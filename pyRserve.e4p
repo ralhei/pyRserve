@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Project SYSTEM "Project-4.2.dtd">
+<!-- eric4 project file for project pyRserve -->
+<!-- Saved: 2009-10-01, 10:43:40 -->
+<!-- Copyright (C) 2009 ,  -->
+<Project version="4.2">
+  <ProgLanguage mixed="0">Python</ProgLanguage>
+  <ProjectType>Qt4</ProjectType>
+  <Description></Description>
+  <Version>0.1</Version>
+  <Author></Author>
+  <Email></Email>
+  <Sources>
+    <Source>
+      <Dir>pyRserve</Dir>
+      <Name>misc.py</Name>
+    </Source>
+    <Source>
+      <Dir>pyRserve</Dir>
+      <Name>rparser.py</Name>
+    </Source>
+    <Source>
+      <Dir>pyRserve</Dir>
+      <Name>rserializer.py</Name>
+    </Source>
+    <Source>
+      <Dir>pyRserve</Dir>
+      <Name>test_rparser.py</Name>
+    </Source>
+    <Source>
+      <Dir>pyRserve</Dir>
+      <Name>binaryRExpressions-v1.py</Name>
+    </Source>
+    <Source>
+      <Dir>pyRserve</Dir>
+      <Name>rexceptions.py</Name>
+    </Source>
+    <Source>
+      <Dir>pyRserve</Dir>
+      <Name>rtypes.py</Name>
+    </Source>
+    <Source>
+      <Dir>pyRserve</Dir>
+      <Name>rconn.py</Name>
+    </Source>
+    <Source>
+      <Dir>pyRserve</Dir>
+      <Name>binaryRExpressions.py</Name>
+    </Source>
+  </Sources>
+  <Forms>
+  </Forms>
+  <Translations>
+  </Translations>
+  <Resources>
+  </Resources>
+  <Interfaces>
+  </Interfaces>
+  <Others>
+  </Others>
+  <Vcs>
+    <VcsType>None</VcsType>
+  </Vcs>
+  <FiletypeAssociations>
+    <FiletypeAssociation pattern="*.ui" type="FORMS" />
+    <FiletypeAssociation pattern="*.idl" type="INTERFACES" />
+    <FiletypeAssociation pattern="*.ptl" type="SOURCES" />
+    <FiletypeAssociation pattern="*.pyw" type="SOURCES" />
+    <FiletypeAssociation pattern="*.ui.h" type="FORMS" />
+    <FiletypeAssociation pattern="*.py" type="SOURCES" />
+    <FiletypeAssociation pattern="*.qrc" type="RESOURCES" />
+  </FiletypeAssociations>
+</Project>
