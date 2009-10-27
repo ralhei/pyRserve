@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.2.dtd">
 <!-- eric4 project file for project pyRserve -->
-<!-- Saved: 2009-10-01, 10:43:40 -->
+<!-- Saved: 2009-10-22, 14:06:36 -->
 <!-- Copyright (C) 2009 ,  -->
 <Project version="4.2">
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -29,10 +29,6 @@
     </Source>
     <Source>
       <Dir>pyRserve</Dir>
-      <Name>binaryRExpressions-v1.py</Name>
-    </Source>
-    <Source>
-      <Dir>pyRserve</Dir>
       <Name>rexceptions.py</Name>
     </Source>
     <Source>
@@ -47,6 +43,15 @@
       <Dir>pyRserve</Dir>
       <Name>binaryRExpressions.py</Name>
     </Source>
+    <Source>
+      <Name>INSTALL</Name>
+    </Source>
+    <Source>
+      <Name>TODO</Name>
+    </Source>
+    <Source>
+      <Name>binCodes.py</Name>
+    </Source>
   </Sources>
   <Forms>
   </Forms>
@@ -57,6 +62,16 @@
   <Interfaces>
   </Interfaces>
   <Others>
+    <Other>
+      <Dir>testData</Dir>
+      <Name>test-script.R</Name>
+    </Other>
+    <Other>
+      <Name>INSTALL</Name>
+    </Other>
+    <Other>
+      <Name>TODO</Name>
+    </Other>
   </Others>
   <Vcs>
     <VcsType>None</VcsType>

@@ -53,6 +53,10 @@ ERR_session_busy     = 0x50 # session is still busy
 ERR_detach_failed    = 0x51 # unable to detach seesion (cannot determine
                             #  peer IP or problems creating a listening socket for resume) 
 
+# pack all error codes with their names into a dictionary:
+ERRORS = dict([(errCode, err_name) for (err_name, errCode) in locals().items() if err_name.startswith('ERR_')])
+
+
 # available commands 
 
 CMD_login        = 0x001    # "name\npwd" : - 
@@ -190,37 +194,55 @@ BOOL_TRUE   = 1
 BOOL_FALSE  = 0
 BOOL_NA     = 2
 
-VALID_R_TYPES = [DT_SEXP, XT_BOOL, XT_INT, XT_DOUBLE, XT_SYMNAME, XT_VECTOR, XT_LIST_TAG, XT_LANG_TAG, 
+VALID_R_TYPES = [DT_SEXP, XT_BOOL, XT_INT, XT_DOUBLE, XT_STR, XT_SYMNAME, XT_VECTOR, XT_LIST_TAG, XT_LANG_TAG, 
                  XT_LIST_NOTAG, XT_LANG_NOTAG, XT_CLOS, XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE,
-                 XT_ARRAY_STR, XT_NULL, XT_UNKNOWN ]
+                 XT_ARRAY_STR, XT_NULL, XT_UNKNOWN, XT_RAW]
 
-# map r-types to typecode strings used in the 'struct' module (only for single char codes),
-# or to self-made codes
+# map r-types and some python types to typecodes used in the 'struct' module
 structMap = {
     XT_BOOL:     'b',
+    numpy.bool:  'b',
+    numpy.bool_: 'b',
     XT_BYTE:     'B',
-#    QSHORT:    'h',
     XT_INT:      'i',
-    XT_INT3:      'i',
-#    QLONG:     'q',
+    int:         'i',
+    numpy.int32: 'i',
+    XT_INT3:     'i',
     XT_DOUBLE:   'd',     # double (float64)
-#    QFLOAT:    'f',     # float  (float32)
-#    QSTRING:   's',
-#    QSYMBOL:   'S',
+    float:       'd',
+    numpy.double:'d',
     }
+
+# mapping to determine overall type of message.
+DT_Map = {
+    str:    DT_STRING,
+    int:    DT_INT,
+    float:  DT_DOUBLE,
+}
+
 
 numpyMap = {
     XT_ARRAY_BOOL:     numpy.bool,
-#    XT_BYTE:     numpy.byte,
-#    QSHORT:    'h',
+#    XT_BYTE:           numpy.byte,
     XT_ARRAY_INT:      numpy.int32,
-#    QLONG:     'q',
     XT_ARRAY_DOUBLE:   numpy.double,     # double float64
-#    QFLOAT:    'f',     # float  (float32)
-#    QSTRING:   's',
-#    QSYMBOL:   'S',
+    XT_ARRAY_STR:      numpy.string_,
     }
-            
+
+# also add the inverse mapping to it:
+for k, v in numpyMap.items():
+    numpyMap[v] = k
+
+
+atom2ArrMap = {
+    # map atomic python objects to their array counterparts in R
+    int:          XT_ARRAY_INT,
+    numpy.int32:  XT_ARRAY_INT,
+    float:        XT_ARRAY_DOUBLE,
+    numpy.double: XT_ARRAY_DOUBLE,
+    str:          XT_ARRAY_STR,
+    }
+
 
 SOCKET_BLOCK_SIZE = 4096
   

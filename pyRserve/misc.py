@@ -12,3 +12,8 @@ class FunctionMapper(object):
             return func
         return wrap
 
+
+
+def phex(aString):
+    'pretty print a strings items in hexadecimal notation'
+    print '\\x'.join(['%02x' % ord(x) for x in aString])

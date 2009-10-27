@@ -2,7 +2,8 @@ import struct
 from numpy import array, ndarray
 from numpy.core.records import recarray, record
 ###
-import rtypes, rparser
+import rtypes, rparser, rserializer
+from misc import phex
 
 def shaped_array(data, dtype, shape):
     arr = array(data, dtype=dtype)
@@ -11,18 +12,22 @@ def shaped_array(data, dtype, shape):
 
 
 r2pyExpressions = [
+    ('"abc"',                                   'abc'),
     ('1',                                       1.0),
+    ('as.integer(c(1))',                        1),
     ('c(1, 2)',                                 array([1.0, 2.0])),
+    ('as.integer(c(1, 2))',                     array([1, 2], dtype=int)),
+    ('c("abc", "defghi")',                      array(["abc", "defghi"])),
     ('seq(1, 5)',                               array(range(1, 6), dtype=int)),
     ('list("otto", "gustav")',                  ["otto", "gustav"]),
-    ('list(husband="otto", wife="erna")',       rparser.TaggedList(["husband", "wife"], ["otto", "erna"])),
-    ('list(n="Fred", no.c=2, c.ages=c(4,7))',   rparser.TaggedList(["n", "no.c", "c.ages"],["Fred",2.,array([4.,7.])])),
-    ('array(1:20, dim=c(4, 5))',                shaped_array(range(1,21), int, (4, 5))),
+    ('list(husband="otto", wife="erna")',       rparser.TaggedList([("husband", "otto"), ("wife", "erna")])),
+    ('list(n="Fred", no_c=2, c_ages=c(4,7))',   rparser.TaggedList([("n","Fred"),("no_c",2.),("c_ages",array([4.,7.]))])),
+#    ('array(1:20, dim=c(4, 5))',                shaped_array(range(1,21), int, (4, 5))),
     #
     #('x<-1:20; y<-x*2; lm(y~x)',                ????),
     # Environment
     #('parent.env',                              [1,2]),
-    ]
+    ]#    ('list(husband="otto", wife="erna")',       rparser.TaggedList(["husband", "wife"], ["otto", "erna"])),
 
 
 ###############################################3
@@ -67,7 +72,7 @@ def rExprTester(rExpr, pyExpr, rBinExpr):
     '''
     qTypeCode = struct.unpack('b', rBinExpr[8])[0]
     #
-    v = rparser.rparse(rBinExpr)
+    v = rparser.rparse(rBinExpr, atomicArray=False)
     if isinstance(v, ndarray):
         compareArrays(v, pyExpr)
     elif v.__class__.__name__ == 'TaggedList':
@@ -76,17 +81,8 @@ def rExprTester(rExpr, pyExpr, rBinExpr):
     else:
         assert v == pyExpr
         
-#    # In python some data types are missing, like 'short' or 'float', etc. In order to serialize
-#    # them correctly, a hint has to be given to the serializer. The hint is calculated by looking
-#    # into the binary q expression calculated from the qExpr. In position 8 it contains the typecode.
-#    # Only typecodes for atomic items are passed in (not for dicts, errors, tables, etc)
-#    qTypeHint = qTypeCode if qTypeCode < 0x60 else None
-#    if type(pyExpr) == dict:
-#        # Python dictionaries do not keep their keys and values in a specific order (unlike q dictionaries),
-#        # so a normal test would fail here. That's way we run a slightly modified test for this case:
-#        assert qparse(qserialize(pyExpr, messageType=qtypes.QRESPONSE, qTypeHint=qTypeHint)) == pyExpr
-#    else:
-#        assert qserialize(pyExpr, messageType=qtypes.QRESPONSE, qTypeHint=qTypeHint) == qBinExpr
+    # assert rserializer.rserialize(pyExpr, asRexp=True, messageCode=messageCode) == rBinExpr
+    assert rserializer.rSerializeResponse(pyExpr) == rBinExpr
 
 
 def hexString(aString):

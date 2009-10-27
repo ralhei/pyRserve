@@ -1,0 +1,10 @@
+
+Important TODOs:
+================
+- Support for endianess when loading arrays directly with 'fromstring()' or 
+  writing them with 'tostring()'.
+  
+  Affected code:
+    - rserializer.s_xt_array_double()
+    - rparser.xt_array_numeric()
+

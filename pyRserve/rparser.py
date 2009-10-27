@@ -1,9 +1,11 @@
-import cStringIO, struct, collections
+import cStringIO, struct, collections, socket
 ###
 from rtypes import *
 from misc import FunctionMapper
+from rexceptions import RResponseError, REvalError
+from taggedContainers import TaggedList, asTaggedArray
 
-DEBUG = True
+DEBUG = 0
 
 class Lexeme(list):
     def __init__(self, rTypeCode, length, hasAttr, lexpos):
@@ -55,15 +57,20 @@ class Lexer(object):
     lexerMap = {}
     fmap = FunctionMapper(lexerMap)
     #
-    def __init__(self, src):
+    def __init__(self, src, atomicArray):
         '''
         @param src: Either a string, a file object, a socket - all providing valid binary r data
+        @param atomicArray: if False parsing arrays with only one element will just return this element
         '''
         try:
             # this only works for objects implementing the buffer protocol, e.g. strings, arrays, ...
             self.fp = cStringIO.StringIO(src) 
         except TypeError:
-            self.fp = src
+            if isinstance(src, socket._socketobject):
+                self.fp = src.makefile()
+            else:
+                self.fp = src
+        self.atomicArray = atomicArray
         
     def readHeader(self):
         '''
@@ -85,6 +92,7 @@ class Lexer(object):
         if DEBUG:
             print 'response ok? %s (responseCode=%x), error-code: %x, message size: %d' % \
                 (self.responseOK, self.responseCode,  self.errCode,  self.messageSize)
+        return self.messageSize
                   
     def clearSocketData(self):
         '''
@@ -125,6 +133,7 @@ class Lexer(object):
         of python objects. Byteswapping for numeric data will be done.
         '''
         structCode = structMap[tCode] if type(tCode)==int else tCode
+        # All data from Rserve is stored in little-endian format!
         fmt = '<' + str(num) + structCode if (num is not None) else '<' + structCode
         if tCode == XT_INT3:
             length = 3
@@ -135,29 +144,6 @@ class Lexer(object):
         d = struct.unpack(fmt, rawData)
         return d[0] if num is None else list(d)
     
-    def __unpackNullTerminatedStrings(self, num):
-        '''
-        @brief  Read 'num' null-terminated strings (i.e. q symbols) from the input source 
-                (a file or a socket). 
-        @note   All strings will be "interned"
-        @return list (of strings)
-        '''
-        # there is an optimized way to read from a socket via lookahead, so differentiate 
-        # these two cases
-        try:
-            sock = self.fp._sock
-        except AttributeError:
-            # read from a normal file or stream:
-            data = readNullTermStringsFromStream(self, num)
-        else:
-            # read from a socket
-            numBytesRead, data = readNullTerminatedStringsFromSock(sock, num)
-            self.lexpos += numBytesRead
-        # Make strings "intern", i.e. Python only keeps a single copy of it in memory and 
-        # just returns new references to it. This is useful if a single symbol is used
-        # thousands of times.
-        return map(intern, data)
-
     def nextExprHdr(self):
         '''
         From the input file/socket determine the type of the next data item, and its length.
@@ -171,7 +157,8 @@ class Lexer(object):
         hasAttr     = (_rTypeCode & XT_HAS_ATTR) != 0      # extract XT_HAS_ATTR flag (if it exists)
         length      = self.__unpack(XT_INT3)
         if not rTypeCode in VALID_R_TYPES:
-            raise RParserError("Invalid token %s found at lexpos %d" % (hex(rTypeCode), startLexpos))
+            raise RParserError("Invalid token %s found at lexpos %d, length %d" % 
+                               (hex(rTypeCode), startLexpos, length))
         return Lexeme(rTypeCode, length, hasAttr, startLexpos)
         
     def nextExprData(self, lexeme):
@@ -180,13 +167,20 @@ class Lexer(object):
         '''
         return self.lexerMap[lexeme.rTypeCode](self, lexeme)
             
-        
-    ###
+    ####################################################################################
        
-    @fmap(XT_BOOL, XT_BYTE, XT_INT, XT_DOUBLE)
+    @fmap(XT_INT, XT_DOUBLE)
     def xt_atom(self, lexeme):
         raw = self.read(lexeme.dataLength)
-        return struct.unpack('<%s' % structMap[lexeme.rTypeCode], raw)
+        return struct.unpack('<%s' % structMap[lexeme.rTypeCode], raw)[0]
+
+    @fmap(XT_BOOL)
+    def xt_bool(self, lexeme):
+        raw = self.read(lexeme.dataLength)
+        # a boolean is stored in a 4 bytes word, but only the first byte is significant:
+        b = struct.unpack('<%s' % structMap[XT_BOOL], raw[0])[0]
+        # b can be 2, meaning NA. Otherwise transform 0/1 into False/True
+        return None if b==2 else b==1
 
     @fmap(XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE)
     def xt_array_numeric(self, lexeme):
@@ -195,10 +189,7 @@ class Lexer(object):
         data = numpy.fromstring(raw, dtype=numpyMap[lexeme.rTypeCode])
         # The next needs to be discussed: In R everything is an array, how do we handle
         # singular array items in Python? Always as an array, or as an atomic item?
-        if len(data) == 1:
-            return data[0]
-        else:
-            return data
+        return data[0] if (len(data)==1 and not self.atomicArray) else data
 
     @fmap(XT_ARRAY_STR)
     def xt_array_str(self, lexeme):
@@ -206,16 +197,13 @@ class Lexer(object):
         An array of one or more null-terminated strings. 
         The XT_ARRAY_STR can contain trailing chars \x01 which need to be chopped off.
         '''
-#        if lexeme.dataLength == 0:
-#            return ''
-#        raw = self.read(lexeme.dataLength)
-#        data = raw.split('\0')[:-1]
-#        return data if len(data) > 1 else data[0]
+        if lexeme.dataLength == 0:
+            return ''
         raw = self.read(lexeme.dataLength)
         data = raw.split('\0')[:-1]
-        return numpy.array(data)
+        return data[0] if (len(data)==1 and not self.atomicArray) else numpy.array(data)
         
-    @fmap(XT_SYMNAME)
+    @fmap(XT_STR, XT_SYMNAME)
     def xt_symname(self, lexeme):
         '''
         A null-terminated string. 
@@ -233,14 +221,19 @@ class Lexer(object):
     def xt_unknown(self, lexeme):
         return self.__unpack(XT_INT)
 
+    @fmap(XT_RAW)
+    def xt_raw(self, lexeme):
+        numBytes = self.__unpack(XT_INT)
+        return self.read(lexeme.dataLength - 4)
+
 
 class RParser(object):
     #
     parserMap = {}
     fmap = FunctionMapper(parserMap)
     #
-    def __init__(self, src):
-        self.lexer = Lexer(src)
+    def __init__(self, src, atomicArray):
+        self.lexer = Lexer(src, atomicArray)
 
     def __getitem__(self, key):
         return self.parserMap[key]
@@ -270,14 +263,23 @@ class RParser(object):
         '''
         self.indentLevel = 1
         self.lexer.readHeader()
-        try:
-            return self._parse()
-        except:
-            # If any error is raised during lexing and parsing, make sure that the entire data
-            # is read from the input source if it is a socket, otherwise following attempts to 
-            # parse again from a socket will return polluted data:
-            self.lexer.clearSocketData()
-            raise
+        if self.lexer.messageSize > 0:
+            try:
+                return self._parse()
+            except:
+                # If any error is raised during lexing and parsing, make sure that the entire data
+                # is read from the input source if it is a socket, otherwise following attempts to 
+                # parse again from a socket will return polluted data:
+                self.lexer.clearSocketData()
+                raise
+        elif not self.lexer.responseOK:
+            try:
+                rserve_err_msg = ERRORS[self.lexer.errCode]
+            except KeyError:
+                raise REvalError("R evaluation error (code=%d)" % self.lexer.errCode)
+            else:
+                raise RResponseError('Response error %s (error code=%d)' % 
+                                    (rserve_err_msg, self.lexer.errCode))
             
     def _parse(self):
         dataLexeme = self.lexer.nextExprHdr()
@@ -305,9 +307,8 @@ class RParser(object):
         lexpos = self.lexer.lexpos
         data = self.lexer.nextExprData(lexeme)
         if DEBUG:
-            print '%s    data-lexpos: %d, data-length: %d' % \
-                    (self.__ind, lexpos, lexeme.dataLength)
-            print '%s    data: %s' % (self.__ind, data)
+            print '%s    data-lexpos: %d, data-length: %d' % (self.__ind, lexpos, lexeme.dataLength)
+            print '%s    data: %s' % (self.__ind, repr(data))
         return data
         
     @fmap(None)
@@ -336,7 +337,7 @@ class RParser(object):
         '''
         finalLexpos = self.lexer.lexpos + lexeme.dataLength
         if DEBUG:
-            print '%s Vector-data: starting at %s, length %d, finished at: %d' % \
+            print '%s     Vector-lexpos: %d, length %d, finished at: %d' % \
                 (self.__ind, self.lexer.lexpos, lexeme.dataLength, finalLexpos)
         data = []
         while self.lexer.lexpos < finalLexpos:
@@ -346,9 +347,12 @@ class RParser(object):
             for tag, value in lexeme.attr:
                 if tag == 'names':
                     # the vector has named items
-                    data = TaggedList(value, data)
+                    #data = TaggedList(value, data)
+                    data = TaggedList(zip(value, data))
                 elif tag == 'class':
                     print 'Warning: applying LIST_TAG "%s" on xt_vector not yet implemented' % tag
+                else:
+                    raise NotImplementedError('tag "%s" not yet implemented' % tag)
         return data
 
     @fmap(XT_LIST_TAG, XT_LANG_TAG)
@@ -363,46 +367,31 @@ class RParser(object):
 
     @fmap(XT_CLOS)
     def xt_closure(self, lexeme):
+        # read entire data provided for closure even though we don't know what to do with
+        # it on the Python side ;-)
         aList1 = self._parseExpr().data
-        print 'closure->list1', aList1
-        #import pdb;pdb.set_trace()
         aList2 = self._parseExpr().data
-        print 'closure->list2', aList2
-        return (aList1, aList2)
+        # Some closures seem to provide their sourcecode in an attrLexeme, but some don't.
+        #return Closure(lexeme.attrLexeme.data[0][1])
+        # So for now let's just return the entire parse tree in a Closure class.
+        return Closure(lexeme, aList1, aList2)
+
 
 
 ########################################################################################
 
-def rparse(src):
-    rparser = RParser(src)
+def rparse(src, atomicArray=False):
+    rparser = RParser(src, atomicArray)
     return rparser.parse()
 
-
-def TaggedList(titles, values):
-    R = collections.namedtuple('TaggedList', [t.replace('.','_') for t in titles])
-    return R(*values)
-
 ########################################################################################
 
-class AttrArray(numpy.ndarray):
-    'numpy.ndarray with additional "attr"-attribute'
-    attr = None
-    
-def asAttrArray(ndarray, attr):
-    arr = ndarray.view(AttrArray)
-    arr.attr = attr
-    return attr
-    
-class TaggedArray(AttrArray):
-    attr = []
-    def __getitem__(self, idx_or_name):
-        try:
-            return numpy.ndarray.__getitem__(self, idx_or_name)
-        except:
-            return numpy.ndarray.__getitem__(self, self.attr.index(idx_or_name))
-
-def asTaggedArray(ndarray, tags):
-    arr = ndarray.view(TaggedArray)
-    arr.attr = tags
-    return arr
-    
+class Closure(object):
+    'Very simple container to return "something" for a closure. Not really usable in Python though.'
+    def __init__(self, lexeme, aList1, aList2):
+        self.lexeme = lexeme
+        self.aList1 = aList1
+        self.aList2 = aList2
+        
+    def __repr__(self):
+        return '<Closure instance %d>' % id(self)

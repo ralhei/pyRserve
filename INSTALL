@@ -1,0 +1,32 @@
+
+Install R
+===========
+Requires:
+- X11 devel package (suse), png-devel, jpeg-devel (otherwise it cannot write png/jpeg files!)
+
+Compilation:
+1. Unpack R-2.9.1.tar.gz
+2. In directory R-2.9.1
+   $ ./configure --enable-R-shlib
+   $ make
+   $ make install
+   
+   
+Install Rserve:
+===============
+1. Download package e.g. into /usr/local/src
+2. cd /usr/local/src
+   No need to untar it for compiling Rserve, only if the client should be compiled
+3. R CMD INSTALL Rserve_0.6-0.tar.gz
+
+This way also the debug version will be compiled and installed.
+
+To start Rserver type:
+
+    $ R CMD Rserve
+
+To start Rserve in debug mode type:
+
+    $ R CMD Rserve.dbg
+
+Now it is ready to be connected from a client.
