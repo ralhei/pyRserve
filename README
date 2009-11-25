@@ -1,0 +1,9 @@
+pyRserve
+--------
+A library for connecting Python to an R process running under Rserve.
+Through the Python connection variables can be get and set from R, 
+and also R-functions can be called.
+
+R:        http://www.r-project.org/
+Rserve:   http://www.rforge.net/Rserve/
+pyRserve: http://www.ralph-heinkel.com/pyRserve/

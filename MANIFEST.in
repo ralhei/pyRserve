@@ -1,0 +1,5 @@
+include LICENSE 
+include README
+graft doc/html
+exclude *.pyc
+# global-exclude test_*
