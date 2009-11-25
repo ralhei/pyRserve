@@ -1,0 +1,7 @@
+Credits:
+--------
+
+Simon Urbanek, the author of Rserve (http://www.rforge.net/Rserve/),
+has been the main source of support to get the binary data conversion
+between Rserve and Python working properly.
+
