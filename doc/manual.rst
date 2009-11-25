@@ -55,7 +55,7 @@ In this example the string ``"3 + 5"`` will be sent to the remote side and evalu
 
 Of course also more complex data types can be sent from R to Python, e.g. lists or real vectors. Here are some examples::
 
-  >>> conn('list(1, 'otto')')
+  >>> conn("list(1, 'otto')")
   [1, 'otto']
   >>> conn('c(1, 5, 7)')
   array([ 1.,  2.])
