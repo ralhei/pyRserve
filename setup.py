@@ -1,10 +1,20 @@
 #!/usr/bin/env python
 
+import os
 from distutils.core import setup
+
+
+## Get long_description from intro.txt:
+here = os.path.dirname(os.path.abspath(__file__))
+f = open(os.path.join(here, 'doc', 'intro.rst'))
+long_description = f.read().strip()
+f.close()
+
 
 setup(name='pyRserve',
       version='0.1',
       description='Python-to-Rserve connector',
+      long_description=long_description,
       author='Ralph Heinkel',
       author_email='rh [at] ralph-heinkel.com',
       url='http://www.ralph-heinkel.com/pyRserve/',

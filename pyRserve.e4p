@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Project SYSTEM "Project-4.2.dtd">
+<!DOCTYPE Project SYSTEM "Project-4.4.dtd">
 <!-- eric4 project file for project pyRserve -->
-<!-- Saved: 2009-10-22, 14:06:36 -->
+<!-- Saved: 2009-11-25, 19:20:15 -->
 <!-- Copyright (C) 2009 ,  -->
-<Project version="4.2">
+<Project version="4.4">
   <ProgLanguage mixed="0">Python</ProgLanguage>
   <ProjectType>Qt4</ProjectType>
   <Description></Description>
@@ -11,47 +11,22 @@
   <Author></Author>
   <Email></Email>
   <Sources>
-    <Source>
-      <Dir>pyRserve</Dir>
-      <Name>misc.py</Name>
-    </Source>
-    <Source>
-      <Dir>pyRserve</Dir>
-      <Name>rparser.py</Name>
-    </Source>
-    <Source>
-      <Dir>pyRserve</Dir>
-      <Name>rserializer.py</Name>
-    </Source>
-    <Source>
-      <Dir>pyRserve</Dir>
-      <Name>test_rparser.py</Name>
-    </Source>
-    <Source>
-      <Dir>pyRserve</Dir>
-      <Name>rexceptions.py</Name>
-    </Source>
-    <Source>
-      <Dir>pyRserve</Dir>
-      <Name>rtypes.py</Name>
-    </Source>
-    <Source>
-      <Dir>pyRserve</Dir>
-      <Name>rconn.py</Name>
-    </Source>
-    <Source>
-      <Dir>pyRserve</Dir>
-      <Name>binaryRExpressions.py</Name>
-    </Source>
-    <Source>
-      <Name>INSTALL</Name>
-    </Source>
-    <Source>
-      <Name>TODO</Name>
-    </Source>
-    <Source>
-      <Name>binCodes.py</Name>
-    </Source>
+    <Source>pyRserve/misc.py</Source>
+    <Source>pyRserve/rparser.py</Source>
+    <Source>pyRserve/rserializer.py</Source>
+    <Source>pyRserve/test_rparser.py</Source>
+    <Source>pyRserve/rexceptions.py</Source>
+    <Source>pyRserve/rtypes.py</Source>
+    <Source>pyRserve/rconn.py</Source>
+    <Source>pyRserve/binaryRExpressions.py</Source>
+    <Source>INSTALL</Source>
+    <Source>TODO</Source>
+    <Source>binCodes.py</Source>
+    <Source>pyRserve/test_taggedContainers.py</Source>
+    <Source>pyRserve/taggedContainers.py</Source>
+    <Source>pyRserve/__init__.py</Source>
+    <Source>pyRserve/binaryRExpressions-v1.py</Source>
+    <Source>setup.py</Source>
   </Sources>
   <Forms>
   </Forms>
@@ -62,19 +37,128 @@
   <Interfaces>
   </Interfaces>
   <Others>
-    <Other>
-      <Dir>testData</Dir>
-      <Name>test-script.R</Name>
-    </Other>
-    <Other>
-      <Name>INSTALL</Name>
-    </Other>
-    <Other>
-      <Name>TODO</Name>
-    </Other>
+    <Other>testData/test-script.R</Other>
+    <Other>INSTALL</Other>
+    <Other>TODO</Other>
+    <Other>LICENSE</Other>
+    <Other>MANIFEST.in</Other>
+    <Other>README</Other>
+    <Other>doc</Other>
+    <Other>CREDITS</Other>
+    <Other>doc/license.rst</Other>
   </Others>
   <Vcs>
-    <VcsType>None</VcsType>
+    <VcsType>Subversion</VcsType>
+    <VcsOptions>
+      <dict>
+        <key>
+          <string>add</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>checkout</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>commit</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>diff</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>export</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>global</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>history</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>log</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>remove</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>status</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>tag</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>update</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+      </dict>
+    </VcsOptions>
+    <VcsOtherData>
+      <dict>
+        <key>
+          <string>standardLayout</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+      </dict>
+    </VcsOtherData>
   </Vcs>
   <FiletypeAssociations>
     <FiletypeAssociation pattern="*.ui" type="FORMS" />
