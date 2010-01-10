@@ -2,5 +2,6 @@ include LICENSE
 include README
 include CREDITS
 graft doc/html
+include doc/*.rst
 exclude *.pyc
 # global-exclude test_*
