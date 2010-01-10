@@ -1,9 +1,11 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml">
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Welcome to pyRserve&#8217;s documentation! &mdash; pyRserve v1.0 documentation</title>
+    <title>Welcome to pyRserve’s documentation! &mdash; pyRserve v1.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -17,10 +19,8 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
     <link rel="top" title="pyRserve v1.0 documentation" href="" />
-    <link rel="next" title="Introduction" href="intro.html" /> 
+    <link rel="next" title="pyRserve" href="intro.html" /> 
   </head>
   <body>
     <div class="related">
@@ -30,17 +30,17 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="intro.html" title="Introduction"
+          <a href="intro.html" title="pyRserve"
              accesskey="N">next</a> |</li>
         <li><a href="">pyRserve v1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
+
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
           <div class="body">
             
-  
   <div class="section" id="welcome-to-pyrserve-s-documentation">
 <h1>Welcome to pyRserve&#8217;s documentation!<a class="headerlink" href="#welcome-to-pyrserve-s-documentation" title="Permalink to this headline">¶</a></h1>
 <p>pyRServe is a library for connecting Python to an R process running under Rserve.
@@ -48,20 +48,21 @@ Through such a connection variables can be get and set in R from Python,
 and also R-functions can be called remotely.</p>
 <p>Contents:</p>
 <ul>
-<li class="toctree-l1"><a class="reference external" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference external" href="intro.html">pyRserve</a><ul>
+<li class="toctree-l2"><a class="reference external" href="intro.html#what-it-does">What It Does</a></li>
+<li class="toctree-l2"><a class="reference external" href="intro.html#supported-platforms">Supported Platforms</a></li>
+<li class="toctree-l2"><a class="reference external" href="intro.html#license">License</a></li>
+<li class="toctree-l2"><a class="reference external" href="intro.html#quick-installation">Quick Installation</a></li>
+<li class="toctree-l2"><a class="reference external" href="intro.html#full-documentation">Full Documentation</a></li>
 </ul>
-<ul>
+</li>
 <li class="toctree-l1"><a class="reference external" href="installation.html">Installation</a></li>
-</ul>
-<ul>
 <li class="toctree-l1"><a class="reference external" href="manual.html">pyRserve manual</a><ul>
 <li class="toctree-l2"><a class="reference external" href="manual.html#setting-up-a-connection-to-rserve">Setting up a connection to Rserve</a></li>
 <li class="toctree-l2"><a class="reference external" href="manual.html#string-evaluation-in-r">String evaluation in R</a></li>
 <li class="toctree-l2"><a class="reference external" href="manual.html#the-r-namespace">The R namespace</a></li>
 </ul>
 </li>
-</ul>
-<ul>
 <li class="toctree-l1"><a class="reference external" href="license.html">This is the MIT license</a></li>
 </ul>
 </div>
@@ -89,17 +90,26 @@ and also R-functions can be called remotely.</p>
 </ul>
 
             <h4>Next topic</h4>
-            <p class="topless"><a href="intro.html" title="next chapter">Introduction</a></p>
+            <p class="topless"><a href="intro.html"
+                                  title="next chapter">pyRserve</a></p>
             <h3>This Page</h3>
             <ul class="this-page-menu">
-              <li><a href="_sources/index.txt">Show Source</a></li>
+              <li><a href="_sources/index.txt"
+                     rel="nofollow">Show Source</a></li>
             </ul>
-          <h3>Quick search</h3>
-            <form class="search" action="search.html" method="get">
-              <input type="text" name="q" size="18" /> <input type="submit" value="Go" />
-              <input type="hidden" name="check_keywords" value="yes" />
-              <input type="hidden" name="area" value="default" />
-            </form>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -109,16 +119,16 @@ and also R-functions can be called remotely.</p>
       <ul>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
+             >index</a></li>
         <li class="right" >
-          <a href="intro.html" title="Introduction"
-             accesskey="N">next</a> |</li>
+          <a href="intro.html" title="pyRserve"
+             >next</a> |</li>
         <li><a href="">pyRserve v1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
       &copy; Copyright 2009, Ralph Heinkel.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.5.1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.3.
     </div>
   </body>
 </html>
