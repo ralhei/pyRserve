@@ -10,14 +10,13 @@ f = open(os.path.join(here, 'doc', 'intro.rst'))
 long_description = f.read().strip()
 f.close()
 
-
 setup(name='pyRserve',
       version='0.1',
       description='Python-to-Rserve connector',
       long_description=long_description,
       author='Ralph Heinkel',
       author_email='rh [at] ralph-heinkel.com',
-      url='http://www.ralph-heinkel.com/pyRserve/',
+      url='http://pypi.python.org/pypi/pyRserve/',
       packages=['pyRserve'],
       license='MIT license',
       platforms=['unix', 'linux', 'cygwin', 'win32'],
