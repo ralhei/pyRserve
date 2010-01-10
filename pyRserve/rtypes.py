@@ -241,6 +241,7 @@ atom2ArrMap = {
     float:        XT_ARRAY_DOUBLE,
     numpy.double: XT_ARRAY_DOUBLE,
     str:          XT_ARRAY_STR,
+    bool:         XT_ARRAY_BOOL,
     }
 
 

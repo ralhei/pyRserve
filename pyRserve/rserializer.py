@@ -46,6 +46,7 @@ class RSerializer(object):
         else:
             # i.e. socket: write result of _fp into socket-fp
             self._orig_fp.write(self._fp.getvalue())
+            self._orig_fp.flush()
             return None
 
     def _writeHeader(self, commandType):
@@ -150,7 +151,7 @@ class RSerializer(object):
         # TODO: make this also work on big endian machines (data must be written in little-endian!!)
         self._fp.write(o.tostring())
     
-    @fmap(int, float, numpy.float64, numpy.int32, numpy.bool_)
+    @fmap(int, float, bool, numpy.float64, numpy.int32, numpy.bool_)
     def s_atom_to_xt_array_numeric(self, o, rTypeCode=None):
         'Render single numeric items into their corresponding array counterpart in r'
         rTypeCode  = rtypes.atom2ArrMap[type(o)]
@@ -196,6 +197,7 @@ class RSerializer(object):
 
     @classmethod
     def rEval(cls, aString, fp=None):
+        'Create binary code for evaluating a string expression remotely in Rserve'
         s = cls(rtypes.CMD_eval, fp=fp)
         s.serialize(aString, dtTypeCode=rtypes.DT_STRING)
         return s.finalize()
@@ -203,6 +205,7 @@ class RSerializer(object):
     
     @classmethod
     def rAssign(cls, varname, o, fp=None):
+        'Create binary code for assigning an expression to a variable remotely in Rserve'
         s = cls(rtypes.CMD_setSEXP, fp=fp)
         s.serialize(varname, dtTypeCode=rtypes.DT_STRING)
         s.serialize(o, dtTypeCode=rtypes.DT_SEXP)
