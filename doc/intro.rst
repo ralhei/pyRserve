@@ -23,8 +23,8 @@ fine for Win32.
 License
 -------
 
-pyRserve has been written by `Ralph Heinkel <http://www.ralph-heinkel.com/>`_ and is released under `MIT license 
-<http://www.ralph-heinkel.com/pyRserve/license.html>`_.
+pyRserve has been written by `Ralph Heinkel (www.ralph-heinkel.com) <http://www.ralph-heinkel.com/>`_ and is released under `MIT license 
+<http://packages.python.org/pyRserve/license.html>`_.
 
 
 Quick Installation
@@ -39,5 +39,5 @@ from your command line.
 Full Documentation
 ------------------
 
-Documentation can be found at `<http://www.ralph-heinkel.com/pyRserve/index.html>`_.
+Documentation can be found at `<http://packages.python.org/pyRserve/>`_.
 
