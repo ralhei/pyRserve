@@ -1,11 +1,3 @@
-# Copyright (c) 2009, Symagon GmbH
-# All rights reserved.
-# www.symagon.com
-#
-# Use in source and binary forms, with or without modification, 
-# is regulated by license agreements between Symagon and its licensees.
-# Redistribution in source and binary forms prohibited.
-
 DATE    = $(shell date +"%d%h%y")
 
 all:
@@ -22,10 +14,8 @@ clean:
 	find . -name '*~'    -exec rm '{}' \;
 	find . -name '*.bak' -exec rm '{}' \;
 	find . -name '*.log' -exec rm '{}' \;
-	find . -name '*.so'  -exec rm '{}' \;
-	find . -name '*.pyd' -exec rm '{}' \;
 	find . -name '.coverage' -exec rm '{}' \;
-	rm -rf build dist cdist_build py2q.egg-info MANIFEST.in
+	rm -rf build dist *.egg-info MANIFEST.in
 
 backup: clean _backup
 
@@ -37,10 +27,10 @@ _backup:
 
 
 test:
-	(cd py2q; py.test)
+	(cd  pyRserve; py.test)
 
 coverage:
 	pyTest=`which py.test` ; \
-	rm -f py2q/binaryQExpressions.py* ; \
-	(cd py2q; coverage -e -x $${pyTest} ; coverage -r -m) 
+	rm -f pyRserve/binaryRExpressions.py* ; \
+	(cd pyRserve; coverage run $${pyTest} ; coverage report -m) 
 
