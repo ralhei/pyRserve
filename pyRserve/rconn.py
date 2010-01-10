@@ -82,29 +82,29 @@ class RConnector(object):
             src = self.sock.makefile()
         return rparse(src)
         
-    @checkIfClosed
-    def send(self, *args, **kw):
-        '''
-        @brief Serializes given arguments and sends them to the rserve process.
-        @note  The result needs to be received separately (using self.receive())
-        '''
-        data = rserialize(args[0] if len(args)==1 else args, **kw)
-        self.sock.send(data)
-
-    @checkIfClosed
-    def receive(self):
-        '@brief Receive the result from a previous call to rserve.'
-        raw = self.sock.recv(rtypes.SOCKET_BLOCK_SIZE)
-        d = [raw]
-        while len(raw) == rtypes.SOCKET_BLOCK_SIZE:
-            raw = self.sock.recv(rtypes.SOCKET_BLOCK_SIZE)
-            d.append(raw)
-        return ''.join(d)
-
-    @checkIfClosed
-    def raw(self, *args, **kw):
-        self.send(*args)
-        return self.receive()
+#    @checkIfClosed
+#    def send(self, *args, **kw):
+#        '''
+#        @brief Serializes given arguments and sends them to the rserve process.
+#        @note  The result needs to be received separately (using self.receive())
+#        '''
+#        data = rserialize(args[0] if len(args)==1 else args, **kw)
+#        self.sock.send(data)
+#
+#    @checkIfClosed
+#    def receive(self):
+#        '@brief Receive the result from a previous call to rserve.'
+#        raw = self.sock.recv(rtypes.SOCKET_BLOCK_SIZE)
+#        d = [raw]
+#        while len(raw) == rtypes.SOCKET_BLOCK_SIZE:
+#            raw = self.sock.recv(rtypes.SOCKET_BLOCK_SIZE)
+#            d.append(raw)
+#        return ''.join(d)
+#
+#    @checkIfClosed
+#    def raw(self, *args, **kw):
+#        self.send(*args)
+#        return self.receive()
 
     @checkIfClosed
     def setRexp(self, name, o):
