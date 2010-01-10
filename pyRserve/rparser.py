@@ -85,6 +85,7 @@ class Lexer(object):
         elif self.responseCode == RESP_ERR:
             self.responseOK = False
         else:
+            self.clearSocketData()
             raise ValueError('Received illegal response code (%x)' % self.responseCode)
         self.errCode     = self.__unpack(XT_BYTE) 
         self.messageSize = self.__unpack(XT_INT)  
