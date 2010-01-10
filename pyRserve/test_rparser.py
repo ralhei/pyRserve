@@ -1,14 +1,17 @@
-import struct
+import struct, datetime, socket, threading, py
 from numpy import array, ndarray
 from numpy.core.records import recarray, record
 ###
 import rtypes, rparser, rserializer
+from rexceptions import RSerializationError
 from misc import phex
 
-def shaped_array(data, dtype, shape):
-    arr = array(data, dtype=dtype)
-    arr.shape = shape
-    return arr
+# rparser.DEBUG = rserializer.DEBUG = True
+
+#def shaped_array(data, dtype, shape):
+#    arr = array(data, dtype=dtype)
+#    arr.shape = shape
+#    return arr
 
 
 r2pyExpressions = [
@@ -45,6 +48,70 @@ def test_rExprGenerator():
             reload(binaryRExpressions)
         yield rExprTester, rExpr, pyExpr, binaryRExpressions.binaryRExpressions[rExpr]
 
+
+def test_rAssign_method():
+    'test "rAssign" class method of RSerializer'
+    hexd = '\x20\x00\x00\x00\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x04\x00\x00\x76\x00'\
+           '\x00\x00\x0a\x08\x00\x00\x20\x04\x00\x00\x01\x00\x00\x00'
+    assert rserializer.rAssign('v', 1) == hexd
+    
+
+def test_rEval_method():
+    hexd = '\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x04\x00\x00\x61\x3d\x31\x00'
+    assert rserializer.rEval('a=1') == hexd
+
+
+def test_serialize_DT_INT():
+    hexd = '\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x007\x00\x00\x00'
+    s = rserializer.RSerializer(rtypes.CMD_eval)
+    s.serialize(55, dtTypeCode=rtypes.DT_INT)
+    res = s.finalize()
+    assert hexd == res
+
+
+def test_serialize_unsupported_object_raises_exception():
+    # datetime objects are not yet supported, so an exception can be expected
+    py.test.raises(RSerializationError, rserializer.rSerializeResponse, datetime.date.today())
+
+
+def test_serialize_into_socket():
+    rs = PseudoRServer()
+    rs.start()
+    # now connect to it:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect(("localhost", PseudoRServer.PORT))
+    hexd = '\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x007\x00\x00\x00'
+    s = rserializer.RSerializer(rtypes.CMD_eval, fp=sock)
+    s.serialize(55, dtTypeCode=rtypes.DT_INT)
+    s.finalize()
+    assert sock.recv(100) == hexd
+    sock.close()
+
+
+def test_parse_from_socket():
+    rs = PseudoRServer()
+    rs.start()
+    # now connect to it:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect(("localhost", PseudoRServer.PORT))
+    sock.send(binaryRExpressions.binaryRExpressions['"abc"'])
+    assert rparser.rparse(sock) == 'abc'
+    sock.close()
+
+
+def test_parse_from_socket_cleanup_in_case_of_buggy_binary_data():
+    rs = PseudoRServer()
+    rs.start()
+    # now connect to it:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect(("localhost", PseudoRServer.PORT))
+    sock.send('\x01\x00\x99\x00\x50\x00\x00\x00')
+    py.test.raises(ValueError, rparser.rparse, sock)
+    # Now try to read from socket, which should be empty. To avoid blocking
+    # when reading non-available data set timeout to very small value:
+    sock.settimeout(0.1)
+    py.test.raises(socket.timeout, sock.recv, 100)
+    sock.close()
 
 ##############################################################
 
@@ -100,7 +167,7 @@ def createBinaryRExpressions():
     import subprocess, socket, time
     RPORT = 6311
     # Start Rserve
-    rProc = subprocess.Popen(['R', 'CMD', 'Rserve.dbg'], stdout=open('/dev/null'))
+    rProc = subprocess.Popen(['R', 'CMD', 'Rserve.dbg', '--no-save'], stdout=open('/dev/null'))
     # wait a moment until Rserve starts listening on RPORT
     time.sleep(1.0)
     #import pdb;pdb.set_trace()
@@ -138,6 +205,30 @@ def createBinaryRExpressions():
         r.close()
     finally:
         rProc.terminate()  # this call is only available in python2.6 and above
+
+
+
+
+class PseudoRServer(threading.Thread):
+    'pseudo rserver, just returning everything received through the network connection'
+    #
+    PORT = 8888
+    #
+    def run(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(("", self.PORT))
+        s.listen(1)
+        conn, addr = s.accept()
+        while 1:
+            #print 'PseudoServer waiting for data'
+            data = conn.recv(1024)
+            if not data:
+                break
+            #print 'PseudoServer received and sent %d bytes' % len(data)
+            conn.send(data)
+        s.close()
+
 
 
 if __name__ == '__main__':
