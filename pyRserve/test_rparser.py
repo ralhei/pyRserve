@@ -8,10 +8,10 @@ from misc import phex
 
 # rparser.DEBUG = rserializer.DEBUG = True
 
-#def shaped_array(data, dtype, shape):
-#    arr = array(data, dtype=dtype)
-#    arr.shape = shape
-#    return arr
+def shaped_array(data, dtype, shape):
+    arr = array(data, dtype=dtype)
+    arr.shape = shape
+    return arr
 
 
 r2pyExpressions = [
@@ -25,7 +25,7 @@ r2pyExpressions = [
     ('list("otto", "gustav")',                  ["otto", "gustav"]),
     ('list(husband="otto", wife="erna")',       rparser.TaggedList([("husband", "otto"), ("wife", "erna")])),
     ('list(n="Fred", no_c=2, c_ages=c(4,7))',   rparser.TaggedList([("n","Fred"),("no_c",2.),("c_ages",array([4.,7.]))])),
-#    ('array(1:20, dim=c(4, 5))',                shaped_array(range(1,21), int, (4, 5))),
+    ('array(1:20, dim=c(4, 5))',                shaped_array(range(1,21), int, (4, 5))),
     #
     #('x<-1:20; y<-x*2; lm(y~x)',                ????),
     # Environment
