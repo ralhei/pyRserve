@@ -80,7 +80,15 @@ class RConnector(object):
             print 'Raw response:', repr(src)
         else:
             src = self.sock.makefile()
-        return rparse(src)
+        try:
+            return rparse(src)
+        except REvalError, msg:
+            # R has reported an evaulation error, so let's obtain a descriptive explanation
+            # about why the error has occurred. R allows to retrieve the error message
+            # of the last exception via a built-in function called 'geterrmessage()'.
+            errorMsg = self.eval('geterrmessage()').strip()
+            raise REvalError(errorMsg)
+            
         
 #    @checkIfClosed
 #    def send(self, *args, **kw):
