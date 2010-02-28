@@ -332,8 +332,9 @@ class RParser(object):
     @fmap(XT_VECTOR, XT_LANG_NOTAG, XT_LIST_NOTAG)
     def xt_vector(self, lexeme):
         '''
-        This is a bit weird: a vector contains unknown number of items, with possibly variable
-        length. The end of this REXP can only be detected by keeping track of how many bytes
+        The binary representation of an XT_VECTOR is weird: a vector contains unknown number 
+        of items, with possibly variable length. 
+        The end of this REXP can only be detected by keeping track of how many bytes
         have been consumed (lexeme.length!) until the end of the REXP has been reached.
         '''
         finalLexpos = self.lexer.lexpos + lexeme.dataLength
@@ -348,12 +349,10 @@ class RParser(object):
             for tag, value in lexeme.attr:
                 if tag == 'names':
                     # the vector has named items
-                    #data = TaggedList(value, data)
                     data = TaggedList(zip(value, data))
-                elif tag == 'class':
-                    print 'Warning: applying LIST_TAG "%s" on xt_vector not yet implemented' % tag
                 else:
-                    raise NotImplementedError('tag "%s" not yet implemented' % tag)
+                    if DEBUG:
+                        print 'Warning: applying LIST_TAG "%s" on xt_vector not yet implemented' % tag
         return data
 
     @fmap(XT_LIST_TAG, XT_LANG_TAG)
