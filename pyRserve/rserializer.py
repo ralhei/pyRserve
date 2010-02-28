@@ -145,12 +145,20 @@ class RSerializer(object):
     @fmap(rtypes.XT_ARRAY_DOUBLE, rtypes.XT_ARRAY_INT, rtypes.XT_ARRAY_BOOL)
     def s_xt_array_numeric(self, o, rTypeCode=None):
         'Only to be called passing numpy arrays in "o"'
-        rTypeCode = rtypes.numpyMap[o.dtype.type]
-        length = o.dtype.itemsize * len(o)
-        self._writeDataHeader(rTypeCode, length)
+#        import pdb;pdb.set_trace()
+        startPos = self._fp.tell()
+        attrFlag = rtypes.XT_HAS_ATTR if o.ndim > 1 else 0
+        rTypeCode = rtypes.numpyMap[o.dtype.type] | attrFlag
+        self._writeDataHeader(rTypeCode, 0)
+        if attrFlag:
+            self.s_xt_tag_list([('dim', numpy.array(o.shape))])
         # TODO: make this also work on big endian machines (data must be written in little-endian!!)
         self._fp.write(o.tostring())
-    
+        length = self._fp.tell() - startPos - 4  # subtract length of header==4 bytes
+        self._fp.seek(startPos)
+        self._writeDataHeader(rTypeCode, length)
+        self._fp.seek(0, os.SEEK_END)
+        
     @fmap(int, float, bool, numpy.float64, numpy.int32, numpy.bool_)
     def s_atom_to_xt_array_numeric(self, o, rTypeCode=None):
         'Render single numeric items into their corresponding array counterpart in r'
@@ -165,16 +173,16 @@ class RSerializer(object):
         'Render all objects of given python list into generic r vector'
         startPos = self._fp.tell()
         # remember start position for calculating length in bytes of entire list content
-        attrTag = rtypes.XT_HAS_ATTR if o.__class__ == TaggedList else 0
-        self._writeDataHeader(rtypes.XT_VECTOR | attrTag, 0)
-        if attrTag:
+        attrFlag = rtypes.XT_HAS_ATTR if o.__class__ == TaggedList else 0
+        self._writeDataHeader(rtypes.XT_VECTOR | attrFlag, 0)
+        if attrFlag:
             self.s_xt_tag_list([('names', numpy.array(o.keys))])
         for v in o:
             self._serializeExpr(v)
         length = self._fp.tell() - startPos
         self._fp.seek(startPos)
         # now write header again with correct length information
-        self._writeDataHeader(rtypes.XT_VECTOR | attrTag, length - 4)  # subtract 4 (omit list header!)
+        self._writeDataHeader(rtypes.XT_VECTOR | attrFlag, length - 4)  # subtract 4 (omit list header!)
         self._fp.seek(0, os.SEEK_END)
         
     def s_xt_tag_list(self, o, rTypeCode=None):
