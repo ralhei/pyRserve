@@ -12,7 +12,7 @@ f.close()
 
 setup(name='pyRserve',
       version='0.2',
-      description='Python-to-Rserve connector',
+      description='A Python client to remotely access R statistic package via Rserve',
       long_description=long_description,
       author='Ralph Heinkel',
       author_email='rh [at] ralph-heinkel.com',
