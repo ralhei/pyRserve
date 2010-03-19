@@ -68,12 +68,15 @@ class RConnector(object):
     def __call__(self, aString):
         return self.eval(aString)
         
+    def _reval(self, aString):
+        rEval(aString, fp=self.sock)
+        
     @checkIfClosed
     def eval(self, aString):
         '@brief Evaluate a string expression through Rserve and return the result transformed into python objects'
         if type(aString) != str:
             raise TypeError('Only string evaluation is allowed')
-        rEval(aString, fp=self.sock)
+        self._reval(aString)
         if DEBUG:
             # Read entire data into memory en block, it's easier to debug
             src = self.receive()
@@ -89,28 +92,18 @@ class RConnector(object):
             errorMsg = self.eval('geterrmessage()').strip()
             raise REvalError(errorMsg)
             
-        
+    @checkIfClosed
+    def _receive(self):
+        '@brief Receive the result from a previous call to rserve.'
+        raw = self.sock.recv(rtypes.SOCKET_BLOCK_SIZE)
+        d = [raw]
+        while len(raw) == rtypes.SOCKET_BLOCK_SIZE:
+            raw = self.sock.recv(rtypes.SOCKET_BLOCK_SIZE)
+            d.append(raw)
+        return ''.join(d)
+
 #    @checkIfClosed
-#    def send(self, *args, **kw):
-#        '''
-#        @brief Serializes given arguments and sends them to the rserve process.
-#        @note  The result needs to be received separately (using self.receive())
-#        '''
-#        data = rserialize(args[0] if len(args)==1 else args, **kw)
-#        self.sock.send(data)
-#
-#    @checkIfClosed
-#    def receive(self):
-#        '@brief Receive the result from a previous call to rserve.'
-#        raw = self.sock.recv(rtypes.SOCKET_BLOCK_SIZE)
-#        d = [raw]
-#        while len(raw) == rtypes.SOCKET_BLOCK_SIZE:
-#            raw = self.sock.recv(rtypes.SOCKET_BLOCK_SIZE)
-#            d.append(raw)
-#        return ''.join(d)
-#
-#    @checkIfClosed
-#    def raw(self, *args, **kw):
+#    def _raw(self, *args, **kw):
 #        self.send(*args)
 #        return self.receive()
 
