@@ -191,9 +191,18 @@ class TaggedArray(AttrArray):
         try:
             return numpy.ndarray.__getitem__(self, idx_or_name)
         except:
+            pass
+        try:
             return numpy.ndarray.__getitem__(self, self.attr.index(idx_or_name))
+        except ValueError:
+            raise KeyError('No tag "%s" available for array' % idx_or_name)
+            
+    def keys(self):
+        return self.attr[:]
 
 def asTaggedArray(ndarray, tags):
+    if len(tags) != len(ndarray):
+        raise ValueError('Number of tags must match size of array')
     arr = ndarray.view(TaggedArray)
     arr.attr = tags
     return arr
