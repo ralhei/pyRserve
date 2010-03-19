@@ -5,8 +5,11 @@ from numpy.core.records import recarray, record
 import rtypes, rparser, rserializer
 from rexceptions import RSerializationError
 from misc import phex
+from taggedContainers import TaggedList, asTaggedArray
 
 # rparser.DEBUG = rserializer.DEBUG = True
+
+DEBUG = 0
 
 def shaped_array(data, dtype, shape):
     arr = array(data, dtype=dtype)
@@ -16,21 +19,35 @@ def shaped_array(data, dtype, shape):
 
 r2pyExpressions = [
     ('"abc"',                                   'abc'),
+    # a single number is handled R-internal as a vector, but for convience reasons is tranlated 
+    # into a single number in Python:
     ('1',                                       1.0),
+    # The same for an integer:
     ('as.integer(c(1))',                        1),
+    # and again for a explicitely created R vector:
+    ('c(1)',                                    1.0),
     ('c(1, 2)',                                 array([1.0, 2.0])),
     ('as.integer(c(1, 2))',                     array([1, 2], dtype=int)),
     ('c("abc", "defghi")',                      array(["abc", "defghi"])),
     ('seq(1, 5)',                               array(range(1, 6), dtype=int)),
+    # An explicit R list with only one item remains a list on the python side:
+    ('list("otto")',                            ["otto"]),
     ('list("otto", "gustav")',                  ["otto", "gustav"]),
-    ('list(husband="otto", wife="erna")',       rparser.TaggedList([("husband", "otto"), ("wife", "erna")])),
-    ('list(n="Fred", no_c=2, c_ages=c(4,7))',   rparser.TaggedList([("n","Fred"),("no_c",2.),("c_ages",array([4.,7.]))])),
+    # tagged lists:
+    ('list(husband="otto")',                    TaggedList([("husband", "otto")])),
+    ('list(husband="otto", wife="erna")',       TaggedList([("husband", "otto"), ("wife", "erna")])),
+    ('list(n="Fred", no_c=2, c_ages=c(4,7))',   TaggedList([("n","Fred"),("no_c",2.),("c_ages",array([4.,7.]))])),
+    # tagged array:
+    ('c(a=1.,b=2.,c=3.)',                       asTaggedArray(array([1.,2.,3.]),['a','b','c'])),
+    # tagged single item array should remain an array on the python side in order to preserve the tag:
+    ('c(a=1)',                                  asTaggedArray(array([1.]), ['a'])),
+    # multi-dim array (internally also a tagged array) gets translated into a shaped numpy array:
     ('array(1:20, dim=c(4, 5))',                shaped_array(range(1,21), int, (4, 5))),
     #
     #('x<-1:20; y<-x*2; lm(y~x)',                ????),
     # Environment
     #('parent.env',                              [1,2]),
-    ]#    ('list(husband="otto", wife="erna")',       rparser.TaggedList(["husband", "wife"], ["otto", "erna"])),
+    ]
 
 
 ###############################################3
@@ -194,12 +211,18 @@ def createBinaryRExpressions():
             l = len(rExpr)
             # The data packet contains trailing padding zeros to be always a multiple of 4 in length:
             multi4Len = l + (4-divmod(l, 4)[1])
-            r.send('\x03\x00\x00\x00' + struct.pack('<i', 4 + multi4Len) + 8*'\x00')
-            # send data:
+            hdr = '\x03\x00\x00\x00' + struct.pack('<i', 4 + multi4Len) + 8*'\x00'
+            # compute data:
             stringHeader = struct.pack('B', rtypes.DT_STRING) + struct.pack('<i', multi4Len)[:3]
-            r.send(stringHeader + rExpr + (multi4Len-l)*'\x00')
+            data = stringHeader + rExpr + (multi4Len-l)*'\x00'
+            if DEBUG:
+                print 'For pyExpr %s sending call to R:\n%s' % (pyExpr, repr(hdr+data))
+            r.send(hdr)
+            r.send(data)
             time.sleep(0.1)
             binRExpr = r.recv(1024)
+            if DEBUG:
+                print 'As result received:\n%s\n' % (repr(binRExpr))
             fp.write("    '%s': '%s',\n" % (rExpr, hexString(binRExpr)))
         fp.write("    }\n")
         r.close()
