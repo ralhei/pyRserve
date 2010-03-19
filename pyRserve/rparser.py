@@ -57,10 +57,9 @@ class Lexer(object):
     lexerMap = {}
     fmap = FunctionMapper(lexerMap)
     #
-    def __init__(self, src, atomicArray):
+    def __init__(self, src):
         '''
         @param src: Either a string, a file object, a socket - all providing valid binary r data
-        @param atomicArray: if False parsing arrays with only one element will just return this element
         '''
         try:
             # this only works for objects implementing the buffer protocol, e.g. strings, arrays, ...
@@ -70,7 +69,6 @@ class Lexer(object):
                 self.fp = src.makefile()
             else:
                 self.fp = src
-        self.atomicArray = atomicArray
         
     def readHeader(self):
         '''
@@ -188,9 +186,7 @@ class Lexer(object):
         raw = self.read(lexeme.dataLength)
         # TODO: swapping...
         data = numpy.fromstring(raw, dtype=numpyMap[lexeme.rTypeCode])
-        # The next needs to be discussed: In R everything is an array, how do we handle
-        # singular array items in Python? Always as an array, or as an atomic item?
-        return data[0] if (len(data)==1 and not self.atomicArray) else data
+        return data
 
     @fmap(XT_ARRAY_STR)
     def xt_array_str(self, lexeme):
@@ -202,7 +198,7 @@ class Lexer(object):
             return ''
         raw = self.read(lexeme.dataLength)
         data = raw.split('\0')[:-1]
-        return data[0] if (len(data)==1 and not self.atomicArray) else numpy.array(data)
+        return numpy.array(data)
         
     @fmap(XT_STR, XT_SYMNAME)
     def xt_symname(self, lexeme):
@@ -234,7 +230,11 @@ class RParser(object):
     fmap = FunctionMapper(parserMap)
     #
     def __init__(self, src, atomicArray):
-        self.lexer = Lexer(src, atomicArray)
+        '''
+        @param atomicArray: if False parsing arrays with only one element will just return this element
+        '''
+        self.lexer = Lexer(src)
+        self.atomicArray = atomicArray
 
     def __getitem__(self, key):
         return self.parserMap[key]
@@ -286,7 +286,7 @@ class RParser(object):
         dataLexeme = self.lexer.nextExprHdr()
         self._debugLog(dataLexeme, isRexpr=False)
         if dataLexeme.rTypeCode == DT_SEXP:
-            return self._parseExpr().data
+            return self._stripArray(self._parseExpr().data)
         else:
             raise NotImplementedError()
 
@@ -312,9 +312,21 @@ class RParser(object):
             print '%s    data: %s' % (self.__ind, repr(data))
         return data
         
+    def _stripArray(self, data):
+        # if data is a plain numpy array, and has only one element, just extract and return this
+        if data.__class__ == numpy.ndarray and len(data) == 1 and not self.atomicArray:
+            # if requested, return singular element of numpy-array.
+            # this does not apply for arrays with attributes (__class__ would be TaggedArray)!
+            data = data[0]
+        return data
+        
     @fmap(None)
     def xt_(self, lexeme):
-        'apply this for atomic data and arrays.'
+        'apply this for atomic data'
+        return self._nextExprData(lexeme)
+
+    @fmap(XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE, XT_ARRAY_STR)
+    def xt_array(self, lexeme):
         data = self._nextExprData(lexeme)
         if lexeme.hasAttr and lexeme.attrTypeCode == XT_LIST_TAG:
             for tag, value in lexeme.attr:
@@ -322,7 +334,8 @@ class RParser(object):
                     # the array has a defined shape
                     data.shape = value
                 elif tag == 'names':
-                    data = asTaggedArray(data, value)
+                    # convert numpy-vector 'value' into list to make taggedarray work properly:
+                    data = asTaggedArray(data, list(value))
                 elif tag in ['dimnames', 'assign']:
                     print 'Warning: applying LIST_TAG "%s" on array not yet implemented' % tag
                 else:
@@ -332,6 +345,8 @@ class RParser(object):
     @fmap(XT_VECTOR, XT_LANG_NOTAG, XT_LIST_NOTAG)
     def xt_vector(self, lexeme):
         '''
+        A vector is e.g. return when sending "list('abc','def')" to R. It can contain mixed
+        types of data items.
         The binary representation of an XT_VECTOR is weird: a vector contains unknown number 
         of items, with possibly variable length. 
         The end of this REXP can only be detected by keeping track of how many bytes
@@ -343,7 +358,8 @@ class RParser(object):
                 (self.__ind, self.lexer.lexpos, lexeme.dataLength, finalLexpos)
         data = []
         while self.lexer.lexpos < finalLexpos:
-            data.append(self._parseExpr().data)
+            # convert single item arrays into atoms (via stripArray)
+            data.append(self._stripArray(self._parseExpr().data))
             
         if lexeme.hasAttr and lexeme.attrTypeCode == XT_LIST_TAG:
             for tag, value in lexeme.attr:
@@ -357,6 +373,7 @@ class RParser(object):
 
     @fmap(XT_LIST_TAG, XT_LANG_TAG)
     def xt_list_tag(self, lexeme):
+        # a xt_list_tag usually occurrs as an attribute of a vector or list (like for a tagged list)
         finalLexpos = self.lexer.lexpos + lexeme.dataLength
         r = []
         while self.lexer.lexpos < finalLexpos:
