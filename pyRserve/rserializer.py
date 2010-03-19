@@ -6,7 +6,7 @@ import numpy
 import rtypes
 from misc import FunctionMapper
 from rexceptions import RSerializationError
-from taggedContainers import TaggedList
+from taggedContainers import TaggedList, TaggedArray
 
 DEBUG = False
 
@@ -144,14 +144,26 @@ class RSerializer(object):
     
     @fmap(rtypes.XT_ARRAY_DOUBLE, rtypes.XT_ARRAY_INT, rtypes.XT_ARRAY_BOOL)
     def s_xt_array_numeric(self, o, rTypeCode=None):
-        'Only to be called passing numpy arrays in "o"'
-#        import pdb;pdb.set_trace()
+        '''
+        @param o: numpy array or subclass (e.g. TaggedArray)
+        @note: If o is multi-dimensional a tagged array is created 
+               Also if o is of type TaggedArray.
+        '''
         startPos = self._fp.tell()
-        attrFlag = rtypes.XT_HAS_ATTR if o.ndim > 1 else 0
+        
+        # Determine which tags the array must be given:
+        xt_tag_list = []
+        if o.ndim > 1:
+            xt_tag_list.append(('dim', numpy.array(o.shape)))
+        if isinstance(o, TaggedArray):
+            attrFlag = rtypes.XT_HAS_ATTR
+            xt_tag_list.append(('names', numpy.array(o.attr)))
+
+        attrFlag = rtypes.XT_HAS_ATTR if xt_tag_list else 0
         rTypeCode = rtypes.numpyMap[o.dtype.type] | attrFlag
         self._writeDataHeader(rTypeCode, 0)
         if attrFlag:
-            self.s_xt_tag_list([('dim', numpy.array(o.shape))])
+            self.s_xt_tag_list(xt_tag_list)
         # TODO: make this also work on big endian machines (data must be written in little-endian!!)
         self._fp.write(o.tostring())
         length = self._fp.tell() - startPos - 4  # subtract length of header==4 bytes
