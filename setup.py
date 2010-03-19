@@ -11,7 +11,7 @@ long_description = f.read().strip()
 f.close()
 
 setup(name='pyRserve',
-      version='0.1',
+      version='0.2',
       description='Python-to-Rserve connector',
       long_description=long_description,
       author='Ralph Heinkel',
