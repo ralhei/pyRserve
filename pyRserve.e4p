@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.4.dtd">
 <!-- eric4 project file for project pyRserve -->
-<!-- Saved: 2009-11-25, 19:20:15 -->
+<!-- Saved: 2009-12-02, 18:17:23 -->
 <!-- Copyright (C) 2009 ,  -->
 <Project version="4.4">
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -25,8 +25,8 @@
     <Source>pyRserve/test_taggedContainers.py</Source>
     <Source>pyRserve/taggedContainers.py</Source>
     <Source>pyRserve/__init__.py</Source>
-    <Source>pyRserve/binaryRExpressions-v1.py</Source>
     <Source>setup.py</Source>
+    <Source>doc/conf.py</Source>
   </Sources>
   <Forms>
   </Forms>
@@ -46,6 +46,12 @@
     <Other>doc</Other>
     <Other>CREDITS</Other>
     <Other>doc/license.rst</Other>
+    <Other>doc/index.rst</Other>
+    <Other>doc/installation.rst</Other>
+    <Other>doc/intro.rst</Other>
+    <Other>doc/make.bat</Other>
+    <Other>doc/Makefile</Other>
+    <Other>doc/manual.rst</Other>
   </Others>
   <Vcs>
     <VcsType>Subversion</VcsType>
