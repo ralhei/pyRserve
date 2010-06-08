@@ -3,7 +3,7 @@ import cStringIO, struct, collections, socket
 from rtypes import *
 from misc import FunctionMapper
 from rexceptions import RResponseError, REvalError
-from taggedContainers import TaggedList, asTaggedArray
+from taggedContainers import TaggedList, asTaggedArray, asAttrArray
 
 DEBUG = 0
 
@@ -327,7 +327,7 @@ class RParser(object):
 
     @fmap(XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE, XT_ARRAY_STR)
     def xt_array(self, lexeme):
-        data = self._nextExprData(lexeme)
+        data = self._nextExprData(lexeme)  # converts lexeme into a numpy array
         if lexeme.hasAttr and lexeme.attrTypeCode == XT_LIST_TAG:
             for tag, value in lexeme.attr:
                 if tag == 'dim':
@@ -336,10 +336,13 @@ class RParser(object):
                 elif tag == 'names':
                     # convert numpy-vector 'value' into list to make taggedarray work properly:
                     data = asTaggedArray(data, list(value))
-                elif tag in ['dimnames', 'assign']:
-                    print 'Warning: applying LIST_TAG "%s" on array not yet implemented' % tag
                 else:
-                    raise NotImplementedError('cannot apply tag "%s" on array' % tag)
+                    # there are additional tags in the attribute, just collect them in a dictionary
+                    # attached to the array. 
+                    try:
+                        data.attr[tag] = value
+                    except AttributeError:
+                        data = asAttrArray(data, {tag: value})
         return data
 
     @fmap(XT_VECTOR, XT_LANG_NOTAG, XT_LIST_NOTAG)
