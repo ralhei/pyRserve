@@ -7,11 +7,11 @@ from distutils.core import setup
 ## Get long_description from intro.txt:
 here = os.path.dirname(os.path.abspath(__file__))
 f = open(os.path.join(here, 'doc', 'intro.rst'))
-long_description = f.read().strip()
+long_description = f.read()
 f.close()
 
 setup(name='pyRserve',
-      version='0.2',
+      version='0.3',     # ALWAYS UPDATE __version__  in __init__.py !!!
       description='A Python client to remotely access R statistic package via Rserve',
       long_description=long_description,
       author='Ralph Heinkel',
