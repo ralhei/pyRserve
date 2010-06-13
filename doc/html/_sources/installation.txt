@@ -3,7 +3,7 @@ Installation
 
 Before pyRserve can be used, R and Rserv have to be installed properly. 
 Installation instructions for both packages are available on their corresponding
-websites at`<http://www.r-project.org/>`_ and `<http://packages.python.org/pyRserve/>`_
+websites at `<http://www.r-project.org/>`_ and `<http://packages.python.org/pyRserve/>`_
 
 
 Installing R from sources
@@ -18,7 +18,7 @@ On Unix this looks like::
   make
   make install
 
-For Windows it might be just enough to install a prepuilt R package. The same might be true for
+For Windows it might be just enough to install a prebuilt R package. The same might be true for
 some Linux distributions, just make sure to install a version which also contains all headers 
 necessary for compiling Rserve in the next step.
 
@@ -42,5 +42,5 @@ Then from your unix/windows command line run::
 
   easy_install pyRserve
 
-
+In the next section you'll find instructions how to use everything together.
   

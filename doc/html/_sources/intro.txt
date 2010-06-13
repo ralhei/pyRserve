@@ -10,14 +10,15 @@ Furthermore - and this makes everything feel very pythonic - all data structures
 R to native Python types and back.
 
 
-Version history
+Changes
 ----------------
 * V 0.3 (2010-06-08)
-
-   * Added conversion of more complex R structures into Python
-   * Updated documentation (installation, manual)
-  
+    * Added conversion of more complex R structures into Python
+    
+    * Updated documentation (installation, manual)
+    
 * V 0.2 (2010-03-19) Fixed rendering of TaggedArrays
+
 * V 0.1 (2010-01-10) Initial version
 
 
@@ -41,7 +42,7 @@ Make sure that Numpy is installed.
 
 Then from your unix/windows command line run::
 
-   easy_install pyRserve
+    easy_install pyRserve
    
 or download the tar.gz or zip package. After unpacking run `python setup.py install` from your command line. 
 
