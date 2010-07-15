@@ -1,4 +1,4 @@
-DATE    = $(shell date +"%d%h%y")
+DATE    = $(shell date +"%F")
 
 all:
 
