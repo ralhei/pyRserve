@@ -30,6 +30,9 @@ help:
 clean:
 	-rm -rf $(BUILDDIR)/*
 
+html-zip: html
+	(cd html; zip ../html.zip *.html _static/* )
+	
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
