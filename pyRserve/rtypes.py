@@ -196,7 +196,7 @@ BOOL_NA     = 2
 
 VALID_R_TYPES = [DT_SEXP, XT_BOOL, XT_INT, XT_DOUBLE, XT_STR, XT_SYMNAME, XT_VECTOR, XT_LIST_TAG, XT_LANG_TAG, 
                  XT_LIST_NOTAG, XT_LANG_NOTAG, XT_CLOS, XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE,
-                 XT_ARRAY_STR, XT_NULL, XT_UNKNOWN, XT_RAW]
+                 XT_ARRAY_CPLX, XT_ARRAY_STR, XT_NULL, XT_UNKNOWN, XT_RAW]
 
 # map r-types and some python types to typecodes used in the 'struct' module
 structMap = {
@@ -226,6 +226,7 @@ numpyMap = {
 #    XT_BYTE:           numpy.byte,
     XT_ARRAY_INT:      numpy.int32,
     XT_ARRAY_DOUBLE:   numpy.double,     # double float64
+    XT_ARRAY_CPLX:     numpy.complex,
     XT_ARRAY_STR:      numpy.string_,
     }
 
@@ -240,6 +241,8 @@ atom2ArrMap = {
     numpy.int32:  XT_ARRAY_INT,
     float:        XT_ARRAY_DOUBLE,
     numpy.double: XT_ARRAY_DOUBLE,
+    complex:      XT_ARRAY_CPLX,
+    numpy.complex:XT_ARRAY_CPLX,
     str:          XT_ARRAY_STR,
     bool:         XT_ARRAY_BOOL,
     }

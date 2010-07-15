@@ -181,7 +181,7 @@ class Lexer(object):
         # b can be 2, meaning NA. Otherwise transform 0/1 into False/True
         return None if b==2 else b==1
 
-    @fmap(XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE)
+    @fmap(XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE, XT_ARRAY_CPLX)
     def xt_array_numeric(self, lexeme):
         raw = self.read(lexeme.dataLength)
         # TODO: swapping...
