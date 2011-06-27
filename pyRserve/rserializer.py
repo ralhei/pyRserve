@@ -154,7 +154,7 @@ class RSerializer(object):
         # Determine which tags the array must be given:
         xt_tag_list = []
         if o.ndim > 1:
-            xt_tag_list.append(('dim', numpy.array(o.shape)))
+            xt_tag_list.append(('dim', numpy.array(o.shape, numpy.int32)))
         if isinstance(o, TaggedArray):
             attrFlag = rtypes.XT_HAS_ATTR
             xt_tag_list.append(('names', numpy.array(o.attr)))

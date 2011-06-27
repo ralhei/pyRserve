@@ -1,4 +1,4 @@
-import struct, datetime, socket, threading, py
+import struct, datetime, socket, threading, py, numpy
 from numpy import array, ndarray
 from numpy.core.records import recarray, record
 ###
@@ -27,9 +27,9 @@ r2pyExpressions = [
     # and again for a explicitely created R vector:
     ('c(1)',                                    1.0),
     ('c(1, 2)',                                 array([1.0, 2.0])),
-    ('as.integer(c(1, 2))',                     array([1, 2], dtype=int)),
+    ('as.integer(c(1, 2))',                     array([1, 2], dtype=numpy.int32)),
     ('c("abc", "defghi")',                      array(["abc", "defghi"])),
-    ('seq(1, 5)',                               array(range(1, 6), dtype=int)),
+    ('seq(1, 5)',                               array(range(1, 6), dtype=numpy.int32)),
     # An explicit R list with only one item remains a list on the python side:
     ('list("otto")',                            ["otto"]),
     ('list("otto", "gustav")',                  ["otto", "gustav"]),
@@ -42,7 +42,7 @@ r2pyExpressions = [
     # tagged single item array should remain an array on the python side in order to preserve the tag:
     ('c(a=1)',                                  asTaggedArray(array([1.]), ['a'])),
     # multi-dim array (internally also a tagged array) gets translated into a shaped numpy array:
-    ('array(1:20, dim=c(4, 5))',                shaped_array(range(1,21), int, (4, 5))),
+    ('array(1:20, dim=c(4, 5))',                shaped_array(range(1,21), numpy.int32, (4, 5))),
     #
     #('x<-1:20; y<-x*2; lm(y~x)',                ????),
     # Environment
