@@ -45,7 +45,7 @@ class RConnector(object):
         return self.__closed
 
     def connect(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock = socket.socket()
         try:
             self.sock.connect((self.host, self.port))
         except socket.error:
@@ -79,13 +79,13 @@ class RConnector(object):
         self._reval(aString)
         if DEBUG:
             # Read entire data into memory en block, it's easier to debug
-            src = self.receive()
+            src = self._receive()
             print 'Raw response:', repr(src)
         else:
             src = self.sock.makefile()
         try:
             return rparse(src)
-        except REvalError, msg:
+        except REvalError:
             # R has reported an evaulation error, so let's obtain a descriptive explanation
             # about why the error has occurred. R allows to retrieve the error message
             # of the last exception via a built-in function called 'geterrmessage()'.
@@ -159,7 +159,7 @@ class RConnector(object):
     def assign(self, aDict):
         '@brief Assign all items of the dictionary to the default R namespace'
         for k, v in aDict.items():
-            setRexp(k, v)
+            self.setRexp(k, v)
 
     @checkIfClosed
     def isFunction(self, name):
