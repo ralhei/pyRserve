@@ -220,7 +220,7 @@ class Lexer(object):
 
     @fmap(XT_RAW)
     def xt_raw(self, lexeme):
-        numBytes = self.__unpack(XT_INT)
+        self.__unpack(XT_INT)
         return self.read(lexeme.dataLength - 4)
 
 
@@ -297,7 +297,7 @@ class RParser(object):
         if lexeme.hasAttr:
             self.indentLevel += 1
             if DEBUG:
-                print '%s Attribute:' % (self.__ind)
+                print '%s Attribute:' % self.__ind
             lexeme.setAttr(self._parseExpr())
             self.indentLevel -= 1
         lexeme.data = self.parserMap.get(lexeme.rTypeCode, self[None])(self, lexeme)
