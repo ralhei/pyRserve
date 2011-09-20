@@ -1,15 +1,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml">
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pyRserve manual &mdash; pyRserve v0.3 documentation</title>
+    <title>pyRserve manual &mdash; pyRserve v0.4 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.3',
+        VERSION:     '0.4',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -17,9 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="top" title="pyRserve v0.3 documentation" href="index.html" />
+    <link rel="top" title="pyRserve v0.4 documentation" href="index.html" />
     <link rel="next" title="This is the MIT license" href="license.html" />
     <link rel="prev" title="Installation" href="installation.html" /> 
   </head>
@@ -36,15 +36,15 @@
         <li class="right" >
           <a href="installation.html" title="Installation"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyRserve v0.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyRserve v0.4 documentation</a> &raquo;</li> 
       </ul>
     </div>  
+
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
           <div class="body">
             
-  
   <div class="section" id="pyrserve-manual">
 <h1>pyRserve manual<a class="headerlink" href="#pyrserve-manual" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="setting-up-a-connection-to-rserve">
@@ -59,7 +59,7 @@
 &gt;&gt;&gt; conn = pyRserve.rconnect()</pre>
 </div>
 <p>To connect to a different location host and port can be specified explicitely:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">pyRserve</span><span class="o">.</span><span class="n">rconnect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mf">6311</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">pyRserve</span><span class="o">.</span><span class="n">rconnect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">6311</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The resulting connection handle can tell you where it is connected to:</p>
@@ -141,14 +141,14 @@ squareit(4)
 </ul>
 <p>Lists can be nested arbitrarily, containing other lists, numbers or arrays.</p>
 <p>The following example shows how to assign a python list with mixed data types to an R variable called <tt class="docutils literal"><span class="pre">aList</span></tt>, and then to retrieve it again:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">aList</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1</span><span class="p">,</span> <span class="s">&#39;abcde&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1</span><span class="p">,</span> <span class="mf">2</span><span class="p">,</span> <span class="mf">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)]</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">aList</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;abcde&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">aList</span>
 <span class="go">[1, &#39;abcde&#39;, array([1, 2, 3])]</span>
 </pre></div>
 </div>
 <p>Numpy-arrays can also contain dimension information which translates them into R matrices when assigned to the R namespace:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">arr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mf">12</span><span class="p">))</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mf">3</span><span class="p">,</span> <span class="mf">4</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">arr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">aMatrix</span> <span class="o">=</span> <span class="n">arr</span>
 
 <span class="go">NOTE: THIS IMPLEMENTATION IS STILL BUGGY, WILL BE FIXED ASAP!!</span>
@@ -172,11 +172,11 @@ $husband
 </pre></div>
 </div>
 <p>This TaggedList instance can be accessed in the same way as its R pendant, except for the fact the indexing is starting at zero in the usual pythonic way:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="p">[</span><span class="mf">0</span><span class="p">]</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 <span class="go">&#39;otto&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="p">[</span><span class="s">&#39;husband&#39;</span><span class="p">]</span>
 <span class="go">&#39;otto&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="p">[</span><span class="mf">2</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
 <span class="go">&#39;5th avenue&#39;</span>
 </pre></div>
 </div>
@@ -199,14 +199,14 @@ $husband
 <p>Now calling R functions is as trivial as calling plain python functions:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">func0</span><span class="p">()</span>
 <span class="go">&quot;hello world&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">func1</span><span class="p">(</span><span class="mf">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">func1</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
 <span class="go">10</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">funcKW</span><span class="p">(</span><span class="n">a2</span><span class="o">=</span><span class="mf">6.0</span><span class="p">)</span>
 <span class="go">[1.0, 6.0]</span>
 </pre></div>
 </div>
 <p>Of course you can also call functions built-in to R:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">length</span><span class="p">([</span><span class="mf">1</span><span class="p">,</span><span class="mf">2</span><span class="p">,</span><span class="mf">3</span><span class="p">])</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">length</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
 <span class="go">3</span>
 </pre></div>
 </div>
@@ -233,28 +233,32 @@ $husband
 <h3>Applying an R function as argument to another function<a class="headerlink" href="#applying-an-r-function-as-argument-to-another-function" title="Permalink to this headline">¶</a></h3>
 <p>A typical application in R is to apply a vector to a function, especially via <tt class="docutils literal"><span class="pre">sapply</span></tt> and its brothers. Fortunately this is as easy as you would expect:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="p">(</span><span class="s">&#39;double &lt;-- function(x) { x*2 }&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">array</span><span class="p">([</span><span class="mf">1</span><span class="p">,</span> <span class="mf">2</span><span class="p">,</span> <span class="mf">3</span><span class="p">]),</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
 <span class="go">array([ 2.,  4.,  6.])</span>
 </pre></div>
 </div>
 <p>Here a Python array and a function defined in R are provided as arguments to the R function <tt class="docutils literal"><span class="pre">sapply</span></tt>.</p>
 <p>Of course the following trying to provide a Python function makes no sense:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">double</span><span class="p">(</span><span class="n">v</span><span class="p">):</span> <span class="k">return</span> <span class="n">v</span><span class="o">*</span><span class="mf">2</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">double</span><span class="p">(</span><span class="n">v</span><span class="p">):</span> <span class="k">return</span> <span class="n">v</span><span class="o">*</span><span class="mi">2</span>
 <span class="gp">...</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">array</span><span class="p">([</span><span class="mf">1</span><span class="p">,</span> <span class="mf">2</span><span class="p">,</span> <span class="mf">3</span><span class="p">]),</span> <span class="n">double</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span> <span class="n">double</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n-Identifier">&lt;module&gt;</span>
+<span class="nc">NameError</span>: <span class="n-Identifier">name &#39;double&#39; is not defined</span>
 </pre></div>
 </div>
-<p>This will result in a serialization error because the connector tries to copy a Python function into R.</p>
+<p>This will result in a NameError error because the connector tries to reference the function &#8216;double&#8217; inside the R namespace.
+It should be obvious that it is not possible to transfer function implementation from Python to R.</p>
 </div>
 <div class="section" id="applying-a-variable-already-defined-in-r-to-a-function">
 <h3>Applying a variable already defined in R to a function<a class="headerlink" href="#applying-a-variable-already-defined-in-r-to-a-function" title="Permalink to this headline">¶</a></h3>
 <p>To understand why this is an interesting feature one has to understand how Python and pyRserve works. The following code is pretty inefficient:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">arr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1</span><span class="p">,</span> <span class="mf">2</span><span class="p">,</span> <span class="mf">3</span><span class="p">])</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">arr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">arr</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>To see why it is inefficient it is reproduced here more explicitely, but doing exactly the same thing:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">arr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1</span><span class="p">,</span> <span class="mf">2</span><span class="p">,</span> <span class="mf">3</span><span class="p">])</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">arr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">arr</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">arr</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
 </pre></div>
@@ -323,7 +327,7 @@ mean of x mean of y
 <p>In the <cite>res</cite> result data structure above there are also objects of a container called <cite>AttrArray</cite>.
 An <cite>AttrArray</cite> is a normal Numpy-Array with an additional attribute <cite>attr</cite>, a dictionary that holds further information provided by R for this data item. In this case is is the confidence level (0.95) for the given confidence interval.</p>
 <p>A <cite>TaggedArray</cite> basically behaves like a <cite>TaggedList</cite>, except that the underlying container is a Numpy array instead of a Python list. So to access the second item of the <cite>TaggedList</cite> called <cite>estimate</cite> the following two commands are equivalent:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">res</span><span class="p">[</span><span class="s">&#39;estimate&#39;</span><span class="p">][</span><span class="mf">1</span><span class="p">]</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">res</span><span class="p">[</span><span class="s">&#39;estimate&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
 <span class="go">5.5</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">res</span><span class="p">[</span><span class="s">&#39;estimate&#39;</span><span class="p">][</span><span class="s">&#39;mean of y&#39;</span><span class="p">]</span>
 <span class="go">5.5</span>
@@ -358,19 +362,29 @@ An <cite>AttrArray</cite> is a normal Numpy-Array with an additional attribute <
 </ul>
 
             <h4>Previous topic</h4>
-            <p class="topless"><a href="installation.html" title="previous chapter">Installation</a></p>
+            <p class="topless"><a href="installation.html"
+                                  title="previous chapter">Installation</a></p>
             <h4>Next topic</h4>
-            <p class="topless"><a href="license.html" title="next chapter">This is the MIT license</a></p>
+            <p class="topless"><a href="license.html"
+                                  title="next chapter">This is the MIT license</a></p>
             <h3>This Page</h3>
             <ul class="this-page-menu">
-              <li><a href="_sources/manual.txt">Show Source</a></li>
+              <li><a href="_sources/manual.txt"
+                     rel="nofollow">Show Source</a></li>
             </ul>
-          <h3>Quick search</h3>
-            <form class="search" action="search.html" method="get">
-              <input type="text" name="q" size="18" /> <input type="submit" value="Go" />
-              <input type="hidden" name="check_keywords" value="yes" />
-              <input type="hidden" name="area" value="default" />
-            </form>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -380,19 +394,19 @@ An <cite>AttrArray</cite> is a normal Numpy-Array with an additional attribute <
       <ul>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
+             >index</a></li>
         <li class="right" >
           <a href="license.html" title="This is the MIT license"
-             accesskey="N">next</a> |</li>
+             >next</a> |</li>
         <li class="right" >
           <a href="installation.html" title="Installation"
-             accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyRserve v0.3 documentation</a> &raquo;</li> 
+             >previous</a> |</li>
+        <li><a href="index.html">pyRserve v0.4 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2009, 2010, Ralph Heinkel.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.5.1.
+      &copy; Copyright 2009, 2010, 2011, Ralph Heinkel.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.3.
     </div>
   </body>
 </html>

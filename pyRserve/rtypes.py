@@ -1,11 +1,16 @@
 import numpy
 
-RHEADER_SIZE = 16
+SOCKET_BLOCK_SIZE = 4096
+RHEADER_SIZE      =   16
+
 
 CMD_RESP = 0x10000  # all responses have this flag set 
 
 RESP_OK  = CMD_RESP|0x0001 # command succeeded; returned parameters depend on the command issued 
 RESP_ERR = CMD_RESP|0x0002 # command failed, check stats code
+
+###############################################################################################################
+# Error codes
 
 ERR_auth_failed      = 0x41 # auth.failed or auth.requested but no
                             #   login came. in case of authentification
@@ -57,7 +62,8 @@ ERR_detach_failed    = 0x51 # unable to detach seesion (cannot determine
 ERRORS = dict([(errCode, err_name) for (err_name, errCode) in locals().items() if err_name.startswith('ERR_')])
 
 
-# available commands 
+###############################################################################################################
+# Available commands
 
 CMD_login        = 0x001    # "name\npwd" : - 
 CMD_voidEval     = 0x002    # string : - 
@@ -98,37 +104,41 @@ CMD_ctrlSource      = 0x45  # string : -
 CMD_ctrlShutdown    = 0x44  # - : - 
 
 # 'internal' commands (since 0.1-9) 
-CMD_setBufferSize = 0x081   # [int sendBufSize]
-                            #     this commad allow clients to request
-                            #     bigger buffer sizes if large data is to be
-                            #     transported from Rserve to the client.
-                            #     (incoming buffer is resized automatically)
+CMD_setBufferSize   = 0x081   # [int sendBufSize]
+                              #     this commad allow clients to request
+                              #     bigger buffer sizes if large data is to be
+                              #     transported from Rserve to the client.
+                              #     (incoming buffer is resized automatically)
 
-CMD_setEncoding   = 0x082   # string (one of "native","latin1","utf8") : -; since 0.5-3 
+CMD_setEncoding     = 0x082   # string (one of "native","latin1","utf8") : -; since 0.5-3
 
 # special commands - the payload of packages with this mask does not contain defined parameters 
 
-CMD_SPECIAL_MASK = 0xf0
+CMD_SPECIAL_MASK    = 0xf0
 
-CMD_serEval      = 0xf5     # serialized eval - the packets are raw serialized data without data header 
-CMD_serAssign    = 0xf6     # serialized assign - serialized list with [[1]]=name, [[2]]=value 
-CMD_serEEval     = 0xf7     # serialized expression eval - like serEval with one additional evaluation round 
+CMD_serEval         = 0xf5     # serialized eval - the packets are raw serialized data without data header
+CMD_serAssign       = 0xf6     # serialized assign - serialized list with [[1]]=name, [[2]]=value
+CMD_serEEval        = 0xf7     # serialized expression eval - like serEval with one additional evaluation round
 
-# data types for the transport protocol (QAP1) do NOT confuse with XT_.. values. 
 
-DT_INT        =  1  # int 
-DT_CHAR       =  2  # char 
-DT_DOUBLE     =  3  # double 
-DT_STRING     =  4  # 0 terminted string 
-DT_BYTESTREAM =  5  # stream of bytes (unlike DT_STRING may contain 0) 
-DT_SEXP       = 10  # encoded SEXP 
+##################################################################################################################
+# Data types for the transport protocol (QAP1) do NOT confuse with XT_.. values.
 
-DT_ARRAY      = 11  # array of objects (i.e. first 4 bytes specify how many
-                    #    subsequent objects are part of the array; 0 is legitimate) 
-DT_LARGE      = 64  # new in 0102: if this flag is set then the length of the object
-                    #    is coded as 56-bit integer enlarging the header by 4 bytes 
+DT_INT           =  1  # int
+DT_CHAR          =  2  # char
+DT_DOUBLE        =  3  # double
+DT_STRING        =  4  # 0 terminted string
+DT_BYTESTREAM    =  5  # stream of bytes (unlike DT_STRING may contain 0)
+DT_SEXP          = 10  # encoded SEXP
 
+DT_ARRAY         = 11  # array of objects (i.e. first 4 bytes specify how many
+                       #    subsequent objects are part of the array; 0 is legitimate)
+DT_LARGE         = 64  # new in 0102: if this flag is set then the length of the object
+                       #    is coded as 56-bit integer enlarging the header by 4 bytes
+
+##################################################################################################################
 # XpressionTypes
+
 #   REXP - R expressions are packed in the same way as command parameters
 #   transport format of the encoded Xpressions:
 #   [0] int type/len (1 byte type, 3 bytes len - same as SET_PAR)
@@ -198,19 +208,25 @@ VALID_R_TYPES = [DT_SEXP, XT_BOOL, XT_INT, XT_DOUBLE, XT_STR, XT_SYMNAME, XT_VEC
                  XT_LIST_NOTAG, XT_LANG_NOTAG, XT_CLOS, XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE,
                  XT_ARRAY_CPLX, XT_ARRAY_STR, XT_NULL, XT_UNKNOWN, XT_RAW]
 
+
+##################################################################################################################
+# Mapping btw. numpy and R data types, in both directions
+
 # map r-types and some python types to typecodes used in the 'struct' module
 structMap = {
-    XT_BOOL:     'b',
-    numpy.bool:  'b',
-    numpy.bool_: 'b',
-    XT_BYTE:     'B',
-    XT_INT:      'i',
-    int:         'i',
-    numpy.int32: 'i',
-    XT_INT3:     'i',
-    XT_DOUBLE:   'd',     # double (float64)
-    float:       'd',
-    numpy.double:'d',
+    XT_BOOL:          'b',
+    numpy.bool:       'b',
+    numpy.bool_:      'b',
+    XT_BYTE:          'B',
+    XT_INT:           'i',
+    int:              'i',
+    numpy.int32:      'i',
+    XT_INT3:          'i',
+    XT_DOUBLE:        'd',     # double (float64)
+    float:            'd',
+    numpy.double:     'd',
+    numpy.complex:    'd',
+    numpy.complex128: 'd',
     }
 
 # mapping to determine overall type of message.
@@ -222,9 +238,9 @@ DT_Map = {
 
 
 numpyMap = {
-    XT_ARRAY_BOOL:     numpy.bool,
+    XT_ARRAY_BOOL:     numpy.bool_,
 #    XT_BYTE:           numpy.byte,
-    XT_ARRAY_INT:      numpy.int32,
+    XT_ARRAY_INT:      numpy.int,
     XT_ARRAY_DOUBLE:   numpy.double,     # double float64
     XT_ARRAY_CPLX:     numpy.complex,
     XT_ARRAY_STR:      numpy.string_,
@@ -234,22 +250,30 @@ numpyMap = {
 for k, v in numpyMap.items():
     numpyMap[v] = k
 
+# some manual additions for numpy variants:
+numpyMap[numpy.complex128] = XT_ARRAY_CPLX
+numpyMap[numpy.int32]      = XT_ARRAY_INT
+
 
 atom2ArrMap = {
     # map atomic python objects to their array counterparts in R
-    int:          XT_ARRAY_INT,
-    numpy.int32:  XT_ARRAY_INT,
-    float:        XT_ARRAY_DOUBLE,
-    numpy.double: XT_ARRAY_DOUBLE,
-    complex:      XT_ARRAY_CPLX,
-    numpy.complex:XT_ARRAY_CPLX,
-    str:          XT_ARRAY_STR,
-    bool:         XT_ARRAY_BOOL,
+    int:               XT_ARRAY_INT,
+    numpy.int32:       XT_ARRAY_INT,
+    float:             XT_ARRAY_DOUBLE,
+    numpy.double:      XT_ARRAY_DOUBLE,
+    complex:           XT_ARRAY_CPLX,
+    numpy.complex:     XT_ARRAY_CPLX,
+    numpy.complex128:  XT_ARRAY_CPLX,
+    str:               XT_ARRAY_STR,
+    bool:              XT_ARRAY_BOOL,
+    numpy.bool:        XT_ARRAY_BOOL,
+    numpy.bool_:       XT_ARRAY_BOOL,
     }
 
 
-SOCKET_BLOCK_SIZE = 4096
-  
+##################################################################################################################
+# Some custom exceptions used in the pyRserve package
+
 class RserveError(StandardError):
     # base class for all errors for this package
     pass

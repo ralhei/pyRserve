@@ -1,11 +1,11 @@
-import cStringIO, struct, collections, socket
+import cStringIO, struct, socket
 ###
 from rtypes import *
 from misc import FunctionMapper
 from rexceptions import RResponseError, REvalError
 from taggedContainers import TaggedList, asTaggedArray, asAttrArray
 
-DEBUG = 0
+DEBUG = 1
 
 class Lexeme(list):
     def __init__(self, rTypeCode, length, hasAttr, lexpos):
@@ -181,11 +181,27 @@ class Lexer(object):
         # b can be 2, meaning NA. Otherwise transform 0/1 into False/True
         return None if b==2 else b==1
 
-    @fmap(XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE, XT_ARRAY_CPLX)
+    @fmap(XT_ARRAY_INT, XT_ARRAY_DOUBLE, XT_ARRAY_CPLX)
     def xt_array_numeric(self, lexeme):
         raw = self.read(lexeme.dataLength)
         # TODO: swapping...
         data = numpy.fromstring(raw, dtype=numpyMap[lexeme.rTypeCode])
+        return data
+
+    @fmap(XT_ARRAY_BOOL)
+    def xt_array_bool(self, lexeme):
+        """A boolean array consists of a 4-byte word (i.e. integer) determining the number of boolean values
+        in the following dataLength-4 bytes.
+        E.g. a bool array of one TRUE item looks like:
+        01 00 00 00   01 ff ff ff
+
+        The first 01 value tells that there is one bool value in the array.
+        The other 01 is the TRUE value, the other 3 'ff's are padding bytes. Those will be used if the vector
+        has 2,3 or 4 boolean values. For a fifth value another 4 bytes are appended.
+        """
+        numBools = self.__unpack(XT_INT, 1)[0]
+        raw = self.read(lexeme.dataLength-4)  # read the actual boolean values, including padding bytes
+        data = numpy.fromstring(raw[:numBools], dtype=numpyMap[lexeme.rTypeCode])
         return data
 
     @fmap(XT_ARRAY_STR)
@@ -334,7 +350,7 @@ class RParser(object):
                     # the array has a defined shape
                     data.shape = value
                 elif tag == 'names':
-                    # convert numpy-vector 'value' into list to make taggedarray work properly:
+                    # convert numpy-vector 'value' into list to make TaggedArray work properly:
                     data = asTaggedArray(data, list(value))
                 else:
                     # there are additional tags in the attribute, just collect them in a dictionary

@@ -214,33 +214,33 @@ class RNameSpaceReference(object):
 class RBaseProxy(object):
     'Proxy for a reference to a variable or function in R. Do not use this directly, only its subclasses'
     def __init__(self, name, rconn):
-        self.name = name
-        self.rconn = rconn
+        self._name = name
+        self._rconn = rconn
 
     
 
 class RVarProxy(RBaseProxy):
     'Proxy for a reference to a variable in R'
     def __repr__(self):
-        return '<RVarProxy to variable "%s">' % self.name
+        return '<RVarProxy to variable "%s">' % self._name
 
     def value(self):
-        return self.rconn.getRexp(self.name)
+        return self._rconn.getRexp(self._name)
         
 
 
 class RFuncProxy(RBaseProxy):
     'Proxy for function calls to Rserve'
     def __repr__(self):
-        return '<RFuncProxy to function "%s">' % self.name
+        return '<RFuncProxy to function "%s">' % self._name
         
     def __call__(self, *args, **kw):
-        return self.rconn.callFunc(self.name, *args, **kw)
+        return self._rconn.callFunc(self._name, *args, **kw)
 
     @property
     def __doc__(self):
         try:
-            d = self.rconn.eval('readLines(as.character(help(%s)))' % self.name)
+            d = self._rconn.eval('readLines(as.character(help(%s)))' % self._name)
         except REvalError:
             # probably no help available, unfortunately there is no specific code for this...
             return None
@@ -251,7 +251,15 @@ class RFuncProxy(RBaseProxy):
     def help(self):
         print self.__doc__
 
-
+    def __getattr__(self, name):
+        """Allow for nested name space calls, e.g. 't.test' """
+        concatName = "%s.%s" % (self._name, name)
+        try:
+            isFunction = self._rconn.isFunction(concatName)
+        except:
+            # an error is only raised if neither such a function or variable exists at all!
+            raise NameError('no such variable or function "%s" defined in Rserve' % concatName)
+        return RFuncProxy(concatName, self._rconn)
 
 
 if __name__ == '__main__':

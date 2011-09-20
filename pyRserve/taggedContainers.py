@@ -1,3 +1,15 @@
+"""
+Some specialized list and array classes to store results obtained from R. These
+classes provide means not to only access object items by index but also - sort
+of like a dictionary - by key. However keys must not be unique or can even be
+None. In those cases only the first item with that key is found.
+
+Available classes:
+- TaggedList
+- TaggedArray
+"""
+
+
 import numpy
 
 
@@ -47,7 +59,7 @@ class TaggedList(object):
                 self.keys.append(key)
                 
     def astuples(self):
-        'converts a TaggedList into a representation suitable to be provided to __init__()'
+        """convert a TaggedList into a representation suitable to be provided to __init__()"""
         return zip(self.keys, self.values)
         
     def __repr__(self): 
@@ -146,6 +158,12 @@ class TaggedList(object):
 #        return self
         
     def append(self, *value, **key_and_value):
+        """Append an item to the list, either given as plain value or as a keywork-arg pair.
+        Example:
+            taggedlist.append(4)
+        or
+            taggedlist.append(k=4)
+        """
         if len(value)==1 and not key_and_value:
             key = None
             value = value[0]
@@ -157,6 +175,12 @@ class TaggedList(object):
         self.keys.append(key)
         
     def insert(self, i, *value, **key_and_value):
+        """Insert an item in the list at position i, either given as plain value or as a keywork-arg pair.
+        Example:
+            taggedlist.insert(4, 'abc)
+        or
+            taggedlist.append(4, k='abc')
+        """
         if len(value)==1 and not key_and_value:
             key = None
             value = value[0]
@@ -167,7 +191,10 @@ class TaggedList(object):
         self.values.insert(i, value)
         self.keys.insert(i, key)
                 
-    def pop(self, i=-1): 
+    def pop(self, i=-1):
+        """Remove an item from the list. By default the last item will be removed. If an item at a specific
+        position should be removed, pass an additional index arguemnt.
+        """
         return self.values.pop(i)
         return self.keys.pop(i)
         
@@ -201,7 +228,7 @@ class TaggedList(object):
 
 
 class AttrArray(numpy.ndarray):
-    'numpy.ndarray with additional "attr"-container'
+    """numpy.ndarray with additional "attr"-container. Used as base class for TaggedArray."""
     attr = None
     
     def __repr__(self):
@@ -215,7 +242,29 @@ def asAttrArray(ndarray, attr):
     arr.attr = attr
     return arr
 
+
 class TaggedArray(AttrArray):
+    """ A tagged array is useful for additionally addressing individual items by
+    name instead of only by index. In contrast to dictionaries multiple items
+    can have the same name or key. However only the first one will be found.
+
+    In many cases a TaggedArray behaves like a normal array and is the equivalent for TaggedList.
+    This class is basically only useful to translate results created by R into something useful in Python.
+
+    Instances of TaggedArray should only be created using the factory function 'asTaggedArray([values)], [tags])',
+    where 'values' and 'tags' can be plain python lists or numpy-arrays.
+
+    Example:
+    l = asTaggedArray(array([1, 2, 3, 4]), ['v1', 'v2', 'v3', 'v4'])
+    l[0]     # returns 1
+    l['v1']  # returns 1
+    l['v2']  # returns 2  (not 4 !)
+    l[3]     # returns 4
+
+    It is recommended not to do lots of manipulations that modify the structure of the arrary. This could lead to
+    mismatched btw. tags and values (those are only very loosely coupled internally). However any type of
+    mathematics like multiplying the array should be possible without problems.
+    """
     attr = []
     def __repr__(self):
         r = super(AttrArray, self).__repr__()
@@ -236,7 +285,17 @@ class TaggedArray(AttrArray):
     def keys(self):
         return self.attr[:]
 
+
 def asTaggedArray(ndarray, tags):
+    """Factory function to create TaggedArray objects. Check the docs in TaggedArray for more information.
+
+    Usage:
+    l = asTaggedArray(array([1, 2, 3, 4]), ['v1', 'v2', 'v3', 'v4'])
+    l[0]     # returns 1
+    l['v1']  # returns 1
+    l['v2']  # returns 2  (not 4 !)
+    l[3]     # returns 4
+    """
     if len(tags) != len(ndarray):
         raise ValueError('Number of keys must match size of array')
     arr = ndarray.view(TaggedArray)

@@ -1,6 +1,5 @@
-import struct, datetime, socket, threading, py, numpy
-from numpy import array, ndarray
-from numpy.core.records import recarray, record
+import struct, datetime, time, socket, threading, py, numpy
+from numpy import array, ndarray, float, float32, float64, complex, complex64, complex128
 ###
 import rtypes, rparser, rserializer
 from rexceptions import RSerializationError
@@ -28,8 +27,14 @@ r2pyExpressions = [
     ('c(1)',                                    1.0),
     ('c(1, 2)',                                 array([1.0, 2.0])),
     ('as.integer(c(1, 2))',                     array([1, 2], dtype=numpy.int32)),
+    # single boolean value:
+    ('TRUE',                                    True),
+    # a boolean vector:
+    ('c(TRUE, FALSE, TRUE)',                    array([True, False, True])),
+    # String vector:
     ('c("abc", "defghi")',                      array(["abc", "defghi"])),
     ('seq(1, 5)',                               array(range(1, 6), dtype=numpy.int32)),
+    ('polyroot(c(-39.141,151.469,401.045))',    array([ 0.1762039 +1.26217745e-29j, -0.5538897 -1.26217745e-29j])),
     # An explicit R list with only one item remains a list on the python side:
     ('list("otto")',                            ["otto"]),
     ('list("otto", "gustav")',                  ["otto", "gustav"]),
@@ -108,12 +113,14 @@ def test_serialize_into_socket():
 def test_parse_from_socket():
     rs = PseudoRServer()
     rs.start()
+    time.sleep(0.5)
     # now connect to it:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(("localhost", PseudoRServer.PORT))
     sock.send(binaryRExpressions.binaryRExpressions['"abc"'])
     assert rparser.rparse(sock) == 'abc'
     sock.close()
+    rs.close()
 
 
 def test_parse_from_socket_cleanup_in_case_of_buggy_binary_data():
@@ -139,7 +146,11 @@ def compareArrays(arr1, arr2):
             if isinstance(arr1[idx], ndarray):
                 _compareArrays(arr1[idx], arr2[idx])
             else:
-                assert arr1[idx] == arr2[idx]
+                if type(arr1[idx]) in [float, float32, float64, complex, complex64, complex128]:
+                    # make a comparison which works for floats and complex numbers
+                    assert abs(arr1[idx] - arr2[idx]) < 0.000001
+                else:
+                    assert arr1[idx] == arr2[idx]
     try:
         _compareArrays(arr1, arr2)
     except TypeError:  #AssertionError:
@@ -160,13 +171,13 @@ def rExprTester(rExpr, pyExpr, rBinExpr):
     if isinstance(v, ndarray):
         compareArrays(v, pyExpr)
     elif v.__class__.__name__ == 'TaggedList':
-        # do comparision of string representation for now ...
+        # do comparison of string representation for now ...
         assert repr(v) == repr(pyExpr)
     else:
         assert v == pyExpr
-        
-    # assert rserializer.rserialize(pyExpr, asRexp=True, messageCode=messageCode) == rBinExpr
-    assert rserializer.rSerializeResponse(pyExpr) == rBinExpr
+
+    # serialize parsed rBinExpr back to binary data stream and check that it is identical to the original value:
+    assert rserializer.rSerializeResponse(v) == rBinExpr
 
 
 def hexString(aString):
@@ -238,7 +249,7 @@ class PseudoRServer(threading.Thread):
     PORT = 8888
     #
     def run(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s = self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(("", self.PORT))
         s.listen(1)
@@ -252,6 +263,8 @@ class PseudoRServer(threading.Thread):
             conn.send(data)
         s.close()
 
+    def close(self):
+        self.s.close()
 
 
 if __name__ == '__main__':

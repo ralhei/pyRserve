@@ -1,5 +1,10 @@
-import struct, sys, os, cStringIO, datetime, socket
-from binascii import hexlify, unhexlify
+"""
+Serializer class to convert Python objects into a binary data stream for sending them to Rserve.
+"""
+
+__all__ = ['reval', 'rassign', 'rSerializeResponse']
+
+import struct, os, cStringIO, socket
 ###
 import numpy
 ###
@@ -8,21 +13,29 @@ from misc import FunctionMapper
 from rexceptions import RSerializationError
 from taggedContainers import TaggedList, TaggedArray
 
+# turn on DEBUG to see extra information about what the serializer is doing with your data
 DEBUG = False
 
 
-def padLen(aString):
+def padLen4(aString):
+    """Calculate how many additional bytes a given string needs to have a length of a multiple of 4"""
     l = len(aString)
     return 4-divmod(l, 4)[1]
 
-def padString(aString):
-    'return a given string padded with zeros to be a multiple of 4 in length'
-    return aString + padLen(aString)*'\0'
+
+def padString4(aString, padByte='\0'):
+    """return a given string padded with zeros at the end to make its length be a multiple of 4"""
+    return aString + padLen4(aString) * padByte
 
 
 
 class RSerializer(object):
-    #
+    """
+    Class to to serialize Python objects into a binary data stream for sending them to Rserve.
+
+    Depending on 'commandType' given to __init__ the resulting binary string can be used to send a command, to assign
+    a variable in Rserve, or to reply to a request received from Rserve.
+    """
     serializeMap = {}
     fmap = FunctionMapper(serializeMap)
     #
@@ -81,7 +94,7 @@ class RSerializer(object):
         # Here the data typecode (DT_* ) of the entire message is written, with its length. 
         # Then the actual data itself is written out.
         if dtTypeCode == rtypes.DT_STRING:
-            paddedString = padString(o)
+            paddedString = padString4(o)
             length = len(paddedString)
             self._writeDataHeader(dtTypeCode, length)
             self._fp.write(paddedString)
@@ -110,6 +123,8 @@ class RSerializer(object):
         except KeyError:
             raise RSerializationError('Serialization of type "%s" not implemented' % rTypeHint)
         startPos = self._fp.tell()
+        if DEBUG:
+            print 'Serializing expr %r with rTypeCode=%s using function %s' % (o, rTypeHint, s_func)
         s_func(self, o, rTypeCode=rTypeHint)
         # determine and return the length of actual R expression data:
         return self._fp.tell() - startPos
@@ -122,7 +137,7 @@ class RSerializer(object):
         - XT_SYMNAME
         '''
         # The string packet contains trailing padding zeros to make it always a multiple of 4 in length:
-        paddedString = padString(o)
+        paddedString = padString4(o)
         length = len(paddedString)
         self._writeDataHeader(rTypeCode, length)
         if DEBUG:
@@ -132,31 +147,23 @@ class RSerializer(object):
     @fmap(str, numpy.string_, rtypes.XT_ARRAY_STR)
     def s_xt_array_str(self, o, rTypeCode=None):
         # Works for single strings, lists of strings, and numpy arrays of strings (dtype 'S' or 'O')
-        if type(o) == str:
+        if type(o) in [str, numpy.string_]:
             # single string
             o = [o]
         zeroSeparatedString = '\0'.join(o)
-        padLength = padLen(zeroSeparatedString)
+        padLength = padLen4(zeroSeparatedString)
         length = len(zeroSeparatedString) + padLength
         self._writeDataHeader(rtypes.XT_ARRAY_STR, length)
         self._fp.write(zeroSeparatedString)
         self._fp.write('\0\1\1\1'[:padLength])
     
-    @fmap(rtypes.XT_ARRAY_DOUBLE, rtypes.XT_ARRAY_INT, rtypes.XT_ARRAY_BOOL)
-    def s_xt_array_numeric(self, o, rTypeCode=None):
-        '''
-        @param o: numpy array or subclass (e.g. TaggedArray)
-        @note: If o is multi-dimensional a tagged array is created 
-               Also if o is of type TaggedArray.
-        '''
-        startPos = self._fp.tell()
-        
+
+    def __s_xt_array_numeric_tag_data(self, o):
         # Determine which tags the array must be given:
         xt_tag_list = []
         if o.ndim > 1:
             xt_tag_list.append(('dim', numpy.array(o.shape, numpy.int32)))
         if isinstance(o, TaggedArray):
-            attrFlag = rtypes.XT_HAS_ATTR
             xt_tag_list.append(('names', numpy.array(o.attr)))
 
         attrFlag = rtypes.XT_HAS_ATTR if xt_tag_list else 0
@@ -164,6 +171,17 @@ class RSerializer(object):
         self._writeDataHeader(rTypeCode, 0)
         if attrFlag:
             self.s_xt_tag_list(xt_tag_list)
+        return rTypeCode
+
+    @fmap(rtypes.XT_ARRAY_CPLX, rtypes.XT_ARRAY_DOUBLE, rtypes.XT_ARRAY_INT)
+    def s_xt_array_numeric(self, o, rTypeCode=None):
+        '''
+        @param o: numpy array or subclass (e.g. TaggedArray)
+        @note: If o is multi-dimensional a tagged array is created. Also if o is of type TaggedArray.
+        '''
+        startPos = self._fp.tell()
+        rTypeCode = self.__s_xt_array_numeric_tag_data(o)
+
         # TODO: make this also work on big endian machines (data must be written in little-endian!!)
         self._fp.write(o.tostring())
         length = self._fp.tell() - startPos - 4  # subtract length of header==4 bytes
@@ -171,7 +189,31 @@ class RSerializer(object):
         self._writeDataHeader(rTypeCode, length)
         self._fp.seek(0, os.SEEK_END)
         
-    @fmap(int, float, bool, numpy.float64, numpy.int32, numpy.bool_)
+    @fmap(rtypes.XT_ARRAY_BOOL)
+    def s_xt_array_boolean(self, o, rTypeCode=None):
+        '''
+        @param o: numpy array or subclass (e.g. TaggedArray) with boolean values
+        @note: If o is multi-dimensional a tagged array is created. Also if o is of type TaggedArray.
+        '''
+        startPos = self._fp.tell()
+        rTypeCode = self.__s_xt_array_numeric_tag_data(o)
+
+        # A boolean vector starts with its number of boolean values in the vector (as int32):
+        structCode = '<'+rtypes.structMap[int]
+        self._fp.write(struct.pack(structCode, len(o)))
+        # Then write the boolean values themselves:
+        data = o.tostring()
+        self._fp.write(data)
+        # Finally pad the binary data to be of a multiple of four in length:
+        self._fp.write(padLen4(data) * "\xff")
+        
+        # Update the vector header:
+        length = self._fp.tell() - startPos - 4  # subtract length of header==4 bytes
+        self._fp.seek(startPos)
+        self._writeDataHeader(rTypeCode, length)
+        self._fp.seek(0, os.SEEK_END)
+
+    @fmap(int, float, numpy.float64, numpy.int32)
     def s_atom_to_xt_array_numeric(self, o, rTypeCode=None):
         'Render single numeric items into their corresponding array counterpart in r'
         rTypeCode  = rtypes.atom2ArrMap[type(o)]
@@ -179,6 +221,15 @@ class RSerializer(object):
         length = struct.calcsize(structCode)
         self._writeDataHeader(rTypeCode, length)
         self._fp.write(struct.pack(structCode, o))
+
+    @fmap(bool, numpy.bool_)
+    def s_atom_to_xt_array_boolean(self, o, rTypeCode=None):
+        """Render single boolean items into their corresponding array counterpart in r.
+
+        Always convert a boolean atomic value into a specialized boolean R vector.
+        """
+        arr = numpy.array([o])
+        self.s_xt_array_boolean(arr)
 
     @fmap(list, TaggedList)
     def s_xt_vector(self, o, rTypeCode=None):
@@ -217,7 +268,7 @@ class RSerializer(object):
 
     @classmethod
     def rEval(cls, aString, fp=None):
-        'Create binary code for evaluating a string expression remotely in Rserve'
+        """Create binary code for evaluating a string expression remotely in Rserve"""
         s = cls(rtypes.CMD_eval, fp=fp)
         s.serialize(aString, dtTypeCode=rtypes.DT_STRING)
         return s.finalize()
@@ -225,7 +276,7 @@ class RSerializer(object):
     
     @classmethod
     def rAssign(cls, varname, o, fp=None):
-        'Create binary code for assigning an expression to a variable remotely in Rserve'
+        """Create binary code for assigning an expression to a variable remotely in Rserve"""
         s = cls(rtypes.CMD_setSEXP, fp=fp)
         s.serialize(varname, dtTypeCode=rtypes.DT_STRING)
         s.serialize(o, dtTypeCode=rtypes.DT_SEXP)
@@ -244,7 +295,3 @@ class RSerializer(object):
 rEval = RSerializer.rEval
 rAssign = RSerializer.rAssign
 rSerializeResponse = RSerializer.rSerializeResponse
-
-
-if __name__ == '__main__':
-    print repr(rserialize('1'))

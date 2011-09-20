@@ -1,15 +1,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml">
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pyRserve &mdash; pyRserve v0.3 documentation</title>
+    <title>pyRserve &mdash; pyRserve v0.4 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.3',
+        VERSION:     '0.4',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -17,11 +19,9 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="top" title="pyRserve v0.3 documentation" href="index.html" />
+    <link rel="top" title="pyRserve v0.4 documentation" href="index.html" />
     <link rel="next" title="Installation" href="installation.html" />
-    <link rel="prev" title="Welcome to pyRserve&#8217;s documentation!" href="index.html" /> 
+    <link rel="prev" title="Welcome to pyRserve’s documentation!" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -34,17 +34,17 @@
           <a href="installation.html" title="Installation"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to pyRserve&#8217;s documentation!"
+          <a href="index.html" title="Welcome to pyRserve’s documentation!"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyRserve v0.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyRserve v0.4 documentation</a> &raquo;</li> 
       </ul>
     </div>  
+
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
           <div class="body">
             
-  
   <div class="section" id="pyrserve">
 <h1>pyRserve<a class="headerlink" href="#pyrserve" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="what-it-does">
@@ -56,6 +56,15 @@ R to native Python types and back.</p>
 <div class="section" id="changes">
 <h2>Changes<a class="headerlink" href="#changes" title="Permalink to this headline">¶</a></h2>
 <ul>
+<li><dl class="first docutils">
+<dt>V 0.4 (2011-09-20)</dt>
+<dd><ul class="first last simple">
+<li>Added support for nested function calls. E.g. conn.r.t.test( ....) now works.</li>
+<li>Proper support for boolean variables and vectors</li>
+</ul>
+</dd>
+</dl>
+</li>
 <li><dl class="first docutils">
 <dt>V 0.3 (2010-06-08)</dt>
 <dd><ul class="first last simple">
@@ -76,6 +85,8 @@ R to native Python types and back.</p>
 <p>This package has been mainly developed under Linux, and hence should run on all standard unix platforms. It has also been
 successfully used on Win32 machines. Unittests have only been used on the Linux side, however they might just work
 fine for Win32.</p>
+<p>It has been tested run with Python 2.6.x and 2.7.x. Python 3.x has never been tested, it might or might not work.</p>
+<p>The latest development has been tested with R 2.13.1 and Rserve 0.6.6.</p>
 </div>
 <div class="section" id="license">
 <h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
@@ -115,19 +126,29 @@ fine for Win32.</p>
 </ul>
 
             <h4>Previous topic</h4>
-            <p class="topless"><a href="index.html" title="previous chapter">Welcome to pyRserve&#8217;s documentation!</a></p>
+            <p class="topless"><a href="index.html"
+                                  title="previous chapter">Welcome to pyRserve&#8217;s documentation!</a></p>
             <h4>Next topic</h4>
-            <p class="topless"><a href="installation.html" title="next chapter">Installation</a></p>
+            <p class="topless"><a href="installation.html"
+                                  title="next chapter">Installation</a></p>
             <h3>This Page</h3>
             <ul class="this-page-menu">
-              <li><a href="_sources/intro.txt">Show Source</a></li>
+              <li><a href="_sources/intro.txt"
+                     rel="nofollow">Show Source</a></li>
             </ul>
-          <h3>Quick search</h3>
-            <form class="search" action="search.html" method="get">
-              <input type="text" name="q" size="18" /> <input type="submit" value="Go" />
-              <input type="hidden" name="check_keywords" value="yes" />
-              <input type="hidden" name="area" value="default" />
-            </form>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -137,19 +158,19 @@ fine for Win32.</p>
       <ul>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
+             >index</a></li>
         <li class="right" >
           <a href="installation.html" title="Installation"
-             accesskey="N">next</a> |</li>
+             >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to pyRserve&#8217;s documentation!"
-             accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyRserve v0.3 documentation</a> &raquo;</li> 
+          <a href="index.html" title="Welcome to pyRserve’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">pyRserve v0.4 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2009, 2010, Ralph Heinkel.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.5.1.
+      &copy; Copyright 2009, 2010, 2011, Ralph Heinkel.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.3.
     </div>
   </body>
 </html>

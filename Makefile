@@ -2,12 +2,12 @@ DATE    = $(shell date +"%F")
 
 all:
 
-cdist:
-	python setup.py cdist --templicense
-
-ext:
-	python setup.py build_ext --inplace
-
+docs:
+	(cd doc; make html)
+	(cd doc/html; zip -r ../pyRserve.html.zip *.html objects.inv searchindex.js _static/* )
+	echo
+	echo "Sphinx documentation has been created in doc/html/index.html"
+	echo "Use doc/pyRserve.html.zip for uploading the docs to pypi"
 
 clean:
 	find . -name '*.pyc' -exec rm '{}' \;
@@ -17,8 +17,14 @@ clean:
 	find . -name '.coverage' -exec rm '{}' \;
 	rm -rf build dist *.egg-info MANIFEST.in
 
-backup: clean _backup
+upload: docs
+	# This will upload the current version to pypi. Credentials are stored in ~/.pypirc
+	python setup.py register
+	python setup.py sdist upload
+	echo  "For uploading the latest documentation login to pypi and upload doc/pyRserve.html.zip"
 
+
+backup: clean _backup
 
 _backup: 
 	DIR=`pwd`; bDIR=`basename $$DIR`; cd ..; \

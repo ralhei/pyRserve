@@ -223,8 +223,12 @@ Of course the following trying to provide a Python function makes no sense::
   >>> def double(v): return v*2
   ...
   >>> conn.r.sapply(array([1, 2, 3]), double)
+  Traceback (most recent call last):
+    File "<stdin>", line 1, in <module>
+  NameError: name 'double' is not defined
 
-This will result in a serialization error because the connector tries to copy a Python function into R. 
+This will result in a NameError error because the connector tries to reference the function 'double' inside the R namespace.
+It should be obvious that it is not possible to transfer function implementation from Python to R.
 
 
 Applying a variable already defined in R to a function

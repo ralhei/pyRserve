@@ -2,7 +2,7 @@ This is the MIT license
 =======================
 (see: http://www.opensource.org/licenses/mit-license.php)
 
-Copyright (c) 2009 Ralph Heinkel (rh [at] ralph-heinkel.com)
+Copyright (c) 2009, 2010, 2011 Ralph Heinkel (rh [at] ralph-heinkel.com)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
