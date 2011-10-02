@@ -12,6 +12,11 @@ R to native Python types and back.
 
 Changes
 ----------------
+* V 0.5 (2011-10-03)
+    * Renamed pyRserve.rconnect() to pyRserve.connect(). The former still works but shows a DepricationWarning
+    * String evaluation should now only be executed on the namespace directly, not on the connection object anymore.
+      The latter still works but shows a DepricationWarning.
+
 * V 0.4 (2011-09-20)
     * Added support for nested function calls. E.g. conn.r.t.test( ....) now works.
     * Proper support for boolean variables and vectors
