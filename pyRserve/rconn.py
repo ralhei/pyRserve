@@ -191,6 +191,9 @@ class RNameSpace(object):
         else:
             return self._rconn.getRexp(name)
 
+    def __call__(self, aString):
+        return self._rconn(aString)
+
 
 class RNameSpaceReference(object):
     'Provides references to R objects (a proxy), NOT directly to their values'
