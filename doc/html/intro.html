@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -5,21 +7,22 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pyRserve &mdash; pyRserve v0.4 documentation</title>
+    <title>pyRserve &mdash; pyRserve v0.5 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.4',
-        COLLAPSE_MODINDEX: false,
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyRserve v0.4 documentation" href="index.html" />
+    <link rel="top" title="pyRserve v0.5 documentation" href="index.html" />
     <link rel="next" title="Installation" href="installation.html" />
     <link rel="prev" title="Welcome to pyRserve’s documentation!" href="index.html" /> 
   </head>
@@ -36,7 +39,7 @@
         <li class="right" >
           <a href="index.html" title="Welcome to pyRserve’s documentation!"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyRserve v0.4 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyRserve v0.5 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -56,6 +59,18 @@ R to native Python types and back.</p>
 <div class="section" id="changes">
 <h2>Changes<a class="headerlink" href="#changes" title="Permalink to this headline">¶</a></h2>
 <ul>
+<li><dl class="first docutils">
+<dt>V 0.5 (2011-10-03)</dt>
+<dd><ul class="first last simple">
+<li>Renamed pyRserve.rconnect() to pyRserve.connect(). The former still works but shows a DepricationWarning</li>
+<li>String evaluation should now only be executed on the namespace directly, not on the connection object anymore.
+The latter still works but shows a DepricationWarning.</li>
+<li>New kw argument <cite>atomicArray=True</cite> added to pyRserve.connect() for preventing single valued arrays from being
+converted into atomic python data types.</li>
+</ul>
+</dd>
+</dl>
+</li>
 <li><dl class="first docutils">
 <dt>V 0.4 (2011-09-20)</dt>
 <dd><ul class="first last simple">
@@ -104,6 +119,12 @@ fine for Win32.</p>
 <h2>Full Documentation<a class="headerlink" href="#full-documentation" title="Permalink to this headline">¶</a></h2>
 <p>Documentation can be found at <a class="reference external" href="http://packages.python.org/pyRserve/">http://packages.python.org/pyRserve/</a>.</p>
 </div>
+<div class="section" id="missing-features">
+<h2>Missing Features<a class="headerlink" href="#missing-features" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Authentication is implemented in Rserve but not yet in pyRserve</li>
+</ul>
+</div>
 </div>
 
 
@@ -112,43 +133,44 @@ fine for Win32.</p>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="index.html">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="">pyRserve</a><ul>
-<li><a class="reference external" href="#what-it-does">What It Does</a></li>
-<li><a class="reference external" href="#changes">Changes</a></li>
-<li><a class="reference external" href="#supported-platforms">Supported Platforms</a></li>
-<li><a class="reference external" href="#license">License</a></li>
-<li><a class="reference external" href="#quick-installation">Quick Installation</a></li>
-<li><a class="reference external" href="#full-documentation">Full Documentation</a></li>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pyRserve</a><ul>
+<li><a class="reference internal" href="#what-it-does">What It Does</a></li>
+<li><a class="reference internal" href="#changes">Changes</a></li>
+<li><a class="reference internal" href="#supported-platforms">Supported Platforms</a></li>
+<li><a class="reference internal" href="#license">License</a></li>
+<li><a class="reference internal" href="#quick-installation">Quick Installation</a></li>
+<li><a class="reference internal" href="#full-documentation">Full Documentation</a></li>
+<li><a class="reference internal" href="#missing-features">Missing Features</a></li>
 </ul>
 </li>
 </ul>
 
-            <h4>Previous topic</h4>
-            <p class="topless"><a href="index.html"
-                                  title="previous chapter">Welcome to pyRserve&#8217;s documentation!</a></p>
-            <h4>Next topic</h4>
-            <p class="topless"><a href="installation.html"
-                                  title="next chapter">Installation</a></p>
-            <h3>This Page</h3>
-            <ul class="this-page-menu">
-              <li><a href="_sources/intro.txt"
-                     rel="nofollow">Show Source</a></li>
-            </ul>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to pyRserve&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="next chapter">Installation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/intro.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -165,12 +187,12 @@ fine for Win32.</p>
         <li class="right" >
           <a href="index.html" title="Welcome to pyRserve’s documentation!"
              >previous</a> |</li>
-        <li><a href="index.html">pyRserve v0.4 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyRserve v0.5 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2009, 2010, 2011, Ralph Heinkel.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.3.
+        &copy; Copyright 2009, 2010, 2011, Ralph Heinkel.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.8.
     </div>
   </body>
 </html>

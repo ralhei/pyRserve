@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -5,21 +7,22 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pyRserve manual &mdash; pyRserve v0.4 documentation</title>
+    <title>pyRserve manual &mdash; pyRserve v0.5 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.4',
-        COLLAPSE_MODINDEX: false,
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyRserve v0.4 documentation" href="index.html" />
+    <link rel="top" title="pyRserve v0.5 documentation" href="index.html" />
     <link rel="next" title="This is the MIT license" href="license.html" />
     <link rel="prev" title="Installation" href="installation.html" /> 
   </head>
@@ -36,7 +39,7 @@
         <li class="right" >
           <a href="installation.html" title="Installation"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyRserve v0.4 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyRserve v0.5 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -53,13 +56,14 @@
 <div class="highlight-python"><pre>$ R CMD Rserve</pre>
 </div>
 <p>If you started it on your local machine (i.e. <tt class="docutils literal"><span class="pre">localhost</span></tt>) without any extra options Rserve should be listening on port 6311 (its default).</p>
-<p>From the python interpreter import the pyRserve package and by omitting any arguments to the <tt class="docutils literal"><span class="pre">rconnect()</span></tt> function setup the connection to your locallly running Rserve:</p>
+<p>From the python interpreter import the pyRserve package and by omitting any arguments to the <tt class="docutils literal"><span class="pre">connect()</span></tt> function setup the connection to your locallly running Rserve:</p>
 <div class="highlight-python"><pre>$ python
 &gt;&gt;&gt; import pyRserve
-&gt;&gt;&gt; conn = pyRserve.rconnect()</pre>
+&gt;&gt;&gt; conn = pyRserve.connect()</pre>
 </div>
+<p>Note: The formerly available method &#8216;rconnect()&#8217; still works but is now deprecated and will print such a warning.</p>
 <p>To connect to a different location host and port can be specified explicitely:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">pyRserve</span><span class="o">.</span><span class="n">rconnect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">6311</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">pyRserve</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">6311</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The resulting connection handle can tell you where it is connected to:</p>
@@ -84,26 +88,40 @@
 </pre></div>
 </div>
 </div>
+<div class="section" id="the-r-namespace">
+<h2>The R namespace<a class="headerlink" href="#the-r-namespace" title="Permalink to this headline">¶</a></h2>
+<p>The Rserve connector <tt class="docutils literal"><span class="pre">conn</span></tt> used above provides an attribute called &#8220;<tt class="docutils literal"><span class="pre">r</span></tt>&#8221; which gives you direct access to the namespace of the R connection. Each Rserve connection has its private namespace which is lost after the connection is closed (if you don&#8217;t save it).</p>
+<p>Through the <tt class="docutils literal"><span class="pre">r</span></tt>-attribute you can set and access variables, and also call functions defined in the R-namespace.
+The following sections explain how to use the namespace in various ways.</p>
+</div>
 <div class="section" id="string-evaluation-in-r">
 <h2>String evaluation in R<a class="headerlink" href="#string-evaluation-in-r" title="Permalink to this headline">¶</a></h2>
-<p>Having established a connection to Rserve you can run the first commands on it. A valid R command can be executed by making a call directly on the connector, providing a string as argument:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="p">(</span><span class="s">&#39;3 + 5&#39;</span><span class="p">)</span>
+<p>Having established a connection to Rserve you can run the first commands on it. A valid R command can be executed by making a call  on the R name space, providing a string as argument:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;3 + 5&#39;</span><span class="p">)</span>
 <span class="go">8.0</span>
 </pre></div>
 </div>
-<p>In this example the string <tt class="docutils literal"><span class="pre">&quot;3</span> <span class="pre">+</span> <span class="pre">5&quot;</span></tt> will be sent to the remote side and evaluated by R. The result is then delivered back into a native Python object, a floating point number in this case. As an R expert you are probably aware of the fact that R uses vectors for all numbers internally by default. But why did we received a single floating point number? The reason is that pyRserve looks at vectors coming from Rserve and converts vectors with only one single item into an atomic value. This behaviour is for convenience reasons only, and might change in the future.</p>
+<p>In this example the string <tt class="docutils literal"><span class="pre">&quot;3</span> <span class="pre">+</span> <span class="pre">5&quot;</span></tt> will be sent to the remote side and evaluated by R. The result is then delivered back into a native Python object, a floating point number in this case. As an R expert you are probably aware of the fact that R uses vectors for all numbers internally by default. But why did we received a single floating point number? The reason is that pyRserve looks at vectors coming from Rserve and converts vectors with only one single item into an atomic value. This behaviour is for convenience reasons only. To override this behaviour (i.e. to always receive arrays with only one element) open the connection to Rserve with an additional argument <cite>atomicArray</cite> set to <cite>True</cite>, i.e. <cite>conn = pyRserve.connect(atomicArray=True)</cite>.</p>
 <p>Of course also more complex data types can be sent from R to Python, e.g. lists or real vectors. Here are some examples:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="p">(</span><span class="s">&quot;list(1, &#39;otto&#39;)&quot;</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&quot;list(1, &#39;otto&#39;)&quot;</span><span class="p">)</span>
 <span class="go">[1, &#39;otto&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="p">(</span><span class="s">&#39;c(1, 5, 7)&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;c(1, 5, 7)&#39;</span><span class="p">)</span>
 <span class="go">array([ 1.,  2.])</span>
 </pre></div>
 </div>
-<p>As demonstrated R lists are converted into plain Python lists whereas R vectors are converted into numpy arrays on the Python side</p>
+<p>As demonstrated R lists are converted into plain Python lists whereas R vectors are converted into numpy arrays on the Python side.</p>
+<p>To set a variable inside the R namespace do:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;aVar &lt;- &quot;abc&quot;&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>and to request its value just do:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;aVar&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>It is also possible to create functions inside the R interpreter through the connector, or even to execute entire scripts. Basically you can do everything which is possible inside a normal R console:</p>
 <div class="highlight-python"><pre># create a function and execute it:
-&gt;&gt;&gt; conn('doubleit &lt;- function(x) { x*2 }')
-&gt;&gt;&gt; conn('doubleit(2)')
+&gt;&gt;&gt; conn.r('doubleit &lt;- function(x) { x*2 }')
+&gt;&gt;&gt; conn.r('doubleit(2)')
 4.0
 # store a script as a string ...
 &gt;&gt;&gt; my_r_script = '''
@@ -112,25 +130,37 @@ squareit &lt;- function(x)
 squareit(4)
 '''
 # and execute the mini-script in R:
-&gt;&gt;&gt; conn(my_r_script)
+&gt;&gt;&gt; conn.r(my_r_script)
 16.0</pre>
 </div>
 </div>
-<div class="section" id="the-r-namespace">
-<h2>The R namespace<a class="headerlink" href="#the-r-namespace" title="Permalink to this headline">¶</a></h2>
-<p>The Rserve connector <tt class="docutils literal"><span class="pre">conn</span></tt> used above provides an attribute called &#8220;<tt class="docutils literal"><span class="pre">r</span></tt>&#8221; which gives you direct access to the namespace of the R connection. Each Rserve connection has its private namespace which is lost after the connection is closed (if you don&#8217;t save it).</p>
-<p>Through the <tt class="docutils literal"><span class="pre">r</span></tt>-attribute you can set and access variables, and also call functions defined in the R-namespace. The advantage of using the R namespace is that you can assign data in R from real Python objects, instead of from strings only. The following two statements are equivalent:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="p">(</span><span class="s">&#39;aVar &lt;- &quot;abc&quot;&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">aVar</span> <span class="o">=</span> <span class="s">&quot;abc&quot;</span>
+<div class="section" id="setting-and-accessing-variables-in-a-more-pythonic-way">
+<h2>Setting and accessing variables in a more pythonic way<a class="headerlink" href="#setting-and-accessing-variables-in-a-more-pythonic-way" title="Permalink to this headline">¶</a></h2>
+<p>The previous section showed how to set a variable inside R by evaluation a statement in string format:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;aVar &lt;- &quot;abc&quot;&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="section" id="setting-and-accessing-variables">
-<h3>Setting and accessing variables<a class="headerlink" href="#setting-and-accessing-variables" title="Permalink to this headline">¶</a></h3>
+<p>This is not very elegant and has limited ways to provide values already stored in Python variables. A much nicer way to do this is by setting the variable name in R as an attribute to the namespace. The following statement does the same thing as the one above, just &#8220;more pythonic&#8221;:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">aVar</span> <span class="o">=</span> <span class="s">&quot;abc&quot;</span>
+</pre></div>
+</div>
+<p>So of course it is then possible to compute values or copy them from Python variables into R:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">aVar</span> <span class="o">=</span> <span class="n">some_python_number</span> <span class="o">*</span> <span class="mf">1000.505</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>To retrieve a variable from R just use it as expected::</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&#39;A value from R:&#39;</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">aVar</span>
+</pre></div>
+</div>
+</dd>
+</dl>
 <p>In its current implementation pyRserve allows to set and access the following base types:</p>
 <ul class="simple">
 <li>boolean</li>
 <li>integers (32-bit only)</li>
 <li>floating point numbers (64 bit only), i.e. doubles</li>
+<li>complex numbers</li>
 <li>strings</li>
 </ul>
 <p>Furthermore the following containers are supported:</p>
@@ -146,15 +176,18 @@ squareit(4)
 <span class="go">[1, &#39;abcde&#39;, array([1, 2, 3])]</span>
 </pre></div>
 </div>
-<p>Numpy-arrays can also contain dimension information which translates them into R matrices when assigned to the R namespace:</p>
+<p>Numpy arrays can also contain dimension information which are translated into R matrices when assigned to the R namespace:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">arr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">aMatrix</span> <span class="o">=</span> <span class="n">arr</span>
-
-<span class="go">NOTE: THIS IMPLEMENTATION IS STILL BUGGY, WILL BE FIXED ASAP!!</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;dim(aMatrix)&#39;</span><span class="p">)</span>  <span class="c"># give me the dimension of aMatrix on the R-side</span>
+<span class="go">array([3, 4])</span>
 </pre></div>
 </div>
-<p>A special type of container is a so called &#8220;TaggedList&#8221;. Such an object is created in R and its items accessed as shown here:</p>
+</div>
+<div class="section" id="taggedarrays">
+<h2>TaggedArrays<a class="headerlink" href="#taggedarrays" title="Permalink to this headline">¶</a></h2>
+<p>A special type of container in R is a so called &#8220;TaggedList&#8221;. In such an object items can be accessed in two ways as shown here (this is now pure R code):</p>
 <div class="highlight-python"><pre>&gt; t &lt;- list(husband="otto", wife="erna", "5th avenue")
 &gt; t[1]
 $husband
@@ -164,9 +197,10 @@ $husband
 $husband
 [1] "otto"</pre>
 </div>
-<p>So items in the list can be either access via their index position or through their &#8220;tag&#8221;. Please note that the third argument (&#8220;5th avenue&#8221;) is not tagged, so it can only be accessed via its index number, i.e. <tt class="docutils literal"><span class="pre">t[3]</span></tt>.</p>
-<p>There is no direct match to any standard Python construct for a TaggedList. Python dictionaries do not preserve their elements&#8217; order, and also don&#8217;t allow for missing keys. The solution was to provide a special class in Python which is called <tt class="docutils literal"><span class="pre">TaggedList</span></tt>. When accessing the list <tt class="docutils literal"><span class="pre">t</span></tt> from the example above you&#8217;ll obtain an instance of a TaggedList in Python:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">conn</span><span class="p">(</span><span class="s">&#39;t &lt;- list(husband=&quot;otto&quot;, wife=&quot;erna&quot;, &quot;5th avenue&quot;)&#39;</span><span class="p">)</span>
+<p>So items in the list can be either accessed via their index position or through their &#8220;tag&#8221;. Please note that the third argument (&#8220;5th avenue&#8221;) is not tagged, so it can only be accessed via its index number, i.e. <tt class="docutils literal"><span class="pre">t[3]</span></tt> (indexing in R starts with 1 and not with zero as in Python!).</p>
+<p>There is no direct match to any standard Python construct for a TaggedList. Python dictionaries do not preserve their elements&#8217; order and also don&#8217;t allow for missing keys. NamedTuples on the other side would do the job but don&#8217;t allow items to be appended or deleted since they are immutual.</p>
+<p>The solution was to provide a special class in Python which is called <tt class="docutils literal"><span class="pre">TaggedList</span></tt>. When accessing the list <tt class="docutils literal"><span class="pre">t</span></tt> from the example above you&#8217;ll obtain an instance of a TaggedList in Python:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;t &lt;- list(husband=&quot;otto&quot;, wife=&quot;erna&quot;, &quot;5th avenue&quot;)&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">t</span>
 <span class="go">TaggedList(husband=&#39;otto&#39;, wife=&#39;erna&#39;, &#39;5th avenue&#39;)</span>
 </pre></div>
@@ -180,7 +214,7 @@ $husband
 <span class="go">&#39;5th avenue&#39;</span>
 </pre></div>
 </div>
-<p>To retrieve its data suitable for instantiating another TaggeList on the Python side get its data as a list of tuples. This also demonstrates how a TaggeList is created:</p>
+<p>To retrieve its data suitable for instantiating another TaggedList on the Python side get its data as a list of tuples. This also demonstrates how a TaggedList is created:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyRserve</span> <span class="kn">import</span> <span class="n">TaggedList</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">astuples</span>
 <span class="go">[(&#39;husband&#39;, &#39;otto&#39;), (&#39;wife&#39;, &#39;erna&#39;), (None, &#39;5th avenue&#39;)]</span>
@@ -189,14 +223,14 @@ $husband
 </div>
 </div>
 <div class="section" id="calling-functions">
-<h3>Calling functions<a class="headerlink" href="#calling-functions" title="Permalink to this headline">¶</a></h3>
-<p>Before the examples below are usable we need to define a couple of very simple functions within the R namespace: <tt class="docutils literal"><span class="pre">func0()</span></tt> accepts no parameters and returns a fixed string, <tt class="docutils literal"><span class="pre">func1()</span></tt> exactly one parameter and <tt class="docutils literal"><span class="pre">funcKKW()</span></tt> takes keyword arguments with defaults set:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">conn</span><span class="p">(</span><span class="s">&#39;func0 &lt;- function() { &quot;hello world&quot; }&#39;</span><span class="p">)</span>
-<span class="n">conn</span><span class="p">(</span><span class="s">&#39;func1 &lt;- function(v) { v*2 }&#39;</span><span class="p">)</span>
-<span class="n">conn</span><span class="p">(</span><span class="s">&#39;funcKW &lt;- function(a1=1.0, a2=4.0) { list(a1, a2) }&#39;</span><span class="p">)</span>
+<h2>Calling functions<a class="headerlink" href="#calling-functions" title="Permalink to this headline">¶</a></h2>
+<p>Before the examples below are usable we need to define a couple of very simple functions within the R namespace: <tt class="docutils literal"><span class="pre">func0()</span></tt> accepts no parameters and returns a fixed string, <tt class="docutils literal"><span class="pre">func1()</span></tt> takes exactly one parameter and <tt class="docutils literal"><span class="pre">funcKKW()</span></tt> takes keyword arguments with default values:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;func0 &lt;- function() { &quot;hello world&quot; }&#39;</span><span class="p">)</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;func1 &lt;- function(v) { v*2 }&#39;</span><span class="p">)</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;funcKW &lt;- function(a1=1.0, a2=4.0) { list(a1, a2) }&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Now calling R functions is as trivial as calling plain python functions:</p>
+<p>Now calling R functions is as trivial as calling plain Python functions:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">func0</span><span class="p">()</span>
 <span class="go">&quot;hello world&quot;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">func1</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
@@ -212,8 +246,9 @@ $husband
 </div>
 </div>
 <div class="section" id="getting-help-with-functions">
-<h3>Getting help with functions<a class="headerlink" href="#getting-help-with-functions" title="Permalink to this headline">¶</a></h3>
-<p>Also here no surprise - just do it the Python way through the <tt class="docutils literal"><span class="pre">__doc__</span></tt> attribute:</p>
+<h2>Getting help with functions<a class="headerlink" href="#getting-help-with-functions" title="Permalink to this headline">¶</a></h2>
+<p>If R is properly installed including its help messages those can be retrieved directly.
+Also here no surprise - just do it the Python way through the <tt class="docutils literal"><span class="pre">__doc__</span></tt> attribute:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="o">.</span><span class="n">__doc__</span>
 <span class="go">lapply                 package:base                 R Documentation</span>
 
@@ -230,46 +265,50 @@ $husband
 <p>Of course this only works for functions which provide documentation. For all others <tt class="docutils literal"><span class="pre">__doc__</span></tt> just returns <tt class="xref docutils literal"><span class="pre">None</span></tt>.</p>
 </div>
 <div class="section" id="applying-an-r-function-as-argument-to-another-function">
-<h3>Applying an R function as argument to another function<a class="headerlink" href="#applying-an-r-function-as-argument-to-another-function" title="Permalink to this headline">¶</a></h3>
+<h2>Applying an R function as argument to another function<a class="headerlink" href="#applying-an-r-function-as-argument-to-another-function" title="Permalink to this headline">¶</a></h2>
 <p>A typical application in R is to apply a vector to a function, especially via <tt class="docutils literal"><span class="pre">sapply</span></tt> and its brothers. Fortunately this is as easy as you would expect:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="p">(</span><span class="s">&#39;double &lt;-- function(x) { x*2 }&#39;</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;double &lt;-- function(x) { x*2 }&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
 <span class="go">array([ 2.,  4.,  6.])</span>
 </pre></div>
 </div>
 <p>Here a Python array and a function defined in R are provided as arguments to the R function <tt class="docutils literal"><span class="pre">sapply</span></tt>.</p>
-<p>Of course the following trying to provide a Python function makes no sense:</p>
+<p>Of course the following attempt to provide a Python function as an argument into R makes no sense:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">double</span><span class="p">(</span><span class="n">v</span><span class="p">):</span> <span class="k">return</span> <span class="n">v</span><span class="o">*</span><span class="mi">2</span>
 <span class="gp">...</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span> <span class="n">double</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
-  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n-Identifier">&lt;module&gt;</span>
-<span class="nc">NameError</span>: <span class="n-Identifier">name &#39;double&#39; is not defined</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">NameError</span>: <span class="n">name &#39;double&#39; is not defined</span>
 </pre></div>
 </div>
 <p>This will result in a NameError error because the connector tries to reference the function &#8216;double&#8217; inside the R namespace.
-It should be obvious that it is not possible to transfer function implementation from Python to R.</p>
+It should be obvious that it is not possible to transfer function implementations from Python to R.</p>
 </div>
 <div class="section" id="applying-a-variable-already-defined-in-r-to-a-function">
-<h3>Applying a variable already defined in R to a function<a class="headerlink" href="#applying-a-variable-already-defined-in-r-to-a-function" title="Permalink to this headline">¶</a></h3>
+<h2>Applying a variable already defined in R to a function<a class="headerlink" href="#applying-a-variable-already-defined-in-r-to-a-function" title="Permalink to this headline">¶</a></h2>
 <p>To understand why this is an interesting feature one has to understand how Python and pyRserve works. The following code is pretty inefficient:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">arr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">arr</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>To see why it is inefficient it is reproduced here more explicitely, but doing exactly the same thing:</p>
+<p>To see why it is inefficient it is reproduced here more explicitly, but doing exactly the same thing:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">arr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">arr</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">arr</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Now it is clear that the value of <tt class="docutils literal"><span class="pre">conn.r.arr</span></tt> is first set inside R, then retrieved back to python (in the second line) and then again sent back to the <tt class="docutils literal"><span class="pre">sapply</span></tt> function. This is pretty inefficient, it would be much better just to set the array in R and then to refer to <tt class="docutils literal"><span class="pre">conn.r.arr</span></tt> instead of sending it back and forth. Here the &#8220;reference&#8221; namespace called <tt class="docutils literal"><span class="pre">ref</span></tt> comes into play:</p>
+<p>Now it is clear that the value of <tt class="docutils literal"><span class="pre">conn.r.arr</span></tt> is first set inside R, then retrieved back to Python (in the second line) and then again sent back to the <tt class="docutils literal"><span class="pre">sapply</span></tt> function. This is pretty inefficient, it would be much better just to set the array in R and then to refer to <tt class="docutils literal"><span class="pre">conn.r.arr</span></tt> instead of sending it back and forth. Here the &#8220;reference&#8221; namespace called <tt class="docutils literal"><span class="pre">ref</span></tt> comes into play:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">ref</span><span class="o">.</span><span class="n">arr</span>
 <span class="go">&lt;RVarProxy to variable &quot;arr&quot;&gt;</span>
 </pre></div>
 </div>
-<p>Through <cite>conn.ref</cite> it is possible to only reference a variable (or a function) in the R namespace without actually bringing it over to Python. Such a reference can then be given as an argument to every function called from <tt class="docutils literal"><span class="pre">conn.r</span></tt>.
-However it is still possible to retrieve the actual content of a variable proxy through its <tt class="docutils literal"><span class="pre">value()</span></tt> method:</p>
+<p>Through <cite>conn.ref</cite> it is possible to only reference a variable (or a function) in the R namespace without actually bringing it over to Python. Such a reference can then be passed as an argument to every function called from <tt class="docutils literal"><span class="pre">conn.r</span></tt>. So the proper way to make the call above is:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">arr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">ref</span><span class="o">.</span><span class="n">arr</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>However it is still possible to retrieve the actual content of a variable proxy through its <tt class="docutils literal"><span class="pre">value()</span></tt> method:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">ref</span><span class="o">.</span><span class="n">arr</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
 <span class="go">array([1., 2., 3.])</span>
 </pre></div>
@@ -280,14 +319,10 @@ However it is still possible to retrieve the actual content of a variable proxy 
 </pre></div>
 </div>
 <p>Actually functions are always returned as proxy references, both in the <tt class="docutils literal"><span class="pre">conn.r</span></tt> and the <tt class="docutils literal"><span class="pre">conn.ref</span></tt> namespace, so <tt class="docutils literal"><span class="pre">conn.r.&lt;function&gt;</span></tt> is the same as <tt class="docutils literal"><span class="pre">conn.ref.&lt;function&gt;</span></tt>.</p>
-<p>Now to make <tt class="docutils literal"><span class="pre">sapply</span></tt> above really access <tt class="docutils literal"><span class="pre">arr</span></tt> from the R namespace let&#8217;s modify the call slightly:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">sapply</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">ref</span><span class="o">.</span><span class="n">arr</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
-</pre></div>
-</div>
 <p>Using reference to R variables is indeed absolutely necessary for variable content which is not transferable into Python, like special types of R classes, complex data frames etc.</p>
 </div>
 <div class="section" id="handling-complex-results-from-r-functions">
-<h3>Handling complex results from R functions<a class="headerlink" href="#handling-complex-results-from-r-functions" title="Permalink to this headline">¶</a></h3>
+<h2>Handling complex results from R functions<a class="headerlink" href="#handling-complex-results-from-r-functions" title="Permalink to this headline">¶</a></h2>
 <p>Some functions in R (especially those doing statistical calculations) return quite complex result objects. The T-test is such an example. In R you would see something like this (please ignore the dummy values to it):</p>
 <div class="highlight-python"><pre>&gt; t.test(c(1,2,3,1),c(1,6,7,8))
 
@@ -304,7 +339,7 @@ mean of x mean of y
 </div>
 <p>This is what you would get to see directly in your R shell.</p>
 <p>Now if the test function is called from pyRserve the result has to somehow be translated into Python objects. Here is what you would expect (note that the result has been manually reformatted to be easier to read in this example):</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">res</span> <span class="o">=</span> <span class="n">conn</span><span class="p">(</span><span class="s">&#39;t.test(c(1,2,3,1),c(1,6,7,8))&#39;</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">res</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;t.test(c(1,2,3,1),c(1,6,7,8))&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">res</span>
 <span class="go">&lt;TaggedList(statistic=TaggedArray([-2.30541984]),</span>
 <span class="go"> parameter=TaggedArray([ 3.56389482], tags=[&#39;df&#39;]),</span>
@@ -318,8 +353,8 @@ mean of x mean of y
 <span class="go">&gt;&gt;&gt;</span>
 </pre></div>
 </div>
-<p>The result is again an instance of a <cite>TaggedList</cite>. As explained above a TaggedList is a Python list that can additionally be accessed via key-words (like in a Python dictionary). However the order is maintained, and keys don&#8217;t have to be unique (in which case it would only return the first item of the list assigned to that key).</p>
-<p>So to access the confidence interval and its confidence level from the t-test you would type in Python:</p>
+<p>The result is again an instance of a <cite>TaggedList</cite>. As explained above a TaggedList is a Python list with items that can additionally be accessed via key-words (like in a Python dictionary). However the order is maintained, and keys don&#8217;t have to be unique (in which case it would only return the first item of the list assigned to that key).</p>
+<p>So to access the confidence interval and its confidence level from the t-test above you would type in Python:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">res</span><span class="p">[</span><span class="s">&#39;conf.int&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s">&#39;conf.level&#39;</span><span class="p">]</span>
 <span class="go">array([ 0.95])</span>
 </pre></div>
@@ -335,7 +370,6 @@ An <cite>AttrArray</cite> is a normal Numpy-Array with an additional attribute <
 </div>
 </div>
 </div>
-</div>
 
 
           </div>
@@ -343,48 +377,47 @@ An <cite>AttrArray</cite> is a normal Numpy-Array with an additional attribute <
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="index.html">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="">pyRserve manual</a><ul>
-<li><a class="reference external" href="#setting-up-a-connection-to-rserve">Setting up a connection to Rserve</a></li>
-<li><a class="reference external" href="#string-evaluation-in-r">String evaluation in R</a></li>
-<li><a class="reference external" href="#the-r-namespace">The R namespace</a><ul>
-<li><a class="reference external" href="#setting-and-accessing-variables">Setting and accessing variables</a></li>
-<li><a class="reference external" href="#calling-functions">Calling functions</a></li>
-<li><a class="reference external" href="#getting-help-with-functions">Getting help with functions</a></li>
-<li><a class="reference external" href="#applying-an-r-function-as-argument-to-another-function">Applying an R function as argument to another function</a></li>
-<li><a class="reference external" href="#applying-a-variable-already-defined-in-r-to-a-function">Applying a variable already defined in R to a function</a></li>
-<li><a class="reference external" href="#handling-complex-results-from-r-functions">Handling complex results from R functions</a></li>
-</ul>
-</li>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pyRserve manual</a><ul>
+<li><a class="reference internal" href="#setting-up-a-connection-to-rserve">Setting up a connection to Rserve</a></li>
+<li><a class="reference internal" href="#the-r-namespace">The R namespace</a></li>
+<li><a class="reference internal" href="#string-evaluation-in-r">String evaluation in R</a></li>
+<li><a class="reference internal" href="#setting-and-accessing-variables-in-a-more-pythonic-way">Setting and accessing variables in a more pythonic way</a></li>
+<li><a class="reference internal" href="#taggedarrays">TaggedArrays</a></li>
+<li><a class="reference internal" href="#calling-functions">Calling functions</a></li>
+<li><a class="reference internal" href="#getting-help-with-functions">Getting help with functions</a></li>
+<li><a class="reference internal" href="#applying-an-r-function-as-argument-to-another-function">Applying an R function as argument to another function</a></li>
+<li><a class="reference internal" href="#applying-a-variable-already-defined-in-r-to-a-function">Applying a variable already defined in R to a function</a></li>
+<li><a class="reference internal" href="#handling-complex-results-from-r-functions">Handling complex results from R functions</a></li>
 </ul>
 </li>
 </ul>
 
-            <h4>Previous topic</h4>
-            <p class="topless"><a href="installation.html"
-                                  title="previous chapter">Installation</a></p>
-            <h4>Next topic</h4>
-            <p class="topless"><a href="license.html"
-                                  title="next chapter">This is the MIT license</a></p>
-            <h3>This Page</h3>
-            <ul class="this-page-menu">
-              <li><a href="_sources/manual.txt"
-                     rel="nofollow">Show Source</a></li>
-            </ul>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="license.html"
+                        title="next chapter">This is the MIT license</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/manual.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -401,12 +434,12 @@ An <cite>AttrArray</cite> is a normal Numpy-Array with an additional attribute <
         <li class="right" >
           <a href="installation.html" title="Installation"
              >previous</a> |</li>
-        <li><a href="index.html">pyRserve v0.4 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyRserve v0.5 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2009, 2010, 2011, Ralph Heinkel.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.3.
+        &copy; Copyright 2009, 2010, 2011, Ralph Heinkel.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.8.
     </div>
   </body>
 </html>

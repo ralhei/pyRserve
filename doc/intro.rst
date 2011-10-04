@@ -16,6 +16,8 @@ Changes
     * Renamed pyRserve.rconnect() to pyRserve.connect(). The former still works but shows a DepricationWarning
     * String evaluation should now only be executed on the namespace directly, not on the connection object anymore.
       The latter still works but shows a DepricationWarning.
+    * New kw argument `atomicArray=True` added to pyRserve.connect() for preventing single valued arrays from being
+      converted into atomic python data types.
 
 * V 0.4 (2011-09-20)
     * Added support for nested function calls. E.g. conn.r.t.test( ....) now works.
@@ -63,3 +65,7 @@ Full Documentation
 
 Documentation can be found at `<http://packages.python.org/pyRserve/>`_.
 
+
+Missing Features
+-----------------
+* Authentication is implemented in Rserve but not yet in pyRserve
