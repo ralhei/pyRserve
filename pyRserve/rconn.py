@@ -1,4 +1,4 @@
-import socket, time
+import socket, time, warnings
 ###
 import rtypes
 from rexceptions import RConnectionRefused, REvalError, PyRserveClosed
@@ -9,13 +9,20 @@ RSERVEPORT = 6311
 DEBUG = False
 
 
-def rconnect(host='', port=RSERVEPORT):
+def connect(host='', port=RSERVEPORT, atomicArray=False):
+    """Open a connection to a Rserve instance"""
 #    if host in (None, ''):
 #        # On Win32 it seems that passing an empty string as 'localhost' does not work
 #        # So just to be sure provide the full local hostname if None or '' were passed.
 #        host = socket.gethostname()
     assert port is not None, 'port number must be given'
-    return RConnector(host, port)
+    return RConnector(host, port, atomicArray)
+
+
+def rconnect(host='', port=RSERVEPORT):
+    """Deprecated method - use connect() instead """
+    warnings.warn("pyRserve.rconnect() is deprecated, use pyRserve.connect() instead.", DeprecationWarning)
+    return connect(host=host, port=port)
 
 
 def checkIfClosed(func):
@@ -29,9 +36,10 @@ def checkIfClosed(func):
 
 class RConnector(object):
     '@brief Provides a network connector to an Rserve process'
-    def __init__(self, host, port):
+    def __init__(self, host, port, atomicArray):
         self.host = host
         self.port = port
+        self.atomicArray = atomicArray
         self.connect()
         self.r = RNameSpace(self)
         self.ref = RNameSpaceReference(self)
@@ -66,6 +74,7 @@ class RConnector(object):
         
     @checkIfClosed
     def __call__(self, aString):
+        warnings.warn("conn() is deprecated, use conn.r() instead.", DeprecationWarning)
         return self.eval(aString)
         
     def _reval(self, aString):
@@ -84,7 +93,7 @@ class RConnector(object):
         else:
             src = self.sock.makefile()
         try:
-            return rparse(src)
+            return rparse(src, atomicArray=self.atomicArray)
         except REvalError:
             # R has reported an evaulation error, so let's obtain a descriptive explanation
             # about why the error has occurred. R allows to retrieve the error message
@@ -113,7 +122,7 @@ class RConnector(object):
         rAssign(name, o, self.sock)
         # Rserv sends an emtpy confirmation message, or error message in case of an error.
         # rparse() will raise an Exception in the latter case.
-        rparse(self.sock)
+        rparse(self.sock, atomicArray=self.atomicArray)
 
     @checkIfClosed
     def getRexp(self, name):

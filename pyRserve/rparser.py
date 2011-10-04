@@ -5,7 +5,7 @@ from misc import FunctionMapper
 from rexceptions import RResponseError, REvalError
 from taggedContainers import TaggedList, asTaggedArray, asAttrArray
 
-DEBUG = 1
+DEBUG = False
 
 class Lexeme(list):
     def __init__(self, rTypeCode, length, hasAttr, lexpos):

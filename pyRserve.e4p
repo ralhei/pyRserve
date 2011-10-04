@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Project SYSTEM "Project-4.4.dtd">
+<!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project pyRserve -->
-<!-- Saved: 2009-12-02, 18:17:23 -->
-<!-- Copyright (C) 2009 ,  -->
-<Project version="4.4">
+<!-- Saved: 2011-05-11, 08:59:34 -->
+<!-- Copyright (C) 2011 ,  -->
+<Project version="4.6">
+  <Language></Language>
   <ProgLanguage mixed="0">Python</ProgLanguage>
   <ProjectType>Qt4</ProjectType>
   <Description></Description>
@@ -22,11 +23,8 @@
     <Source>INSTALL</Source>
     <Source>TODO</Source>
     <Source>binCodes.py</Source>
-    <Source>pyRserve/test_taggedContainers.py</Source>
-    <Source>pyRserve/taggedContainers.py</Source>
-    <Source>pyRserve/__init__.py</Source>
     <Source>setup.py</Source>
-    <Source>doc/conf.py</Source>
+    <Source>Makefile</Source>
   </Sources>
   <Forms>
   </Forms>
@@ -40,18 +38,7 @@
     <Other>testData/test-script.R</Other>
     <Other>INSTALL</Other>
     <Other>TODO</Other>
-    <Other>LICENSE</Other>
-    <Other>MANIFEST.in</Other>
-    <Other>README</Other>
     <Other>doc</Other>
-    <Other>CREDITS</Other>
-    <Other>doc/license.rst</Other>
-    <Other>doc/index.rst</Other>
-    <Other>doc/installation.rst</Other>
-    <Other>doc/intro.rst</Other>
-    <Other>doc/make.bat</Other>
-    <Other>doc/Makefile</Other>
-    <Other>doc/manual.rst</Other>
   </Others>
   <Vcs>
     <VcsType>Subversion</VcsType>
@@ -169,9 +156,11 @@
   <FiletypeAssociations>
     <FiletypeAssociation pattern="*.ui" type="FORMS" />
     <FiletypeAssociation pattern="*.idl" type="INTERFACES" />
+    <FiletypeAssociation pattern="*.qm" type="TRANSLATIONS" />
     <FiletypeAssociation pattern="*.ptl" type="SOURCES" />
     <FiletypeAssociation pattern="*.pyw" type="SOURCES" />
     <FiletypeAssociation pattern="*.ui.h" type="FORMS" />
+    <FiletypeAssociation pattern="*.ts" type="TRANSLATIONS" />
     <FiletypeAssociation pattern="*.py" type="SOURCES" />
     <FiletypeAssociation pattern="*.qrc" type="RESOURCES" />
   </FiletypeAssociations>
