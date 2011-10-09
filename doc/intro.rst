@@ -59,11 +59,17 @@ Then from your unix/windows command line run::
    
 or download the tar.gz or zip package. After unpacking run `python setup.py install` from your command line. 
 
-
-Full Documentation
-------------------
+Documentation
+----------------
 
 Documentation can be found at `<http://packages.python.org/pyRserve/>`_.
+
+
+Support
+--------
+
+For discussion of pyRserve issues and getting help please use the Google newsgroup
+available at `<http://groups.google.com/group/pyrserve>`_.
 
 
 Missing Features

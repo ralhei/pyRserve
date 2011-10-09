@@ -90,7 +90,7 @@
 </div>
 <div class="section" id="the-r-namespace">
 <h2>The R namespace<a class="headerlink" href="#the-r-namespace" title="Permalink to this headline">¶</a></h2>
-<p>The Rserve connector <tt class="docutils literal"><span class="pre">conn</span></tt> used above provides an attribute called &#8220;<tt class="docutils literal"><span class="pre">r</span></tt>&#8221; which gives you direct access to the namespace of the R connection. Each Rserve connection has its private namespace which is lost after the connection is closed (if you don&#8217;t save it).</p>
+<p>The Rserve connector <tt class="docutils literal"><span class="pre">conn</span></tt> created above provides an attribute called &#8220;<tt class="docutils literal"><span class="pre">r</span></tt>&#8221; which gives you direct access to the namespace of the R connection. Each Rserve connection has its private namespace which is lost after the connection is closed (if you don&#8217;t save it).</p>
 <p>Through the <tt class="docutils literal"><span class="pre">r</span></tt>-attribute you can set and access variables, and also call functions defined in the R-namespace.
 The following sections explain how to use the namespace in various ways.</p>
 </div>
@@ -116,20 +116,22 @@ The following sections explain how to use the namespace in various ways.</p>
 </div>
 <p>and to request its value just do:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">conn</span><span class="o">.</span><span class="n">r</span><span class="p">(</span><span class="s">&#39;aVar&#39;</span><span class="p">)</span>
+<span class="go">&#39;abc&#39;</span>
 </pre></div>
 </div>
-<p>It is also possible to create functions inside the R interpreter through the connector, or even to execute entire scripts. Basically you can do everything which is possible inside a normal R console:</p>
+<p>It is also possible to create functions inside the R interpreter through the connector&#8217;s namespace, or even to execute entire scripts. Basically you can do everything which is possible inside a normal R console:</p>
 <div class="highlight-python"><pre># create a function and execute it:
 &gt;&gt;&gt; conn.r('doubleit &lt;- function(x) { x*2 }')
 &gt;&gt;&gt; conn.r('doubleit(2)')
 4.0
-# store a script as a string ...
+
+# store a mini script definition in a Python string ...
 &gt;&gt;&gt; my_r_script = '''
 squareit &lt;- function(x)
   { x**2 }
 squareit(4)
 '''
-# and execute the mini-script in R:
+# .... and execute it in R:
 &gt;&gt;&gt; conn.r(my_r_script)
 16.0</pre>
 </div>
@@ -344,7 +346,7 @@ mean of x mean of y
 <span class="go">&lt;TaggedList(statistic=TaggedArray([-2.30541984]),</span>
 <span class="go"> parameter=TaggedArray([ 3.56389482], tags=[&#39;df&#39;]),</span>
 <span class="go"> p.value=0.090532640733331213,</span>
-<span class="go"> conf.int=AttrArray([-8.49269413,  0.99269413], attr={&#39;conf.level&#39;: array([ 0.95])}),</span>
+<span class="go"> conf.int=TaggedArray([-8.49269413,  0.99269413], attr={&#39;conf.level&#39;: array([ 0.95])}),</span>
 <span class="go"> estimate=TaggedArray([ 1.75,  5.5 ], tags=[&#39;mean of x&#39;, &#39;mean of y&#39;]),</span>
 <span class="go"> null.value=TaggedArray([ 0.], tags=[&#39;difference in means&#39;]),</span>
 <span class="go"> alternative=&#39;two.sided&#39;,</span>
@@ -359,8 +361,8 @@ mean of x mean of y
 <span class="go">array([ 0.95])</span>
 </pre></div>
 </div>
-<p>In the <cite>res</cite> result data structure above there are also objects of a container called <cite>AttrArray</cite>.
-An <cite>AttrArray</cite> is a normal Numpy-Array with an additional attribute <cite>attr</cite>, a dictionary that holds further information provided by R for this data item. In this case is is the confidence level (0.95) for the given confidence interval.</p>
+<p>In the <cite>res</cite> result data structure above there are also objects of a container called <cite>TaggedArray</cite>.
+An <cite>TaggedArray</cite> is a normal Numpy-Array with an additional attribute <cite>attr</cite>, a dictionary that holds further information provided by R for this data item. In this case is is the confidence level (0.95) for the given confidence interval.</p>
 <p>A <cite>TaggedArray</cite> basically behaves like a <cite>TaggedList</cite>, except that the underlying container is a Numpy array instead of a Python list. So to access the second item of the <cite>TaggedList</cite> called <cite>estimate</cite> the following two commands are equivalent:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">res</span><span class="p">[</span><span class="s">&#39;estimate&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
 <span class="go">5.5</span>
