@@ -13,9 +13,9 @@ R to native Python types and back.
 Changes
 ----------------
 * V 0.5 (2011-10-03)
-    * Renamed pyRserve.rconnect() to pyRserve.connect(). The former still works but shows a DepricationWarning
+    * Renamed pyRserve.rconnect() to pyRserve.connect(). The former still works but shows a DeprecationWarning
     * String evaluation should now only be executed on the namespace directly, not on the connection object anymore.
-      The latter still works but shows a DepricationWarning.
+      The latter still works but shows a DeprecationWarning.
     * New kw argument `atomicArray=True` added to pyRserve.connect() for preventing single valued arrays from being
       converted into atomic python data types.
 
