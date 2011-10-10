@@ -13,7 +13,7 @@ f.close()
 
 setup(name='pyRserve',
       version='0.5',     # ALWAYS UPDATE __version__  in __init__.py and conf.py for sphinx!!!
-      description='A Python client to remotely access R statistic package via Rserve',
+      description='A Python client to remotely access the R statistic package via Rserve',
       long_description=long_description,
       author='Ralph Heinkel',
       author_email='rh [at] ralph-heinkel.com',
