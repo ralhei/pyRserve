@@ -12,6 +12,8 @@ R to native Python types and back.
 
 Changes
 ----------------
+* V 0.5.2 (2011-12-02)
+    * Fixed problem with 32bit integers being mistakenly rendered into 64bit integers on 64bit machines
 * V 0.5.1 (2011-11-22)
     * Fixed improper DeprecationWarning when evaluating R statements via conn.r(...)
 * V 0.5 (2011-10-03)

@@ -11,8 +11,10 @@ f = open(os.path.join(here, 'doc', 'intro.rst'))
 long_description = f.read()
 f.close()
 
+from pyRserve import __version__
+
 setup(name='pyRserve',
-      version='0.5.1',     # ALWAYS UPDATE __version__  in __init__.py, docs/index.rst and docs/conf.py for sphinx!!!
+      version=__version__,
       description='A Python client to remotely access the R statistic package via Rserve',
       long_description=long_description,
       author='Ralph Heinkel',

@@ -240,7 +240,7 @@ DT_Map = {
 numpyMap = {
     XT_ARRAY_BOOL:     numpy.bool_,
 #    XT_BYTE:           numpy.byte,
-    XT_ARRAY_INT:      numpy.int,
+    XT_ARRAY_INT:      numpy.int32,
     XT_ARRAY_DOUBLE:   numpy.double,     # double float64
     XT_ARRAY_CPLX:     numpy.complex,
     XT_ARRAY_STR:      numpy.string_,
