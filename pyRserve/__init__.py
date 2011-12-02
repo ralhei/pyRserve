@@ -7,5 +7,5 @@ del warnings
 from rconn import rconnect, connect
 from taggedContainers import TaggedList
 
-__version__ = '0.5'
+__version__ = '0.5.1'  # always update version in setup.py, docs/conf.py, docs/index.rst
 

@@ -201,7 +201,7 @@ class RNameSpace(object):
             return self._rconn.getRexp(name)
 
     def __call__(self, aString):
-        return self._rconn(aString)
+        return self._rconn.eval(aString)
 
 
 class RNameSpaceReference(object):

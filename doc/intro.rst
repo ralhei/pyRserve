@@ -12,6 +12,8 @@ R to native Python types and back.
 
 Changes
 ----------------
+* V 0.5.1 (2011-11-22)
+    * Fixed improper DeprecationWarning when evaluating R statements via conn.r(...)
 * V 0.5 (2011-10-03)
     * Renamed pyRserve.rconnect() to pyRserve.connect(). The former still works but shows a DeprecationWarning
     * String evaluation should now only be executed on the namespace directly, not on the connection object anymore.
