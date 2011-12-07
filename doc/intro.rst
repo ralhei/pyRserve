@@ -39,9 +39,9 @@ Changes
 Supported Platforms
 ----------------------------
 
-This package has been mainly developed under Linux, and hence should run on all standard unix platforms. It has also been
-successfully used on Win32 machines. Unittests have only been used on the Linux side, however they might just work 
-fine for Win32.
+This package has been mainly developed under Linux, and hence should run on all standard unix platforms, as well
+ as on Mac OS X. pyRserve has also been successfully used on Win32 machines. Unittests have been used on the Linux
+ and Mac OS X side, however they might just work fine for Win32.
 
 It has been tested run with Python 2.6.x and 2.7.x. Python 3.x has never been tested, it might or might not work.
 
