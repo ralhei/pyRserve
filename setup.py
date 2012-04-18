@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os
+import os, sys
 from distutils.core import setup
 
 # NOTE: Other files to be included are specified in MANIFEST.in
@@ -11,7 +11,8 @@ f = open(os.path.join(here, 'doc', 'intro.rst'))
 long_description = f.read()
 f.close()
 
-from pyRserve import __version__
+sys.path.append('pyRserve')
+from version import __version__
 
 setup(name='pyRserve',
       version=__version__,
@@ -29,13 +30,10 @@ setup(name='pyRserve',
                      'License :: OSI Approved :: MIT License',
                      'Operating System :: POSIX',
                      'Operating System :: Microsoft :: Windows',
-                     'Operating System :: MacOS :: MacOS X',
                      'Programming Language :: Python',
                      'Intended Audience :: Developers',
                      'Topic :: Scientific/Engineering :: Information Analysis',
                      'Topic :: Scientific/Engineering :: Interface Engine/Protocol Translator',
                      'Topic :: Scientific/Engineering :: Mathematics',
-                     'Topic :: System :: Distributed Computing',
-                     'Topic :: System :: Networking',
                      ],
      )
