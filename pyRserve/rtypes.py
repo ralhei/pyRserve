@@ -1,4 +1,5 @@
 import numpy
+from pyRserve.misc import PY3
 
 SOCKET_BLOCK_SIZE = 4096
 RHEADER_SIZE      =   16
@@ -208,6 +209,9 @@ VALID_R_TYPES = [DT_SEXP, XT_BOOL, XT_INT, XT_DOUBLE, XT_STR, XT_SYMNAME, XT_VEC
                  XT_LIST_NOTAG, XT_LANG_NOTAG, XT_CLOS, XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE,
                  XT_ARRAY_CPLX, XT_ARRAY_STR, XT_NULL, XT_UNKNOWN, XT_RAW]
 
+STRING_TYPES = [str, numpy.string_, numpy.str_, XT_ARRAY_STR]
+if not PY3:
+    STRING_TYPES.append(unicode)
 
 ##################################################################################################################
 # Mapping btw. numpy and R data types, in both directions
@@ -247,12 +251,13 @@ numpyMap = {
     }
 
 # also add the inverse mapping to it:
-for k, v in numpyMap.items():
+for k, v in list(numpyMap.items()):
     numpyMap[v] = k
 
 # some manual additions for numpy variants:
 numpyMap[numpy.complex128] = XT_ARRAY_CPLX
 numpyMap[numpy.int32]      = XT_ARRAY_INT
+numpyMap[numpy.str_]       = XT_ARRAY_STR
 
 
 atom2ArrMap = {
@@ -265,6 +270,8 @@ atom2ArrMap = {
     numpy.complex:     XT_ARRAY_CPLX,
     numpy.complex128:  XT_ARRAY_CPLX,
     str:               XT_ARRAY_STR,
+    numpy.str_:        XT_ARRAY_STR,
+    numpy.string_:     XT_ARRAY_STR,
     bool:              XT_ARRAY_BOOL,
     numpy.bool:        XT_ARRAY_BOOL,
     numpy.bool_:       XT_ARRAY_BOOL,
@@ -274,7 +281,7 @@ atom2ArrMap = {
 ##################################################################################################################
 # Some custom exceptions used in the pyRserve package
 
-class RserveError(StandardError):
+class RserveError(Exception):
     # base class for all errors for this package
     pass
     

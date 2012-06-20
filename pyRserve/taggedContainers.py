@@ -60,7 +60,7 @@ class TaggedList(object):
                 
     def astuples(self):
         """convert a TaggedList into a representation suitable to be provided to __init__()"""
-        return zip(self.keys, self.values)
+        return list(zip(self.keys, self.values))
         
     def __repr__(self): 
         data = ["%s=%s" % (key, repr(value)) if key else "'%s'" % value for key,value in self.astuples()]

@@ -1,7 +1,7 @@
 
 # unittests for classes from taggedContainers
 
-from taggedContainers import TaggedList
+from .taggedContainers import TaggedList
 
 def test_TaggedList_init_emtpy():
     t = TaggedList()

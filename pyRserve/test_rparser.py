@@ -1,10 +1,10 @@
 import struct, datetime, time, socket, threading, py, numpy
 from numpy import array, ndarray, float, float32, float64, complex, complex64, complex128
 ###
-import rtypes, rparser, rserializer
-from rexceptions import RSerializationError
-from misc import phex
-from taggedContainers import TaggedList, asTaggedArray
+from .import rtypes, rparser, rserializer
+from pyRserve.misc import byteEncode, hexString
+from .rexceptions import RSerializationError
+from .taggedContainers import TaggedList, asTaggedArray
 
 # rparser.DEBUG = rserializer.DEBUG = True
 
@@ -55,7 +55,7 @@ r2pyExpressions = [
     ]
 
 
-###############################################3
+###############################################
 
 def test_rExprGenerator():
     '''
@@ -73,18 +73,18 @@ def test_rExprGenerator():
 
 def test_rAssign_method():
     'test "rAssign" class method of RSerializer'
-    hexd = '\x20\x00\x00\x00\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x04\x00\x00\x76\x00'\
-           '\x00\x00\x0a\x08\x00\x00\x20\x04\x00\x00\x01\x00\x00\x00'
+    hexd = b'\x20\x00\x00\x00\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x04\x00\x00\x76\x00'\
+           b'\x00\x00\x0a\x08\x00\x00\x20\x04\x00\x00\x01\x00\x00\x00'
     assert rserializer.rAssign('v', 1) == hexd
     
 
 def test_rEval_method():
-    hexd = '\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x04\x00\x00\x61\x3d\x31\x00'
+    hexd = b'\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x04\x00\x00\x61\x3d\x31\x00'
     assert rserializer.rEval('a=1') == hexd
 
 
 def test_serialize_DT_INT():
-    hexd = '\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x007\x00\x00\x00'
+    hexd = b'\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x007\x00\x00\x00'
     s = rserializer.RSerializer(rtypes.CMD_eval)
     s.serialize(55, dtTypeCode=rtypes.DT_INT)
     res = s.finalize()
@@ -102,12 +102,14 @@ def test_serialize_into_socket():
     # now connect to it:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(("localhost", PseudoRServer.PORT))
-    hexd = '\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x007\x00\x00\x00'
+    hexd = b'\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x007\x00\x00\x00'
     s = rserializer.RSerializer(rtypes.CMD_eval, fp=sock)
     s.serialize(55, dtTypeCode=rtypes.DT_INT)
     s.finalize()
-    assert sock.recv(100) == hexd
-    sock.close()
+    try:
+        assert sock.recv(100) == hexd
+    finally:
+        sock.close()
 
 
 def test_parse_from_socket():
@@ -118,9 +120,11 @@ def test_parse_from_socket():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(("localhost", PseudoRServer.PORT))
     sock.send(binaryRExpressions.binaryRExpressions['"abc"'])
-    assert rparser.rparse(sock) == 'abc'
-    sock.close()
-    rs.close()
+    try:
+        assert rparser.rparse(sock) == 'abc'
+    finally:
+        sock.close()
+        rs.close()
 
 
 def test_parse_from_socket_cleanup_in_case_of_buggy_binary_data():
@@ -129,13 +133,15 @@ def test_parse_from_socket_cleanup_in_case_of_buggy_binary_data():
     # now connect to it:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(("localhost", PseudoRServer.PORT))
-    sock.send('\x01\x00\x99\x00\x50\x00\x00\x00')
+    sock.send(b'\x01\x00\x99\x00\x50\x00\x00\x00')
     py.test.raises(ValueError, rparser.rparse, sock)
     # Now try to read from socket, which should be empty. To avoid blocking
     # when reading non-available data set timeout to very small value:
-    sock.settimeout(0.1)
-    py.test.raises(socket.timeout, sock.recv, 100)
-    sock.close()
+    sock.settimeout(0.2)
+    try:
+        py.test.raises(socket.timeout, sock.recv, 100)
+    finally:
+        sock.close()
 
 ##############################################################
 
@@ -165,8 +171,6 @@ def rExprTester(rExpr, pyExpr, rBinExpr):
     @Param  pyExpr   <python expression>  The python expression from r2pyExpressions above
     @Param  rBinExpr <string>             rExpr translated by r into its binary (network) representation
     '''
-    qTypeCode = struct.unpack('b', rBinExpr[8])[0]
-    #
     v = rparser.rparse(rBinExpr, atomicArray=False)
     if isinstance(v, ndarray):
         compareArrays(v, pyExpr)
@@ -180,9 +184,6 @@ def rExprTester(rExpr, pyExpr, rBinExpr):
     assert rserializer.rSerializeResponse(v) == rBinExpr
 
 
-def hexString(aString):
-    'convert a binary string in its hexadecimal representation, like "\x00\x01..."'
-    return ''.join([r'\x%02x' % ord(c) for c in aString])
 
 def createBinaryRExpressions():
     '''
@@ -198,15 +199,14 @@ def createBinaryRExpressions():
     rProc = subprocess.Popen(['R', 'CMD', 'Rserve.dbg', '--no-save'], stdout=open('/dev/null'))
     # wait a moment until Rserve starts listening on RPORT
     time.sleep(1.0)
-    #import pdb;pdb.set_trace()
-    
+
     try:
         # open a socket connection to Rserve
         r = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         r.connect(('', RPORT))
         
         hdr = r.recv(1024)
-        assert hdr.startswith('Rsrv01') # make sure we are really connected with rserv
+        assert hdr.startswith(b'Rsrv01') # make sure we are really connected with rserv
         
         # Create the result file, and write some preliminaries as well as correct code for a dictionary
         # holding the results from calls to Rserve:
@@ -222,18 +222,18 @@ def createBinaryRExpressions():
             l = len(rExpr)
             # The data packet contains trailing padding zeros to be always a multiple of 4 in length:
             multi4Len = l + (4-divmod(l, 4)[1])
-            hdr = '\x03\x00\x00\x00' + struct.pack('<i', 4 + multi4Len) + 8*'\x00'
+            hdr = b'\x03\x00\x00\x00' + struct.pack('<i', 4 + multi4Len) + 8*b'\x00'
             # compute data:
             stringHeader = struct.pack('B', rtypes.DT_STRING) + struct.pack('<i', multi4Len)[:3]
-            data = stringHeader + rExpr + (multi4Len-l)*'\x00'
+            data = stringHeader + byteEncode(rExpr) + (multi4Len-l)*b'\x00'
             if DEBUG:
-                print 'For pyExpr %s sending call to R:\n%s' % (pyExpr, repr(hdr+data))
+                print('For pyExpr %s sending call to R:\n%s' % (pyExpr, repr(hdr+data)))
             r.send(hdr)
             r.send(data)
             time.sleep(0.1)
             binRExpr = r.recv(1024)
             if DEBUG:
-                print 'As result received:\n%s\n' % (repr(binRExpr))
+                print('As result received:\n%s\n' % (repr(binRExpr)))
             fp.write("    '%s': '%s',\n" % (rExpr, hexString(binRExpr)))
         fp.write("    }\n")
         r.close()
@@ -255,7 +255,6 @@ class PseudoRServer(threading.Thread):
         s.listen(1)
         conn, addr = s.accept()
         while 1:
-            #print 'PseudoServer waiting for data'
             data = conn.recv(1024)
             if not data:
                 break
@@ -271,9 +270,9 @@ if __name__ == '__main__':
     createBinaryRExpressions()
 else:
     try:
-        import binaryRExpressions
+        from . import binaryRExpressions
     except ImportError:
         # it seems like the autogenerated module is not there yet. Create it, and then import it:
-        print 'Cannot import binaryRExpressions, rebuilding them'
+        print('Cannot import binaryRExpressions, rebuilding them')
         createBinaryRExpressions()
-        import binaryRExpressions
+        from . import binaryRExpressions

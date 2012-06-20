@@ -1,28 +1,32 @@
 import socket, time, warnings
 ###
-import rtypes
-from rexceptions import RConnectionRefused, REvalError, PyRserveClosed
-from rserializer import rEval, rAssign
-from rparser import rparse
+from . import rtypes
+from .rexceptions import RConnectionRefused, REvalError, PyRserveClosed
+from .rserializer import rEval, rAssign
+from .rparser import rparse
 
 RSERVEPORT = 6311
 DEBUG = False
 
 
-def connect(host='', port=RSERVEPORT, atomicArray=False):
-    """Open a connection to a Rserve instance"""
+def connect(host='', port=RSERVEPORT, atomicArray=False, arrayOrder='C'):
+    """Open a connection to an Rserve instance
+    Params:
+    - host: provide hostname where Rserve runs, or leave as empty string to connect to localhost
+    - port: Rserve port number, defaults to 6311
+    - atomicArray: If True: when a result from an Rserve call is an array with a single element that single element
+                   is returned. Otherwise the array is returned unmodified. Default: True
+    - arrayOrder:  The order in which data in multi-dimensional arrays is returned.
+                   Provide 'C' for c-order, F for fortran. Default: 'C'
+    """
 #    if host in (None, ''):
 #        # On Win32 it seems that passing an empty string as 'localhost' does not work
 #        # So just to be sure provide the full local hostname if None or '' were passed.
 #        host = socket.gethostname()
     assert port is not None, 'port number must be given'
-    return RConnector(host, port, atomicArray)
+    assert arrayOrder in ('C', 'F'), 'array order must be either "C" for c-order or "F" for fortran order'
+    return RConnector(host, port, atomicArray, arrayOrder)
 
-
-def rconnect(host='', port=RSERVEPORT):
-    """Deprecated method - use connect() instead """
-    warnings.warn("pyRserve.rconnect() is deprecated, use pyRserve.connect() instead.", DeprecationWarning)
-    return connect(host=host, port=port)
 
 
 def checkIfClosed(func):
@@ -35,11 +39,12 @@ def checkIfClosed(func):
 
 
 class RConnector(object):
-    '@brief Provides a network connector to an Rserve process'
-    def __init__(self, host, port, atomicArray):
+    """Provide a network connector to an Rserve process"""
+    def __init__(self, host, port, atomicArray, arrayOrder):
         self.host = host
         self.port = port
         self.atomicArray = atomicArray
+        self.arrayOrder  = arrayOrder   # must be either 'C' or 'F' (for fortran)
         self.connect()
         self.r = RNameSpace(self)
         self.ref = RNameSpaceReference(self)
@@ -62,8 +67,8 @@ class RConnector(object):
         hdr = self.sock.recv(1024)
         self.__closed = False
         if DEBUG:
-            print 'received hdr %s from rserve' % hdr
-        assert hdr.startswith('Rsrv01') # make sure we are really connected with rserv
+            print('received hdr %s from rserve' % hdr)
+        assert hdr.startswith(b'Rsrv01') # make sure we are really connected with rserv
         # TODO: possibly also do version checking here to make sure we understand the protocol...
 
     @checkIfClosed
@@ -72,28 +77,21 @@ class RConnector(object):
         self.sock.close()
         self.__closed = True
         
-    @checkIfClosed
-    def __call__(self, aString):
-        warnings.warn("conn() is deprecated, use conn.r() instead.", DeprecationWarning)
-        return self.eval(aString)
-        
     def _reval(self, aString):
         rEval(aString, fp=self.sock)
         
     @checkIfClosed
     def eval(self, aString):
         '@brief Evaluate a string expression through Rserve and return the result transformed into python objects'
-        if type(aString) != str:
+        if not type(aString in rtypes.STRING_TYPES):
             raise TypeError('Only string evaluation is allowed')
         self._reval(aString)
         if DEBUG:
             # Read entire data into memory en block, it's easier to debug
             src = self._receive()
-            print 'Raw response:', repr(src)
-        else:
-            src = self.sock.makefile()
+            print('Raw response:', repr(src))
         try:
-            return rparse(src, atomicArray=self.atomicArray)
+            return rparse(self.sock, atomicArray=self.atomicArray, arrayOrder=self.arrayOrder)
         except REvalError:
             # R has reported an evaulation error, so let's obtain a descriptive explanation
             # about why the error has occurred. R allows to retrieve the error message
@@ -122,7 +120,7 @@ class RConnector(object):
         rAssign(name, o, self.sock)
         # Rserv sends an emtpy confirmation message, or error message in case of an error.
         # rparse() will raise an Exception in the latter case.
-        rparse(self.sock, atomicArray=self.atomicArray)
+        rparse(self.sock, atomicArray=self.atomicArray, arrayOrder=self.arrayOrder)
 
     @checkIfClosed
     def getRexp(self, name):
@@ -144,7 +142,7 @@ class RConnector(object):
             # variables). To avoid confusion for the users a check is applied here to make
             # sure that "args" only contains variable or function references (proxies) and
             # NOT values!
-            assert filter(lambda x:not isinstance(x, RBaseProxy), args) == (), \
+            assert [x for x in args if not isinstance(x, RBaseProxy)] == (), \
                    'Only references to variables or functions allowed for "rm()"'
         
         argNames = []
@@ -261,7 +259,7 @@ class RFuncProxy(RBaseProxy):
         return helpstring
 
     def help(self):
-        print self.__doc__
+        print(self.__doc__)
 
     def __getattr__(self, name):
         """Allow for nested name space calls, e.g. 't.test' """
@@ -285,7 +283,7 @@ if __name__ == '__main__':
     atexit.register(readline.write_history_file, histfile)
 
     conn = rconnect()
-    print '''"conn" is your handle to rserve. Type e.g. "conn('1')" for string evaluation.'''
+    print('''"conn" is your handle to rserve. Type e.g. "conn('1')" for string evaluation.''')
     #r('x<-1:20; y<-x*2; lm(y~x)')
     sc = open('../testData/test-script.R').read()
     v = conn(sc)
