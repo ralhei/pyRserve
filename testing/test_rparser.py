@@ -235,7 +235,7 @@ def test_tagged_lists():
     # test via call to ident function with single argument:
     assert repr(conn.r.ident(exp_res)) == repr(exp_res)   # do string comparison because of complex nested data!
 
-    # NOTE: The following fails in the rserializer:                     <<<<<<<--------- TODO!!
+    # NOTE: The following fails in the rserializer because of the missing tag of the 2nd element:  <<<<--------- TODO!!
     # conn.r.ident(TaggedList([("n","Fred"), 2.0, ("c_ages", 5.5)])
 
 ### Test more numpy arrays
@@ -243,10 +243,16 @@ def test_tagged_lists():
 
 def test_2d_array_c_order():
     """Arrays can be returned with data in C-order, or Fortran-order. C-order is the default, and used in this test"""
-    arr = numpy.array([[1,2,3], [3,5,6]])
+    arr = numpy.array([[1,2,3], [4,5,6]])
     res = conn.r.ident(arr)
     assert compareArrays(res, arr)
     assert res.shape == arr.shape
+
+    # create a 2d array directly in R and compare it again:
+    conn.r('arr = c(1, 2, 3, 4, 5, 6)')
+    conn.r('dim(arr) = c(2, 3)')
+    assert compareArrays(conn.r.arr, arr)
+
 
 def test_2d_array_fortran_order():
     """Arrays can be returned with data in C-order, or Fortran-order. fortran-order is checked here"""

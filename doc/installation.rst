@@ -36,17 +36,21 @@ If you have already downloaded the tar file then from your command line run::
 Note that you have to run at least version 0.6.6 to get the unittests to work. Older versions of Rserve have a severe
 implementation bug.
 
-Installing PyRserve
+Installing pyRserve
 -------------------
 
 For the following to work you have to have Python's `setuptools` 
 (from `<http://pypi.python.org/pypi/setuptools>`_ ) to be installed.
 
-PyRserve requires numpy to be installed (`easy_install numpy`). 
+pyRserve requires numpy to be installed (`easy_install numpy`).
 
 Then from your unix/windows command line run::
 
   easy_install pyRserve
+
+Note: pyRserve requires numpy. Easy_install should install numpy automatically if it's not there yet. However cases
+have been reported where `easy_install` fails doing this. The solution is to either install numpy manually, or use `pip`
+instead of `easy_install`. `pip` can be obtained from `<http://pypi.python.org/pypi/pip>`_.
 
 In the next section you'll find instructions how to use everything together.
   

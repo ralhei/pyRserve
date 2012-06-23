@@ -4,10 +4,14 @@ pyRserve
 What It Does
 -------------
 
-pyRerve is a library for connecting Python to an `R process <http://www.r-project.org/>`_ (an excellent statistic package) running `Rserve <http://www.rforge.net/Rserve/>`_ as a RPC connection gateway. Through such a connection variables can be get and set in R from Python, and also R-functions can be called remotely.  In contrast to `rpy or rpy2 <http://rpy.sourceforge.net/>`_ the R process does not have to run on the same machine, it can run on a remote machine and all variable  access and function calls will be delegated there through the network.
+pyRerve is a library for connecting Python to an `R process <http://www.r-project.org/>`_
+(an excellent statistic package) running `Rserve <http://www.rforge.net/Rserve/>`_ as a RPC connection gateway.
+Through such a connection variables can be get and set in R from Python, and also R-functions can be called remotely.
+In contrast to `rpy or rpy2 <http://rpy.sourceforge.net/>`_ the R process does not have to run on the same machine,
+it can run on a remote machine and all variable  access and function calls will be delegated there through the network.
 
-Furthermore - and this makes everything feel very pythonic - all data structures will automatically be converted from native 
-R to native Python types and back.
+Furthermore - and this makes everything feel very pythonic - all data structures will automatically be converted
+from native R to native Python types and back.
 
 
 Changes
@@ -16,13 +20,19 @@ Changes
     * support for Python3.x
     * Python versions <= 2.5 no more supported (due to Py3 support)
     * support for unicode strings in Python 2.x
-    * full support complex numbers
+    * full support complex numbers, partial support for 64bit integers and arrays
+    * suport for Fortran-style ordering of numpy arrays
     * elements of single-item arrays are now translated to native python data types
     * better unit test coverage
+    * usage of the deprecated conn(<eval-string> is no more possible
+    * pyRserve.rconnect() now also removed
+
 * V 0.5.2 (2011-12-02)
     * Fixed problem with 32bit integers being mistakenly rendered into 64bit integers on 64bit machines
+
 * V 0.5.1 (2011-11-22)
     * Fixed improper DeprecationWarning when evaluating R statements via conn.r(...)
+
 * V 0.5 (2011-10-03)
     * Renamed pyRserve.rconnect() to pyRserve.connect(). The former still works but shows a DeprecationWarning
     * String evaluation should now only be executed on the namespace directly, not on the connection object anymore.
@@ -57,18 +67,21 @@ The latest development has been tested with R 2.13.1 and Rserve 0.6.6.
 License
 -------
 
-pyRserve has been written by `Ralph Heinkel (www.ralph-heinkel.com) <http://www.ralph-heinkel.com/>`_ and is released under `MIT license <http://packages.python.org/pyRserve/license.html>`_.
+pyRserve has been written by `Ralph Heinkel (www.ralph-heinkel.com) <http://www.ralph-heinkel.com/>`_ and is
+released under `MIT license <http://packages.python.org/pyRserve/license.html>`_.
 
 
 Quick Installation
 -------------------
-Make sure that Numpy is installed.
+Make sure that Numpy is installed. Actually `easy_install pyRserve` should install numpy if it is missing.
 
 Then from your unix/windows command line run::
 
     easy_install pyRserve
    
-or download the tar.gz or zip package. After unpacking run `python setup.py install` from your command line. 
+or download the tar.gz or zip package. After unpacking run `python setup.py install` from your command line.
+
+Actually `easy_install pyRserve` should install numpy if it is missing. If it fails please use `pip` instead.
 
 Documentation
 ----------------
