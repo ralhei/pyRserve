@@ -78,6 +78,14 @@ class TaggedList(object):
 #    def __cmp__(self, other):
 #        return cmp(self.values, self.__cast(other))
     __hash__ = None # Mutable sequence, so not hashable
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
     
     def __contains__(self, item): 
         return item in self.values
@@ -285,20 +293,23 @@ class TaggedArray(AttrArray):
     def keys(self):
         return self.attr[:]
 
+    @classmethod
+    def new(cls, ndarray, tags):
+        """Factory method to create TaggedArray objects. Check the docs in TaggedArray for more information.
+        Usage:
+        l = TaggedArray.new(array([1, 2, 3, 4]), ['v1', 'v2', 'v3', 'v4'])
+        l[0]     # returns 1
+        l['v1']  # returns 1
+        l['v2']  # returns 2  (not 4 !)
+        l[3]     # returns 4
+        """
+        if len(tags) != len(ndarray):
+            raise ValueError('Number of keys must match size of array')
+        arr = ndarray.view(cls)
+        arr.attr = tags
+        return arr
+
 
 def asTaggedArray(ndarray, tags):
-    """Factory function to create TaggedArray objects. Check the docs in TaggedArray for more information.
+    return TaggedArray.new(ndarray, tags)
 
-    Usage:
-    l = asTaggedArray(array([1, 2, 3, 4]), ['v1', 'v2', 'v3', 'v4'])
-    l[0]     # returns 1
-    l['v1']  # returns 1
-    l['v2']  # returns 2  (not 4 !)
-    l[3]     # returns 4
-    """
-    if len(tags) != len(ndarray):
-        raise ValueError('Number of keys must match size of array')
-    arr = ndarray.view(TaggedArray)
-    arr.attr = tags
-    return arr
-    

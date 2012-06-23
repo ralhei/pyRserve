@@ -3,7 +3,7 @@ Serializer class to convert Python objects into a binary data stream for sending
 """
 __all__ = ['reval', 'rassign', 'rSerializeResponse']
 
-import struct, os, socket, io
+import struct, os, socket, io, sys, types
 ###
 import numpy
 ###
@@ -15,6 +15,11 @@ from .taggedContainers import TaggedList, TaggedArray
 # turn on DEBUG to see extra information about what the serializer is doing with your data
 DEBUG = 0
 
+if PY3:
+    NoneType = type(None)
+    long = int
+else:
+    NoneType = types.NoneType
 
 
 class RSerializer(object):
@@ -110,13 +115,19 @@ class RSerializer(object):
         try:
             s_func = self.serializeMap[rTypeHint]
         except KeyError:
-            raise RSerializationError('Serialization of type "%s" not implemented' % rTypeHint)
+            raise NotImplementedError('Serialization of "%s" not implemented' % rTypeHint)
         startPos = self._fp.tell()
         if DEBUG:
             print('Serializing expr %r with rTypeCode=%s using function %s' % (o, rTypeHint, s_func))
         s_func(self, o, rTypeCode=rTypeHint)
         # determine and return the length of actual R expression data:
         return self._fp.tell() - startPos
+
+    @fmap(NoneType, rtypes.XT_NULL)
+    def s_null(self, o, rTypeCode=rtypes.XT_NULL):
+        """Send Python's None to R, resulting in NULL there"""
+        # For NULL only the header needs to be written, there is no data body.
+        self._writeDataHeader(rtypes.XT_NULL, 4)
         
     @fmap(rtypes.XT_STR, rtypes.XT_SYMNAME)
     def s_string_or_symbol(self, o, rTypeCode=rtypes.XT_STR):
@@ -168,6 +179,13 @@ class RSerializer(object):
         @param o: numpy array or subclass (e.g. TaggedArray)
         @note: If o is multi-dimensional a tagged array is created. Also if o is of type TaggedArray.
         '''
+        if o.dtype in (numpy.int64, numpy.long):
+            if -sys.maxsize <= o.min() and o.max() <= sys.maxsize:
+                # even though this type of array is 'long' its values still fit into a normal int32 array. Good!
+                o = o.astype(numpy.int32)
+            else:
+                raise ValueError('Cannot serialize long integer arrays with values outside sys.maxsize range')
+
         startPos = self._fp.tell()
         rTypeCode = self.__s_xt_array_numeric_tag_data(o)
 
@@ -202,14 +220,27 @@ class RSerializer(object):
         self._writeDataHeader(rTypeCode, length)
         self._fp.seek(0, os.SEEK_END)
 
-    @fmap(int, float, numpy.float64, numpy.int32)
+    @fmap(int, numpy.int32, long, numpy.int64, numpy.long, float, numpy.float64,
+          complex, numpy.complex, numpy.complex64, numpy.complex128)
     def s_atom_to_xt_array_numeric(self, o, rTypeCode=None):
-        'Render single numeric items into their corresponding array counterpart in r'
+        """Render single numeric items into their corresponding array counterpart in R"""
+        if isinstance(o, (long, numpy.int64, numpy.long)):
+            if -sys.maxsize <= o <= sys.maxsize:
+                # even though this type of data is 'long' it still fits into a normal integer. Good!
+                o = int(o)
+            else:
+                raise ValueError('Cannot serialize long integers larger than sys.maxsize (2**31-1)')
+
         rTypeCode  = rtypes.atom2ArrMap[type(o)]
         structCode = '<'+rtypes.structMap[type(o)]
         length = struct.calcsize(structCode)
-        self._writeDataHeader(rTypeCode, length)
-        self._fp.write(struct.pack(structCode, o))
+        if type(o) is complex:
+            self._writeDataHeader(rTypeCode, length*2)
+            self._fp.write(struct.pack(structCode, o.real))
+            self._fp.write(struct.pack(structCode, o.imag))
+        else:
+            self._writeDataHeader(rTypeCode, length)
+            self._fp.write(struct.pack(structCode, o))
 
     @fmap(bool, numpy.bool_)
     def s_atom_to_xt_array_boolean(self, o, rTypeCode=None):

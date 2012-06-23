@@ -8,3 +8,6 @@ Important TODOs:
     - rserializer.s_xt_array_double()
     - rparser.xt_array_numeric()
 
+
+- The rserializer fails on objects like TaggedList([("n","Fred"), 2.0, ("c_ages", 5.5)])
+  where the 2nd item has no tag name.

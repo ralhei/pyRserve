@@ -5,7 +5,7 @@ from .misc import FunctionMapper, byteEncode, stringEncode, PY3
 from .rexceptions import RResponseError, REvalError
 from .taggedContainers import TaggedList, asTaggedArray, asAttrArray
 
-DEBUG = False
+DEBUG = 0
 
 class Lexeme(list):
     def __init__(self, rTypeCode, length, hasAttr, lexpos):
@@ -345,8 +345,20 @@ class RParser(object):
         if data.__class__ == numpy.ndarray:
             # this does not apply for arrays with attributes (__class__ would be TaggedArray)!
             if len(data) == 1 and not self.atomicArray:
-                # if data is a plain numpy array, and has only one element, just extract and return this
+                # if data is a plain numpy array, and has only one element, just extract and return this.
+                # For convenience reasons type-convert it into a native Python data type:
                 data = data[0]
+                if isinstance(data, (numpy.float, numpy.float64)):
+                    data = float(data)    # convert into native python float
+                elif isinstance(data, (numpy.int, numpy.int32, numpy.int64)):
+                    data = int(data)      # convert into native int or long, depending on value
+                elif isinstance(data, (numpy.complex, numpy.complex64, numpy.complex128)):
+                    data = complex(data)  # convert into native python complex number
+                elif isinstance(data, (numpy.string_, numpy.str_)):
+                    data = str(data)      # convert into native python string
+                elif isinstance(data, (numpy.bool_, numpy.bool, numpy.bool8)):
+                    data = bool(data)     # convert into native python string
+
             elif len(data.shape) > 1 and self.arrayOrder == 'F':
                 # Convert array into fortran-style ordering.
                 #
@@ -364,7 +376,7 @@ class RParser(object):
                 #
                 # By default all arrays are at 'C'-style at this point. To convert it into fortran style
                 # the reshape() function has to be applied. To make this work the array must be made 1-d first!!!
-                shape = data.shape                     # save the shape information
+                shape = data.shape[::-1]               # save the shape information, just backwards
                 data.shape = data.size                 # make it one-dimensional
                 data = data.reshape(shape, order='F')  # now reshape, using the saved shape info, into fortran order
         return data
@@ -400,7 +412,8 @@ class RParser(object):
         A vector is e.g. return when sending "list('abc','def')" to R. It can contain mixed
         types of data items.
         The binary representation of an XT_VECTOR is weird: a vector contains unknown number 
-        of items, with possibly variable length. 
+        of items, with possibly variable length. Only the number of bytes of the data of a vector
+        is known in advance.
         The end of this REXP can only be detected by keeping track of how many bytes
         have been consumed (lexeme.length!) until the end of the REXP has been reached.
         '''
@@ -414,6 +427,9 @@ class RParser(object):
             data.append(self._postprocessData(self._parseExpr().data))
             
         if lexeme.hasAttr and lexeme.attrTypeCode == XT_LIST_TAG:
+            # The vector is actually a tagge list, i.e. a list which allows to access its items
+            # by name (like in a dictionary). However items are ordered, and there is not
+            # necessarily a name available for every item.
             for tag, value in lexeme.attr:
                 if tag == 'names':
                     # the vector has named items
@@ -425,7 +441,7 @@ class RParser(object):
 
     @fmap(XT_LIST_TAG, XT_LANG_TAG)
     def xt_list_tag(self, lexeme):
-        # a xt_list_tag usually occurrs as an attribute of a vector or list (like for a tagged list)
+        # a xt_list_tag usually occurs as an attribute of a vector or list (like for a tagged list)
         finalLexpos = self.lexer.lexpos + lexeme.dataLength
         r = []
         while self.lexer.lexpos < finalLexpos:
@@ -436,13 +452,13 @@ class RParser(object):
 
     @fmap(XT_CLOS)
     def xt_closure(self, lexeme):
-        # read entire data provided for closure even though we don't know what to do with
-        # it on the Python side ;-)
+        # read entire data provided for closure (a R code object) even though we don't know
+        # what to do with it on the Python side ;-)
         aList1 = self._parseExpr().data
         aList2 = self._parseExpr().data
         # Some closures seem to provide their sourcecode in an attrLexeme, but some don't.
-        #return Closure(lexeme.attrLexeme.data[0][1])
-        # So for now let's just return the entire parse tree in a Closure class.
+        # return Closure(lexeme.attrLexeme.data[0][1])
+        # So for now let's just return the entire parse tree in a Closure instance.
         return Closure(lexeme, aList1, aList2)
 
 

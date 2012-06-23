@@ -1,7 +1,7 @@
-
+import sys
 # unittests for classes from taggedContainers
-
-from .taggedContainers import TaggedList
+sys.path.insert(0, '..')
+from pyRserve.taggedContainers import TaggedList
 
 def test_TaggedList_init_emtpy():
     t = TaggedList()

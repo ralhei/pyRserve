@@ -68,12 +68,13 @@ class RConnector(object):
         self.__closed = False
         if DEBUG:
             print('received hdr %s from rserve' % hdr)
-        assert hdr.startswith(b'Rsrv01') # make sure we are really connected with rserv
+        # make sure we are really connected with rserv
+        assert hdr.startswith(b'Rsrv01'), 'Protocol error with Rserv, obtained invalid header string'
         # TODO: possibly also do version checking here to make sure we understand the protocol...
 
     @checkIfClosed
     def close(self):
-        '@brief Close network connection to rserve'
+        """Close network connection to rserve"""
         self.sock.close()
         self.__closed = True
         
@@ -81,17 +82,19 @@ class RConnector(object):
         rEval(aString, fp=self.sock)
         
     @checkIfClosed
-    def eval(self, aString):
+    def eval(self, aString, **kwargs):
         '@brief Evaluate a string expression through Rserve and return the result transformed into python objects'
         if not type(aString in rtypes.STRING_TYPES):
             raise TypeError('Only string evaluation is allowed')
         self._reval(aString)
         if DEBUG:
-            # Read entire data into memory en block, it's easier to debug
+            # Read entire data into memory en bloque, it's easier to debug
             src = self._receive()
             print('Raw response:', repr(src))
+        atomicArray = kwargs.get('atomicArray', self.atomicArray)
+        arrayOrder = kwargs.get('arrayOrder', self.arrayOrder)
         try:
-            return rparse(self.sock, atomicArray=self.atomicArray, arrayOrder=self.arrayOrder)
+            return rparse(self.sock, atomicArray=atomicArray, arrayOrder=arrayOrder)
         except REvalError:
             # R has reported an evaulation error, so let's obtain a descriptive explanation
             # about why the error has occurred. R allows to retrieve the error message
@@ -198,8 +201,8 @@ class RNameSpace(object):
         else:
             return self._rconn.getRexp(name)
 
-    def __call__(self, aString):
-        return self._rconn.eval(aString)
+    def __call__(self, aString, **kwargs):
+        return self._rconn.eval(aString, **kwargs)
 
 
 class RNameSpaceReference(object):
@@ -263,6 +266,10 @@ class RFuncProxy(RBaseProxy):
 
     def __getattr__(self, name):
         """Allow for nested name space calls, e.g. 't.test' """
+        if name == '__name__':
+            # this is useful for py.test which does some code inspection during runtime
+            return self._name
+
         concatName = "%s.%s" % (self._name, name)
         try:
             isFunction = self._rconn.isFunction(concatName)
@@ -282,16 +289,16 @@ if __name__ == '__main__':
         pass
     atexit.register(readline.write_history_file, histfile)
 
-    conn = rconnect()
+    conn = connect()
     print('''"conn" is your handle to rserve. Type e.g. "conn('1')" for string evaluation.''')
     #r('x<-1:20; y<-x*2; lm(y~x)')
     sc = open('../testData/test-script.R').read()
-    v = conn(sc)
+    v = conn.r(sc)
     open('r-test-png.png', 'w').write(v[3])
     conn.r.v = 'abc'
-    conn('func0 <- function() { 3 }')
-    conn('func1 <- function(a1) { a1 }')
-    conn('func2 <- function(a1, a2) { list(a1, a2) }')
-    conn('funcKW <- function(a1=1, a2=4) { list(a1, a2) }')
-    conn('squared<-function(t) t^2')
+    conn.r('func0 <- function() { 3 }')
+    conn.r('func1 <- function(a1) { a1 }')
+    conn.r('func2 <- function(a1, a2) { list(a1, a2) }')
+    conn.r('funcKW <- function(a1=1, a2=4) { list(a1, a2) }')
+    conn.r('squared<-function(t) t^2')
 

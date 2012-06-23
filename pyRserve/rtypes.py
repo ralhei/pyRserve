@@ -229,6 +229,7 @@ structMap = {
     XT_DOUBLE:        'd',     # double (float64)
     float:            'd',
     numpy.double:     'd',
+    complex:          'd',
     numpy.complex:    'd',
     numpy.complex128: 'd',
     }
@@ -257,6 +258,8 @@ for k, v in list(numpyMap.items()):
 # some manual additions for numpy variants:
 numpyMap[numpy.complex128] = XT_ARRAY_CPLX
 numpyMap[numpy.int32]      = XT_ARRAY_INT
+numpyMap[numpy.int64]      = XT_ARRAY_INT
+numpyMap[numpy.long]       = XT_ARRAY_INT
 numpyMap[numpy.str_]       = XT_ARRAY_STR
 
 
