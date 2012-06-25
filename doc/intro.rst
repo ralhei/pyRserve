@@ -13,10 +13,20 @@ it can run on a remote machine and all variable  access and function calls will 
 Furthermore - and this makes everything feel very pythonic - all data structures will automatically be converted
 from native R to native Python types and back.
 
+Why is pyRserve still 'beta'?
+------------------------------------------------------
+
+The question behind that usually is: Can pyRserve already be used for real work?
+
+Well, pyRserve has been used at various companies in production mode for over two years now. So it is pretty stable
+and many things work as they should.
+
+However it is not complete yet - there are a few loose ends which should still be improved. Until then I still
+consider it `beta`-status.
 
 Changes
 ----------------
-* V 0.6.0 (2012-06-22)
+* V 0.6.0 (2012-06-25)
     * support for Python3.x
     * Python versions <= 2.5 no more supported (due to Py3 support)
     * support for unicode strings in Python 2.x
@@ -24,7 +34,7 @@ Changes
     * suport for Fortran-style ordering of numpy arrays
     * elements of single-item arrays are now translated to native python data types
     * better unit test coverage
-    * usage of the deprecated conn(<eval-string> is no more possible
+    * usage of the deprecated conn(<eval-string>) is no more possible
     * pyRserve.rconnect() now also removed
 
 * V 0.5.2 (2011-12-02)
@@ -73,15 +83,15 @@ released under `MIT license <http://packages.python.org/pyRserve/license.html>`_
 
 Quick Installation
 -------------------
-Make sure that Numpy is installed. Actually `easy_install pyRserve` should install numpy if it is missing.
+Make sure that Numpy is installed. Actually ``easy_install pyRserve`` should install numpy if it is missing.
 
 Then from your unix/windows command line run::
 
     easy_install pyRserve
    
-or download the tar.gz or zip package. After unpacking run `python setup.py install` from your command line.
+or download the tar.gz or zip package. After unpacking run ``python setup.py install`` from your command line.
 
-Actually `easy_install pyRserve` should install numpy if it is missing. If it fails please use `pip` instead.
+Actually ``easy_install pyRserve`` should install numpy if it is missing. If it fails please use ``pip`` instead.
 
 Documentation
 ----------------

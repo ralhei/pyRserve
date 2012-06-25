@@ -102,7 +102,7 @@ class Lexer(object):
         a socket is removed to avoid data pollution with further parsing attempts.
         This should only be called after self.readHeader() has been executed.
         '''
-        if not type(self.fp) == socket.socket:  #hasattr(self.fp, '_sock'):
+        if type(self.fp) != socket.socket:  #hasattr(self.fp, '_sock'):
             # probably not a socket. Nothing to do here.
             return
         self.fp.setblocking(0)
@@ -118,15 +118,21 @@ class Lexer(object):
         '''
         Reads number of bytes from input data source (file or socket). If end of data is
         reached it raises EndOfDataError().
+
+        Sockets might not return all requested data at once, so use an io buffer to collect all data needed in a loop.
         '''
-        if length==0:
-            # this can happen if an empty string is read from the data source
-            data = ''
-        else:
-            self.lexpos += length
-            data = self._read(length)
-            if len(data) == 0:
+        bytesToRead = length
+        buf = io.BytesIO(b'')
+        while bytesToRead > 0:
+            fragment = self._read(bytesToRead)
+            lenFrag = len(fragment)
+            if lenFrag == 0:
                 raise EndOfDataError()
+            buf.write(fragment)
+            bytesToRead -= lenFrag
+
+        self.lexpos += length
+        data = buf.getvalue()
         return data
 
     def __unpack(self, tCode, num=None):
@@ -334,8 +340,13 @@ class RParser(object):
         lexpos = self.lexer.lexpos
         data = self.lexer.nextExprData(lexeme)
         if DEBUG:
-            print('%s    data-lexpos: %d, data-length: %d' % (self.__ind, lexpos, lexeme.dataLength))
+            print('%s    data-lexpos: %d, data-length: %d bytes' % (self.__ind, lexpos, lexeme.dataLength))
             print('%s    data: %s' % (self.__ind, repr(data)))
+            try:
+                dataLen = len(data)
+                print('%s    length: %d' % (self.__ind, dataLen))
+            except TypeError:
+                pass
         return data
         
     def _postprocessData(self, data):

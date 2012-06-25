@@ -92,7 +92,7 @@ Then the called above would return a `numpy` array:
 
   >>> conn.atomicArray
   True
-  >>> conn.atomicArray = False
+  >>> conn.atomicArray = False  # change value
 
 More expression evaluation
 ------------------------------
@@ -421,8 +421,9 @@ it back and forth. Here the "reference" namespace called ``ref`` comes into play
    >>> conn.ref.arr
    <RVarProxy to variable "arr">
 
-Through `conn.ref` it is possible to only reference a variable (or a function) in the R namespace without actually
-bringing it over to Python. Such a reference can then be passed as an argument to every function called
+Through ``conn.ref`` it is possible to only reference a variable (or a function) in the R namespace without actually
+bringing it over to P
+. Such a reference can then be passed as an argument to every function called
 from ``conn.r``. So the proper way to make the call above is::
 
   >>> conn.r.arr = numpy.array([1, 2, 3])
@@ -445,65 +446,4 @@ so ``conn.r.<function>`` is the same as ``conn.ref.<function>``.
 
 Using reference to R variables is indeed absolutely necessary for variable content which is not transferable into
 Python, like special types of R classes, complex data frames etc.
-
-
-
-Handling complex results from R functions
----------------------------------------------
-
-Some functions in R (especially those doing statistical calculations) return quite complex result objects.
-The T-test is such an example. In R you would see something like this (please ignore the dummy values to it)::
-
-    > t.test(c(1,2,3,1),c(1,6,7,8))
-    
-            Welch Two Sample t-test
-    
-    data:  c(1, 2, 3, 1) and c(1, 6, 7, 8)
-    t = -2.3054, df = 3.564, p-value = 0.09053
-    alternative hypothesis: true difference in means is not equal to 0
-    95 percent confidence interval:
-     -8.4926941  0.9926941
-    sample estimates:
-    mean of x mean of y
-         1.75      5.50
-
-This is what you would get to see directly in your R shell. 
-
-Now if the test function is called from pyRserve the result has to somehow be translated into Python objects.
-Here is what you would expect (note that the result has been manually reformatted to be easier to read in this example)::
-
-    >>> res = conn.r('t.test(c(1,2,3,1),c(1,6,7,8))')
-    >>> res
-    <TaggedList(statistic=TaggedArray([-2.30541984]), 
-     parameter=TaggedArray([ 3.56389482], tags=['df']), 
-     p.value=0.090532640733331213, 
-     conf.int=TaggedArray([-8.49269413,  0.99269413], attr={'conf.level': array([ 0.95])}),
-     estimate=TaggedArray([ 1.75,  5.5 ], tags=['mean of x', 'mean of y']), 
-     null.value=TaggedArray([ 0.], tags=['difference in means']), 
-     alternative='two.sided', 
-     method='Welch Two Sample t-test', 
-     data.name='c(1, 2, 3, 1) and c(1, 6, 7, 8)')>
-
-The result is again an instance of a `TaggedList`. As explained above a TaggedList is a Python list with items that
-can additionally be accessed via key-words (like in a Python dictionary). However the order is maintained, and keys
-don't have to be unique (in which case it would only return the first item of the list assigned to that key).
-
-So to access the confidence interval and its confidence level from the t-test above you would type in Python::
-
-    >>> res['conf.int'].attr['conf.level']
-    array([ 0.95])
-
-In the `res` result data structure above there are also objects of a container called `TaggedArray`.
-An `TaggedArray` is a normal Numpy-Array with an additional attribute `attr`, a dictionary that holds further
-information provided by R for this data item. In this case is is the confidence level (0.95) for the given
-confidence interval.
-
-A `TaggedArray` basically behaves like a `TaggedList`, except that the underlying container is a Numpy array
-instead of a Python list. So to access the second item of the `TaggedList` called `estimate` the following two
-commands are equivalent::
-
-    >>> res['estimate'][1]
-    5.5
-    >>> res['estimate']['mean of y']
-    5.5
 
