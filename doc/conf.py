@@ -12,7 +12,7 @@
 # serve to show the default.
 
 import sys, os
-sys.path.append('..')
+sys.path.insert(0, '..')
 from pyRserve import __version__
 
 # If extensions (or modules to document with autodoc) are in another directory,

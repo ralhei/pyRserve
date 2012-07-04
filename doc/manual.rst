@@ -1,16 +1,25 @@
 pyRserve manual
 ===============
 
+This manual is written in sort of a `walk-through`-style. All examples can be tried out on the Python
+command line as you read through it. 
+
 Setting up a connection to Rserve
----------------------------------
+------------------------------------
 
 First of all startup Rserve if it is not yet running::
 
   $ R CMD Rserve
 
 If you started it on your local machine (i.e. ``localhost``) without any extra options Rserve should be listening on
-port 6311 (its default).
+port 6311 (its default). R puts itself into daemon mode, meaning that your shell comes back, and you have no way to
+shutdown R via ``ctrl-C`` (you need to call ``kill`` with it's process id). However ``Rserve`` can be started in 
+debug mode during development. In this mode it'll print messages to stdout helping you to see whether your 
+connection works etc. To do so `Rserve` needs to be started like::
 
+  $ R CMD Rserve.dbg
+
+Now we can try to connect to it.
 From the python interpreter import the pyRserve package and by omitting any arguments to the ``connect()`` function
 setup the connection to your locally running ``Rserve``::
 
@@ -56,7 +65,7 @@ To check the status of the connection use::
 The R namespace
 -------------------------
 
-The Rserve connector ``conn`` created above provides an attribute called "``r``" which gives you direct access to the
+The Rserve connector ``conn`` created above provides an attribute called "``r``" which gives direct access to the
 namespace of the R connection. Each Rserve connection has its private namespace which is lost after the connection
 is closed (if you don't save it).
 
@@ -66,15 +75,15 @@ The following sections explain how to use the namespace in various ways.
 String evaluation in R
 -------------------------------
 
-Having established a connection to Rserve you can run the first commands on it. A valid R command can be executed
-by making a call  on the R name space, providing a string as argument::
+Having established a connection to Rserve you can run the first commands on it. A valid R command can be executed 
+by making a call to the R name space, providing a string as argument which contains valid R syntax::
 
   >>> conn.r('3 + 5')
   8.0
 
-In this example the string ``"3 + 5"`` will be sent to the remote side and evaluated by R. The result is then
+In this example the string ``"3 + 5"`` will be sent to the remote side and evaluated by the R interpreter. The result is then
 delivered back into a native Python object, a floating point number in this case. As an R expert you are
-probably aware of the fact that R uses vectors for all numbers internally by default. But why did we received
+probably aware of the fact that R uses vectors for all numbers internally by default. But why did we receive
 a single floating point number? The reason is that pyRserve looks at arrays coming from Rserve and converts
 arrays with only one single item into an atomic value. This behaviour is for convenience reasons only.
 To override this behaviour (i.e. to always receive arrays with only one element) open the connection to
@@ -171,9 +180,12 @@ Furthermore the following containers are supported:
 * lists
 * numpy arrays
 * TaggedList
+* AttrArray
 * TaggedArray
 
-Lists can be nested arbitrarily, containing other lists, numbers, or arrays.
+Lists can be nested arbitrarily, containing other lists, numbers, or arrays. ``TaggedList``, ``AttrArray``, and 
+``TaggedArray`` are 
+special containers to handle very R-specific result types. They will be explained further down in the manual.
 
 The following example shows how to assign a python list with mixed data types to an R variable called ``aList``,
 and then to retrieve it again::
@@ -241,91 +253,10 @@ Examples:
          [3, 6]])
 
 
-TaggedLists
---------------
+Calling functions in R
+------------------------
 
-A special type of container in R is a so called "TaggedList". In such an object items can be accessed in two ways
-as shown here (this is now pure R code)::
-
-  > t <- list(husband="otto", wife="erna", "5th avenue")
-  > t[1]
-  $husband
-  [1] "otto"
-
-  > t['husband']
-  $husband
-  [1] "otto"
-
-So items in the list can be either accessed via their index position or through their "tag". Please note that the
-third argument ("5th avenue") is not tagged, so it can only be accessed via its index number, i.e. ``t[3]``
-(indexing in R starts at 1 and not at zero as in Python!).
-
-There is no direct match to any standard Python construct for a ``TaggedList``. Python dictionaries do not preserve
-their elements' order and also don't allow for missing keys (which is why an OrderDict also doesn't help).
-NamedTuples on the other side would do the job but don't allow items to be appended or deleted since they are immutual.
-
-The solution was to provide a special class in Python which is called ``TaggedList``. When accessing the
-list ``t`` from the example above you'll obtain an instance of a TaggedList in Python::
-
-  >>> t = conn.r('t <- list(husband="otto", wife="erna", "5th avenue")')
-  >>> t
-  TaggedList(husband='otto', wife='erna', '5th avenue')
-
-This ``TaggedList`` instance can be accessed in the same way as its R pendant, except for the fact the indexing is
-starting at zero in the usual Pythonic way::
-
-  >>> t[0]
-  'otto'
-  >>> t['husband']
-  'otto'
-  >>> t[2]
-  '5th avenue'
-
-To retrieve its data suitable for instantiating another ``TaggedList`` on the Python side get its data as a list of
-tuples. This also demonstrates how a ``TaggedList`` is created::
-
-  >>> from pyRserve import TaggedList
-  >>> t.astuples
-  [('husband', 'otto'), ('wife', 'erna'), (None, '5th avenue')]
-  >>> new_tagged_list = TaggedList(t.astuples)
-
-
-TaggedArrays
---------------
-The second special data type provided by pyRserve is the so called ``TaggedArray``. It provides basically the same
-features as ``TaggedList`` above, however the underlying data type is a numpy-Array. In fact, a TaggedArray is a direct
-subclass of ``numpy.ndarray``, enhanced with some new features like accessing array cells by name as in ``TaggedList``.
-
-For the moment ``TaggedArray``s only make real sense if they are 1-dimensional, so please do not change its shape. The
-results would not really be predictable.
-
-To create a ``TaggedArray`` on the R side and transfer it to Python type:
-
-  >>> res = conn.r('c(a=1.,b=2.,3.)')
-  >>> res
-  TaggedArray([ 1.,  2.,  3.], key=['a', 'b', ''])
-  >>> res[1]
-  2.0
-  >>> res['b']
-  2.0
-
-The third element in the array did not obtain a name on the R side, so it is represented by an empty string in
-the ``TaggedArray`` object.
-
-Although ``TaggedArray``s are normal numpy arrays they loose their tags when further processed in Python, but still
-present themselves (via ``__repr__``) as ``TaggedArray``. This is a current flaw in their implementation.
-
-To create a ``TaggedArray`` directly in Python there is a construction function ``new()`` which takes a normal
-1-d numpy array as the first argument and a list of tags as the second. Both arguments must match in their size.
-
-  >>> arr = TaggedArray.new( numpy.array([1, 2, 3]), ['a', 'b', ''] )
-  >>> arr
-  TaggedArray([1, 2, 3], key=['a', 'b', ''])
-
-
-
-Calling functions
----------------------
+Functions defined in R can be called as if they were a Python methods, declared in the namespace of R.
 
 Before the examples below are usable we need to define a couple of very simple functions within the R namespace:
 ``func0()`` accepts no parameters and returns a fixed string, ``func1()`` takes exactly one parameter and
@@ -375,7 +306,9 @@ Of course this only works for functions which provide documentation. For all oth
 Applying an R function as argument to another function
 ---------------------------------------------------------
 
-A typical application in R is to apply a vector to a function, especially via ``sapply`` and its brothers.
+A typical application in R is to apply a vector to a function, especially via ``sapply`` and its brothers (or sisters, 
+depending how how one sees them).
+
 Fortunately this is as easy as you would expect::
 
   >>> conn.r('double <-- function(x) { x*2 }')
@@ -383,7 +316,6 @@ Fortunately this is as easy as you would expect::
   array([ 2.,  4.,  6.])
 
 Here a Python array and a function defined in R are provided as arguments to the R function ``sapply``.
-
 
 Of course the following attempt to provide a Python function as an argument into R makes no sense::
 
@@ -422,8 +354,7 @@ it back and forth. Here the "reference" namespace called ``ref`` comes into play
    <RVarProxy to variable "arr">
 
 Through ``conn.ref`` it is possible to only reference a variable (or a function) in the R namespace without actually
-bringing it over to P
-. Such a reference can then be passed as an argument to every function called
+bringing it over to Python. Such a reference can then be passed as an argument to every function called
 from ``conn.r``. So the proper way to make the call above is::
 
   >>> conn.r.arr = numpy.array([1, 2, 3])
@@ -446,4 +377,198 @@ so ``conn.r.<function>`` is the same as ``conn.ref.<function>``.
 
 Using reference to R variables is indeed absolutely necessary for variable content which is not transferable into
 Python, like special types of R classes, complex data frames etc.
+
+
+Handling complex result objects from R functions
+---------------------------------------------------
+
+Some functions in R (especially those doing statistical calculations) return quite complex result objects. 
+
+The T-test is such an example. In the R shell you would see something like this (please ignore the silly values 
+applied to the t test)::
+
+   > t.test(c(1,2,3,1),c(1,6,7,8))
+
+        Welch Two Sample t-test
+
+   data:  c(1, 2, 3, 1) and c(1, 6, 7, 8)
+   t = -2.3054, df = 3.564, p-value = 0.09053
+   alternative hypothesis: true difference in means is not equal to 0
+   95 percent confidence interval:
+    -8.4926941  0.9926941
+   sample estimates:
+   mean of x mean of y
+        1.75      5.50
+
+This is what you would get to see directly in your R shell.
+
+Now, how would this convoluted result be transferred into Python objects? For this to be possible
+pyRserve has defined three special classes that allow for a mapping from R to Python objects. These classes
+are explained the the following sections. Afterwards - with that knowledge - we have a final look at the result
+of the t-test again.
+
+
+TaggedLists
+~~~~~~~~~~~~~~~~
+
+The first special type of container is called "TaggedList". It reflects a list-type object in R where 
+items can be accessed in two ways as shown here (this is now pure R code)::
+
+  > t <- list(husband="otto", wife="erna", "5th avenue")
+  > t[1]
+  $husband
+  [1] "otto"
+
+  > t['husband']
+  $husband
+  [1] "otto"
+
+So items in the list can be either accessed via their index position, or through their "tag". Please note that the
+third list item ("5th avenue") is not tagged, so it can only be accessed via its index number, i.e. ``t[3]``
+(indexing in R starts at 1 and not at zero as in Python!).
+
+There is no direct match to any standard Python construct for a ``TaggedList``. Python dictionaries do not preserve
+their elements' order and also don't allow for missing keys (which is why an OrderDict also doesn't help).
+NamedTuples on the other side would do the job but don't allow items to be appended or deleted since they are 
+immutable.
+
+The solution was to provide a special class in Python which is called ``TaggedList``. When accessing the
+list ``t`` from the example above you'll obtain an instance of a TaggedList in Python::
+
+  >>> t = conn.r('list(husband="otto", wife="erna", "5th avenue")')
+  >>> t
+  TaggedList(husband='otto', wife='erna', '5th avenue')
+
+This ``TaggedList`` instance can be accessed in the same way as its R pendant, except for the fact the indexing is
+starting at zero in the usual Pythonic way::
+
+  >>> t[0]
+  'otto'
+  >>> t['husband']
+  'otto'
+  >>> t[2]
+  '5th avenue'
+
+To retrieve its data suitable for instantiating another ``TaggedList`` on the Python side get its data as a list of
+tuples. This also demonstrates how a ``TaggedList`` can be created directly in Python::
+
+  >>> from pyRserve import TaggedList
+  >>> t.astuples
+  [('husband', 'otto'), ('wife', 'erna'), (None, '5th avenue')]
+  >>> new_tagged_list = TaggedList(t.astuples)
+
+.. NOTE::
+   ``TaggedList`` does not provide the full list API that one would expect, some methods are just to entirely
+   implemented yet. However it is useful enough to retrieve all information obtained out of a R result object.
+
+
+AttrArrays
+~~~~~~~~~~~~~~~~~
+
+An ``AttrArray`` is simply an normal numpy array, with an additional dictionary attribute called ``attr``. 
+This dicionary is used to store meta data associated to an array retrieved from R. 
+
+Let's create such an ``AttrArray`` in R, and transfer it into to the Python side::
+
+   >>> conn.r("t <- c(-8.49, 0.99)")
+   >>> conn.r("attributes(t) <- list(conf.level=0.95)")
+   >>> conn.r.t
+   AttrArray([-8.49, 0.99], attr={'conf.level': array([ 0.95])})
+
+To create such an array from Python in R is also possible via::
+
+   >>> from pyRserve import AttrArray
+   >>> conn.r.t = AttrArray.new([-8.49, 0.99], {'conf.level': numpy.array([ 0.95])})
+
+Instead of a list argument the ``new`` function also accepts a numpy array as well::
+
+   >>> conn.r.t = AttrArray.new(numpy.array([-8.49, 0.99]), {'conf.level': numpy.array([ 0.95])})
+
+
+TaggedArrays
+~~~~~~~~~~~~~~~~
+
+The third special data type provided by pyRserve is the so called ``TaggedArray``. It provides basically the same
+features as ``TaggedList`` above, however the underlying data type is a numpy-Array instead of a Python list. 
+In fact, a TaggedArray is a direct subclass of ``numpy.ndarray``, enhanced with some new features 
+like accessing array cells by name as in ``TaggedList``.
+
+For the moment ``TaggedArrays`` only make real sense if they are 1-dimensional, so please do not change 
+its shape. The results would not really be predictable.
+
+To create a ``TaggedArray`` on the R side and transfer it to Python type:
+
+  >>> res = conn.r('c(a=1.,b=2.,3.)')
+  >>> res
+  TaggedArray([ 1.,  2.,  3.], key=['a', 'b', ''])
+  >>> res[1]
+  2.0
+  >>> res['b']
+  2.0
+
+The third element in the array did not obtain a name on the R side, so it is represented by an empty string in
+the ``TaggedArray`` object.
+
+Although ``TaggedArray``s are normal numpy arrays they loose their tags when further processed in Python, but still
+present themselves (via ``__repr__``) as ``TaggedArray``. This is a current flaw in their implementation.
+
+To create a ``TaggedArray`` directly in Python there is a constructor function ``new()`` which takes a normal
+1-d numpy array as the first argument and a list of tags as the second. Both arguments must match in their size::
+
+  >>> from pyRserve import TaggedArray
+  >>> arr = TaggedArray.new(numpy.array([1, 2, 3]), ['a', 'b', ''])
+  >>> arr
+  TaggedArray([1, 2, 3], key=['a', 'b', ''])
+
+
+Back to the t-test example
+--------------------------------
+
+After ``TaggedList`` and ``TaggedArray`` have been introduced we can now go back to the t-test mentioned
+before. Let's make the same call to the test function, this time just from the Python side, and then
+look at the result. Again there are two ways to call it, one via string evaluation by the R interpreter,
+one by directly providing native Python parameters.
+So::
+
+   >>> res = conn.r('t.test(c(1,2,3,1),c(1,6,7,8))')
+
+and::
+
+   >>> res = conn.r.test(numpy.array([1,2,3,1]), numpy.array([1,6,7,8]))
+
+does actually the same thing.
+
+Looking at the result we get::
+   >>> res
+   <TaggedList(statistic=TaggedArray([-2.30541984]),
+    parameter=TaggedArray([ 3.56389482], tags=['df']),
+    p.value=0.090532640733331213,
+    conf.int=TaggedArray([-8.49269413,  0.99269413], attr={'conf.level': array([ 0.95])}),
+    estimate=TaggedArray([ 1.75,  5.5 ], tags=['mean of x', 'mean of y']),
+    null.value=TaggedArray([ 0.], tags=['difference in means']),
+    alternative='two.sided',
+    method='Welch Two Sample t-test',
+    data.name='c(1, 2, 3, 1) and c(1, 6, 7, 8)')>
+
+The result is an instance of a ``TaggedList``, containing different types of list items.
+
+So to access e.g. the confidence interval one would type in Python::
+
+   >>> res['conf.int']
+   AttrArray([-8.49269413,  0.99269413], attr={'conf.level': array([ 0.95])})
+
+This returns an AttrArray where the confidence level is stored in an attribute called ``conf.level``
+in the ``attr``-dictionary::
+
+   >>> res['conf.int'].attr['conf.level']
+   array([ 0.95])
+
+In the ``res``-result data structure above there are also objects of a container called TaggedArray::
+
+   >>> res['estimate']
+   TaggedArray([ 1.75,  5.5 ], tags=['mean of x', 'mean of y'])
+   >>> res['estimate'][1]
+   5.5
+   >>> res['estimate']['mean of y']
+   5.5
 

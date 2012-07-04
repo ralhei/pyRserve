@@ -244,11 +244,22 @@ class AttrArray(numpy.ndarray):
         if hasattr(self, 'attr'):
             return r[:-1] + ', attr=' + repr(self.attr) + ')'
         return r
+        
+    @classmethod
+    def new(cls, data, attr):
+        """Factory method to create AttrArray objects from ndarrays or Python lists.
+        Usage: AttrArray.new(array([1, 2, 3, 4]), {'attr1': val1, 'attr2': val2})
+        """
+        if not isinstance(data, numpy.ndarray):
+	    arr = numpy.array(data)  # assume it is a Python list or any other valid data type for arrays
+	else:
+	    arr = data 
+        attrArr = arr.view(AttrArray)
+        attrArr.attr = attr
+        return attrArr
 
-def asAttrArray(ndarray, attr):
-    arr = ndarray.view(AttrArray)
-    arr.attr = attr
-    return arr
+def asAttrArray(data, attr):
+    return AttrArray.new(data, attr)
 
 
 class TaggedArray(AttrArray):
@@ -294,8 +305,9 @@ class TaggedArray(AttrArray):
         return self.attr[:]
 
     @classmethod
-    def new(cls, ndarray, tags):
-        """Factory method to create TaggedArray objects. Check the docs in TaggedArray for more information.
+    def new(cls, data, tags):
+        """Factory method to create TaggedArray objects from ndarrays or Python lists.
+        Check the docs in TaggedArray for more information.
         Usage:
         l = TaggedArray.new(array([1, 2, 3, 4]), ['v1', 'v2', 'v3', 'v4'])
         l[0]     # returns 1
@@ -303,13 +315,18 @@ class TaggedArray(AttrArray):
         l['v2']  # returns 2  (not 4 !)
         l[3]     # returns 4
         """
-        if len(tags) != len(ndarray):
+        if len(tags) != len(data):
             raise ValueError('Number of keys must match size of array')
-        arr = ndarray.view(cls)
-        arr.attr = tags
-        return arr
+        if not isinstance(data, numpy.ndarray):
+	    arr = numpy.array(data)  # assume it is a Python list or any other valid data type for arrays
+	else:
+	    arr = data 
+	
+        taggedArr = arr.view(cls)
+        taggedArr.attr = tags
+        return taggedArr
 
 
-def asTaggedArray(ndarray, tags):
-    return TaggedArray.new(ndarray, tags)
+def asTaggedArray(data, tags):
+    return TaggedArray.new(data, tags)
 

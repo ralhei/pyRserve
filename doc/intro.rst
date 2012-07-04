@@ -11,7 +11,7 @@ In contrast to `rpy or rpy2 <http://rpy.sourceforge.net/>`_ the R process does n
 it can run on a remote machine and all variable  access and function calls will be delegated there through the network.
 
 Furthermore - and this makes everything feel very pythonic - all data structures will automatically be converted
-from native R to native Python types and back.
+from native R to native Python and numpy types and back.
 
 Why is pyRserve still 'beta'?
 ------------------------------------------------------
@@ -33,6 +33,7 @@ Changes
     * full support complex numbers, partial support for 64bit integers and arrays
     * suport for Fortran-style ordering of numpy arrays
     * elements of single-item arrays are now translated to native python data types
+    * much improved documentation
     * better unit test coverage
     * usage of the deprecated conn(<eval-string>) is no more possible
     * pyRserve.rconnect() now also removed
@@ -70,7 +71,7 @@ This package has been mainly developed under Linux, and hence should run on all 
  as on Mac OS X. pyRserve has also been successfully used on Win32 machines. Unittests have been used on the Linux
  and Mac OS X side, however they might just work fine for Win32.
 
-It has been tested run with Python 2.6.x and 2.7.x. Python 3.x has never been tested, it might or might not work.
+It has been tested run with Python 2.6.x, 2.7.x and Python 3.2.
 
 The latest development has been tested with R 2.13.1 and Rserve 0.6.6.
 

@@ -9,7 +9,7 @@ websites at `<http://www.r-project.org/>`_ and `<http://www.rforge.net/Rserve/>`
 Installing R from sources
 -------------------------
 
-For R being able to run Rserve properly it has to be installed with the `--enable-R-shlib` option.
+For R being able to run Rserve properly it has to be installed with the ``--enable-R-shlib`` option.
 
 The following command show how to do this for the sources. Make sure you have a
 fortran compiler installed, otherwise installation will not be possible.
@@ -39,18 +39,18 @@ implementation bug.
 Installing pyRserve
 -------------------
 
-For the following to work you have to have Python's `setuptools` 
+For the following to work you have to have Python's ``setuptools``
 (from `<http://pypi.python.org/pypi/setuptools>`_ ) to be installed.
 
-pyRserve requires numpy to be installed (`easy_install numpy`).
+pyRserve requires numpy to be installed (``easy_install numpy``).
 
 Then from your unix/windows command line run::
 
   easy_install pyRserve
 
-Note: pyRserve requires numpy. Easy_install should install numpy automatically if it's not there yet. However cases
-have been reported where `easy_install` fails doing this. The solution is to either install numpy manually, or use `pip`
-instead of `easy_install`. `pip` can be obtained from `<http://pypi.python.org/pypi/pip>`_.
+Note: pyRserve requires numpy. ``easy_install`` should install numpy automatically if it's not there yet. However cases
+have been reported where ``easy_install`` fails doing this. The solution is to either install numpy manually, or use `pip`
+instead of ``easy_install``. ``pip`` can be obtained from `<http://pypi.python.org/pypi/pip>`_.
 
 In the next section you'll find instructions how to use everything together.
   

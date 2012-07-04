@@ -12,7 +12,7 @@ This documentation applies to pyRserve release V |release|
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    intro
    installation

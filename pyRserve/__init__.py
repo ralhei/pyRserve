@@ -6,6 +6,6 @@ warnings.filterwarnings('once', category=DeprecationWarning)
 del warnings
 
 from .rconn import connect
-from .taggedContainers import TaggedList
+from .taggedContainers import TaggedList, TaggedArray, AttrArray
 
 
