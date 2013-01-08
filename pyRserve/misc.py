@@ -30,7 +30,7 @@ def byteEncode(aString, encoding='utf-8'):
     if PY3 and type(aString).__name__ != 'bytes':   # check for __name__ not to get faked by Python2.x!
         return bytes(aString, encoding=encoding)
     else:
-        if type(aString).__name__ == 'unicode':
+        if type(aString).__name__.startswith('unicode'):
             return aString.encode('utf-8')
         else:
             return aString
@@ -46,14 +46,20 @@ def stringEncode(byteData, encoding='utf-8'):
 
 
 def padLen4(aString):
-    """Calculate how many additional bytes a given string needs to have a length of a multiple of 4"""
+    """Calculate how many additional bytes a given string needs to have a length of a multiple of 4
+    A zero-length array is considered a multiple of 4.
+    """
     l = len(aString)
-    return 4-divmod(l, 4)[1]
+    mod = divmod(l, 4)[1]
+    return 4-mod if mod else 0
 
 
-def string2bytesPad4(aString, padByte=b'\0'):
-    """return a given string converted into bytes, padded with zeros at the end to make its length be a multiple of 4"""
-    return byteEncode(aString) + padLen4(aString) * padByte
+def string2bytesPad4(aString):
+    """Return a given string converted into bytes, padded with zeros at the end to make its length be a multiple of 4.
+    A zero-length string is considered a multiple of 4.
+    """
+    byteString = byteEncode(aString) + b'\0'
+    return byteString + padLen4(byteString) * b'\0'
 
 
 

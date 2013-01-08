@@ -62,39 +62,40 @@ To check the status of the connection use::
 
    Then restart Rserve.
 
-The R namespace
--------------------------
-
-The Rserve connector ``conn`` created above provides an attribute called "``r``" which gives direct access to the
-namespace of the R connection. Each Rserve connection has its private namespace which is lost after the connection
-is closed (if you don't save it).
-
-Through the ``r``-attribute you can set and access variables, and also call functions defined in the R-namespace.
-The following sections explain how to use the namespace in various ways.
-
 String evaluation in R
 -------------------------------
 
 Having established a connection to Rserve you can run the first commands on it. A valid R command can be executed 
-by making a call to the R name space, providing a string as argument which contains valid R syntax::
+by making a call to the R name space via the connection's `eval()` method, providing a string as argument which
+contains valid R syntax::
 
-  >>> conn.r('3 + 5')
+  >>> conn.eval('3 + 5')
   8.0
 
-In this example the string ``"3 + 5"`` will be sent to the remote side and evaluated by the R interpreter. The result is then
+In this example the string ``"3 + 5"`` will be sent to the remote side and evaluated by the R interpreter.
+The result is then
 delivered back into a native Python object, a floating point number in this case. As an R expert you are
 probably aware of the fact that R uses vectors for all numbers internally by default. But why did we receive
 a single floating point number? The reason is that pyRserve looks at arrays coming from Rserve and converts
 arrays with only one single item into an atomic value. This behaviour is for convenience reasons only.
-To override this behaviour (i.e. to always receive arrays with only one element) open the connection to
-Rserve with an additional argument ``atomicArray`` set to ``True``, i.e.
+
+There are two ways to override this behaviour so that the result is a real (numpy) array:
+
+ * Apply `atomicArray=True` to the `eval()`-method:
+
+   >>> conn.eval('3 + 5', atomicArray=True)
+   array([ 8.])
+
+   This behaviour is then valid for one single call.
+
+* Apply `atomicArray=True` to the `connect()`-function to make it the default for all calls to `eval()`:
 
     ``conn = pyRserve.connect(atomicArray=True)``
 
-Then the called above would return a `numpy` array:
+    Then calling `eval()` would return a `numpy` array in every case:
 
-  >>> conn.r('3 + 5')
-  array([ 8.])
+    >>> conn.eval('3 + 5')
+    array([ 8.])
 
 ``conn.atomicArray`` will tell you how the connection handles results. This attribute contains the value of the
 ``atomicArray`` kw-argument given to connect. It can also be changed directly for a running connection.
@@ -108,29 +109,50 @@ More expression evaluation
 
 Of course also more complex data types can be sent from R to Python, e.g. lists or real arrays. Here are some examples::
 
-  >>> conn.r("list(1, 'otto')")
+  >>> conn.eval("list(1, 'otto')")
   [1, 'otto']
-  >>> conn.r('c(1, 5, 7)')
+  >>> conn.eval('c(1, 5, 7)')
   array([ 1.,  2.])
 
-As demonstrated R lists are converted into plain Python lists whereas R vectors are converted into numpy
+As demonstrated here R-lists are converted into plain Python lists whereas R-vectors are converted into numpy
 arrays on the Python side.
 
 To set a variable inside the R namespace do::
 
-  >>> conn.r('aVar <- "abc"')
+  >>> conn.eval('aVar <- "abc"')
+  'abc'
 
 and to request its value just do::
 
-  >>> conn.r('aVar')
+  >>> conn.eval('aVar')
   'abc'
+
+
+Expression evaluation without expecting a result
+----------------------------------------------------
+
+In the example above setting a variable in R did not only set the variable but also returned it back to Python::
+
+  >>> conn.eval('aVar <- "abc"')
+  'abc'
+
+This is usually not something one would expect or need, and especially in the case of very large data this can cause
+unnecessary network traffic. The solution to this is to either call `eval()` with another option `void=True`, or to
+use `conn.voidEval()` directly. The following two calls are identical and do not return the string `'abc'`:
+
+  >>> conn.eval('aVar <- "abc"', void=True)
+  >>> conn.voidEval('aVar <- "abc"')
+
+
+Defining functions and calling them through expression evaluation
+--------------------------------------------------------------------
 
 It is also possible to create functions inside the R interpreter through the connector's namespace, or even to
 execute entire scripts. Basically you can do everything which is possible inside a normal R console::
 
   # create a function and execute it:
-  >>> conn.r('doubleit <- function(x) { x*2 }')
-  >>> conn.r('doubleit(2)')
+  >>> conn.voidEval('doubleit <- function(x) { x*2 }')
+  >>> conn.eval('doubleit(2)')
   4.0
 
   # store a mini script definition in a Python string ...
@@ -140,21 +162,21 @@ execute entire scripts. Basically you can do everything which is possible inside
   squareit(4)
   '''
   # .... and execute it in R:
-  >>> conn.r(my_r_script)
+  >>> conn.eval(my_r_script)
   16.0
 
 
 
-Setting and accessing variables in a more Pythonic way
----------------------------------------------------------
+The R namespace - setting and accessing variables in a more Pythonic way
+------------------------------------------------------------------------------
 
-The previous section showed how to set a variable inside R by evaluation a statement in string format::
+Previous sections explained how to set a variable inside R by evaluation a statement in string format::
 
-  >>> conn.r('aVar <- "abc"')
+  >>> conn.voidEval('aVar <- "abc"')
 
 This is not very elegant and has limited ways to provide values already stored in Python variables. A much nicer
-way to do this is by setting the variable name in R as an attribute to the namespace. The following statement
-does the same thing as the one above, just "more Pythonic"::
+way to do this is by setting the variable name in R as an attribute to a special variable `conn.r` which points
+to the namespace in R directly. The following statement does the same thing as the one above, just "more Pythonic"::
 
   >>> conn.r.aVar = "abc"
 
@@ -206,51 +228,21 @@ The result of the shape information is - in contrast to what one gets from numpy
 There is nothing special about this, this is just the way R internally deals with that information.
 
 
-Handling Fortran and C style ordering of arrays
--------------------------------------------------
+Expression evaluation through the R namespace
+------------------------------------------------
 
-In R arrays are handled the Fortran way, meaning that the first index iterates over columns, while in C-style arrays
-(like the default in `numpy`) the first index iterates over the cells of the array.
+Instead of using `conn.eval('1+1') expressions can also be evaluate by making a function call on the R namespace
+directly. The following calls are producing the same result:
 
-  >>> arr = numpy.array([[1, 2, 3], [4, 5, 6]])
-  >>> arr
-  array([[1, 2, 3],
-         [4, 5, 6]])
-  >>> arr[0]
-  [1, 2, 3]
+  >>> conn.r('1+1')
+  >>> conn.eval('1+1')
 
-Not so in R::
+`conn.r('...') also accepts the `void`-option in case you want to suppress that a result is returned. Again the
+following three calls are producing the same result:
 
-  > arr = c(1,2,3,4,5,6)
-  > dim(arr) = c(2,3)
-  > arr
-       [,1] [,2] [,3]
-  [1,]    1    3    5
-  [2,]    2    4    6
-  > arr[1]
-  [1] 1
-
-To retrieve R arrays in Fortran-style order, there are two possibilities:
-
-  * provide the option ``arrayOrder='F'`` to the ``pyRserve.connect()`` call
-  * change ``conn.arrayOrder`` from 'C' to 'F'
-
-Examples:
-
-  >>> conn.r('arr = c(1,2,3,4,5,6)')
-  >>> conn.r('dim(arr) = c(2,3)')
-  # In C-style:
-  >>> conn.arrayType
-  'C'
-  >>> ronn.r.arr
-  array([[1, 2, 3],
-         [4, 5, 6]])
-  # In Fortran-style:
-  >>> conn.arrayType = 'F'
-  >>> ronn.r.arr
-  array([[1, 3],
-         [2, 5],
-         [3, 6]])
+  >>> conn.r('1+1', void=True)
+  >>> conn.eval('1+1', void=True)
+  >>> conn.voidEval('1+1')
 
 
 Calling functions in R
@@ -262,9 +254,9 @@ Before the examples below are usable we need to define a couple of very simple f
 ``func0()`` accepts no parameters and returns a fixed string, ``func1()`` takes exactly one parameter and
 ``funcKKW()`` takes keyword arguments with default values::
 
-  conn.r('func0 <- function() { "hello world" }')
-  conn.r('func1 <- function(v) { v*2 }')
-  conn.r('funcKW <- function(a1=1.0, a2=4.0) { list(a1, a2) }')
+  conn.voidEval('func0 <- function() { "hello world" }')
+  conn.voidEval('func1 <- function(v) { v*2 }')
+  conn.voidEval('funcKW <- function(a1=1.0, a2=4.0) { list(a1, a2) }')
 
 Now calling R functions is as trivial as calling plain Python functions::
 
@@ -311,7 +303,7 @@ depending how how one sees them).
 
 Fortunately this is as easy as you would expect::
 
-  >>> conn.r('double <-- function(x) { x*2 }')
+  >>> conn.voidEval('double <-- function(x) { x*2 }')
   >>> conn.r.sapply(array([1, 2, 3]), conn.r.double)
   array([ 2.,  4.,  6.])
 
@@ -435,7 +427,7 @@ immutable.
 The solution was to provide a special class in Python which is called ``TaggedList``. When accessing the
 list ``t`` from the example above you'll obtain an instance of a TaggedList in Python::
 
-  >>> t = conn.r('list(husband="otto", wife="erna", "5th avenue")')
+  >>> t = conn.eval('list(husband="otto", wife="erna", "5th avenue")')
   >>> t
   TaggedList(husband='otto', wife='erna', '5th avenue')
 
@@ -470,8 +462,8 @@ This dicionary is used to store meta data associated to an array retrieved from 
 
 Let's create such an ``AttrArray`` in R, and transfer it into to the Python side::
 
-   >>> conn.r("t <- c(-8.49, 0.99)")
-   >>> conn.r("attributes(t) <- list(conf.level=0.95)")
+   >>> conn.voidEval("t <- c(-8.49, 0.99)")
+   >>> conn.voidEval("attributes(t) <- list(conf.level=0.95)")
    >>> conn.r.t
    AttrArray([-8.49, 0.99], attr={'conf.level': array([ 0.95])})
 
@@ -498,7 +490,7 @@ its shape. The results would not really be predictable.
 
 To create a ``TaggedArray`` on the R side and transfer it to Python type:
 
-  >>> res = conn.r('c(a=1.,b=2.,3.)')
+  >>> res = conn.eval('c(a=1.,b=2.,3.)')
   >>> res
   TaggedArray([ 1.,  2.,  3.], key=['a', 'b', ''])
   >>> res[1]
@@ -530,7 +522,7 @@ look at the result. Again there are two ways to call it, one via string evaluati
 one by directly providing native Python parameters.
 So::
 
-   >>> res = conn.r('t.test(c(1,2,3,1),c(1,6,7,8))')
+   >>> res = conn.eval('t.test(c(1,2,3,1),c(1,6,7,8))')
 
 and::
 

@@ -125,17 +125,17 @@ CMD_serEEval        = 0xf7     # serialized expression eval - like serEval with 
 ##################################################################################################################
 # Data types for the transport protocol (QAP1) do NOT confuse with XT_.. values.
 
-DT_INT           =  1  # int
-DT_CHAR          =  2  # char
-DT_DOUBLE        =  3  # double
-DT_STRING        =  4  # 0 terminted string
-DT_BYTESTREAM    =  5  # stream of bytes (unlike DT_STRING may contain 0)
-DT_SEXP          = 10  # encoded SEXP
+DT_INT           = 0x01  # int
+DT_CHAR          = 0x02  # char
+DT_DOUBLE        = 0x03  # double
+DT_STRING        = 0x04  # 0 terminted string
+DT_BYTESTREAM    = 0x05  # stream of bytes (unlike DT_STRING may contain 0)
+DT_SEXP          = 0x0A  # encoded SEXP
 
-DT_ARRAY         = 11  # array of objects (i.e. first 4 bytes specify how many
-                       #    subsequent objects are part of the array; 0 is legitimate)
-DT_LARGE         = 64  # new in 0102: if this flag is set then the length of the object
-                       #    is coded as 56-bit integer enlarging the header by 4 bytes
+DT_ARRAY         = 0x0B  # array of objects (i.e. first 4 bytes specify how many
+                         #    subsequent objects are part of the array; 0 is legitimate)
+DT_LARGE         = 0x40  # new in 0102: if this flag is set then the length of the object
+                         #    is coded as 56-bit integer enlarging the header by 4 bytes
 
 ##################################################################################################################
 # XpressionTypes
@@ -158,6 +158,7 @@ XT_S4            =  0x07  # P  data: [0]
 
 XT_BYTE          =  0x08  # extension for pyRserve
 XT_INT3          =  0x09  # extension for pyRserve, a 3-byte integer as used in REXP
+XT_INT7          =  0x0A  # extension for pyRserve, a 7-byte integer as used in REXP
 
 XT_VECTOR        =  0x10  # 16dec: P  data: [?]REXP,REXP,.. 
 XT_LIST          =  0x11  # 17dec: -  X head, X vals, X tag (since 0.1-5) 
@@ -205,11 +206,11 @@ BOOL_TRUE   = 1
 BOOL_FALSE  = 0
 BOOL_NA     = 2
 
-VALID_R_TYPES = [DT_SEXP, XT_BOOL, XT_INT, XT_DOUBLE, XT_STR, XT_SYMNAME, XT_VECTOR, XT_LIST_TAG, XT_LANG_TAG, 
+VALID_R_TYPES = [DT_SEXP, XT_BOOL, XT_INT, XT_DOUBLE, XT_STR, XT_SYMNAME, XT_VECTOR, XT_LIST_TAG, XT_LANG_TAG,
                  XT_LIST_NOTAG, XT_LANG_NOTAG, XT_CLOS, XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE,
                  XT_ARRAY_CPLX, XT_ARRAY_STR, XT_NULL, XT_UNKNOWN, XT_RAW]
 
-STRING_TYPES = [str, numpy.string_, numpy.str_, XT_ARRAY_STR]
+STRING_TYPES = [str, numpy.string_, numpy.str_]
 if not PY3:
     STRING_TYPES.append(unicode)
 
@@ -226,6 +227,7 @@ structMap = {
     int:              'i',
     numpy.int32:      'i',
     XT_INT3:          'i',
+    XT_INT7:          'q',     # 64 bit integer
     XT_DOUBLE:        'd',     # double (float64)
     float:            'd',
     numpy.double:     'd',
@@ -261,6 +263,7 @@ numpyMap[numpy.int32]      = XT_ARRAY_INT
 numpyMap[numpy.int64]      = XT_ARRAY_INT
 numpyMap[numpy.long]       = XT_ARRAY_INT
 numpyMap[numpy.str_]       = XT_ARRAY_STR
+numpyMap[numpy.unicode_]   = XT_ARRAY_STR
 
 
 atom2ArrMap = {
@@ -275,6 +278,7 @@ atom2ArrMap = {
     str:               XT_ARRAY_STR,
     numpy.str_:        XT_ARRAY_STR,
     numpy.string_:     XT_ARRAY_STR,
+    numpy.unicode_:    XT_ARRAY_STR,
     bool:              XT_ARRAY_BOOL,
     numpy.bool:        XT_ARRAY_BOOL,
     numpy.bool_:       XT_ARRAY_BOOL,

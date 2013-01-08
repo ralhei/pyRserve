@@ -146,6 +146,9 @@ class Lexer(object):
         if tCode == XT_INT3:
             length = 3
             rawData = self.read(length) + b'\x00'
+        elif tCode == XT_INT7:
+            length = 7
+            rawData = self.read(length) + b'\x00'
         else:
             length = struct.calcsize(fmt or 1)
             rawData = self.read(length)
@@ -160,12 +163,18 @@ class Lexer(object):
         - an REXPR header
         '''
         startLexpos = self.lexpos
-        _rTypeCode  = self.__unpack('B') # unsigned byte!
-        rTypeCode   =  _rTypeCode & (0xFF - XT_HAS_ATTR)   # remove XT_HAS_ATTR flag (if it exists)
-        hasAttr     = (_rTypeCode & XT_HAS_ATTR) != 0      # extract XT_HAS_ATTR flag (if it exists)
-        length      = self.__unpack(XT_INT3)
-        if not rTypeCode in VALID_R_TYPES:
-            raise RParserError("Invalid token %s found at lexpos %d, length %d" % 
+        _rTypeCode  = self.__unpack('B')  # unsigned byte!
+        rTypeCode   =  _rTypeCode & 0x3F                 # extract pure rTypeCode without XT_HAS_ATTR or XT_LARGE flags
+        hasAttr     = (_rTypeCode & XT_HAS_ATTR) != 0    # extract XT_HAS_ATTR flag (if it exists)
+        isXtLarge   = (_rTypeCode & XT_LARGE)    != 0    # extract XT_LARGE flag (if it exists)
+        if isXtLarge:
+            # header is larger, use all 7 bytes for length information (new in Rserve 0.3)
+            length  = self.__unpack(XT_INT7)
+        else:
+            # small header, use 3 bytes for length information
+            length  = self.__unpack(XT_INT3)
+        if rTypeCode not in VALID_R_TYPES:
+            raise RParserError("Unknown SEXP type %s found at lexpos %d, length %d" %
                                (hex(rTypeCode), startLexpos, length))
         return Lexeme(rTypeCode, length, hasAttr, startLexpos)
         
@@ -260,14 +269,13 @@ class RParser(object):
     parserMap = {}
     fmap = FunctionMapper(parserMap)
     #
-    def __init__(self, src, atomicArray, arrayOrder):
+    def __init__(self, src, atomicArray):
         '''
         atomicArray: if False parsing arrays with only one element will just return this element
         arrayOrder:  The order in which data in multi-dimensional arrays is returned. 'C' for c-order, F for fortran.
         '''
         self.lexer = Lexer(src)
         self.atomicArray = atomicArray
-        self.arrayOrder  = arrayOrder
 
     def __getitem__(self, key):
         return self.parserMap[key]
@@ -287,9 +295,8 @@ class RParser(object):
         if DEBUG:
             l = lexeme
             typeCodeDict = XTs if isRexpr else DTs
-            print('%s %s (%s), hasAttr=%s, lexpos=%d, length=%s' % \
-                  (self.__ind, typeCodeDict[l.rTypeCode], hex(l.rTypeCode),
-                   l.hasAttr, l.lexpos, l.length))
+            print('%s %s (%s), hasAttr=%s, lexpos=%d, length=%s' %
+                  (self.__ind, typeCodeDict[l.rTypeCode], hex(l.rTypeCode), l.hasAttr, l.lexpos, l.length))
 
     def parse(self):
         '''
@@ -318,7 +325,8 @@ class RParser(object):
         dataLexeme = self.lexer.nextExprHdr()
         self._debugLog(dataLexeme, isRexpr=False)
         if dataLexeme.rTypeCode == DT_SEXP:
-            return self._postprocessData(self._parseExpr().data)
+            expression = self._parseExpr()
+            return self._postprocessData(expression.data)
         else:
             raise NotImplementedError()
 
@@ -332,6 +340,7 @@ class RParser(object):
                 print('%s Attribute:' % self.__ind)
             lexeme.setAttr(self._parseExpr())
             self.indentLevel -= 1
+        #import pdb;pdb.set_trace()
         lexeme.data = self.parserMap.get(lexeme.rTypeCode, self[None])(self, lexeme)
         self.indentLevel -= 1
         return lexeme
@@ -369,27 +378,6 @@ class RParser(object):
                     data = str(data)      # convert into native python string
                 elif isinstance(data, (numpy.bool_, numpy.bool, numpy.bool8)):
                     data = bool(data)     # convert into native python string
-
-            elif len(data.shape) > 1 and self.arrayOrder == 'F':
-                # Convert array into fortran-style ordering.
-                #
-                # Multi-dimensional arrays can have different data ordering: c-style or fortran-style.
-                # In the former case the last index moves fastest, in fortran style it is the first index.
-                # See numpy docs for further details.
-                # Example:
-                # >>> conn.r("matrix(1:6, nrow=2, ncol=3)")  with 'C' ordering would result in
-                # array([[1, 2, 3],
-                #        [4, 5, 6]])
-                #
-                # while conn.r("matrix(1:6, nrow=2, ncol=3)")  with 'F' ordering would result in
-                # array([[1, 3, 5],
-                #        [2, 4, 6]])
-                #
-                # By default all arrays are at 'C'-style at this point. To convert it into fortran style
-                # the reshape() function has to be applied. To make this work the array must be made 1-d first!!!
-                shape = data.shape[::-1]               # save the shape information, just backwards
-                data.shape = data.size                 # make it one-dimensional
-                data = data.reshape(shape, order='F')  # now reshape, using the saved shape info, into fortran order
         return data
 
     @fmap(None)
@@ -399,12 +387,12 @@ class RParser(object):
 
     @fmap(XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE, XT_ARRAY_STR)
     def xt_array(self, lexeme):
-        data = self._nextExprData(lexeme)  # converts lexeme into a numpy array
+        data = self._nextExprData(lexeme)  # converts data into a numpy array already
         if lexeme.hasAttr and lexeme.attrTypeCode == XT_LIST_TAG:
             for tag, value in lexeme.attr:
                 if tag == 'dim':
-                    # the array has a defined shape
-                    data.shape = value
+                    # the array has a defined shape, and R stores and sends arrays in Fortran mode:
+                    data = data.reshape(value, order='F')
                 elif tag == 'names':
                     # convert numpy-vector 'value' into list to make TaggedArray work properly:
                     data = asTaggedArray(data, list(value))
@@ -476,8 +464,8 @@ class RParser(object):
 
 ########################################################################################
 
-def rparse(src, atomicArray=False, arrayOrder='C'):
-    rparser = RParser(src, atomicArray, arrayOrder)
+def rparse(src, atomicArray=False):
+    rparser = RParser(src, atomicArray)
     return rparser.parse()
 
 ########################################################################################

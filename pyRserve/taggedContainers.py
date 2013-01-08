@@ -251,12 +251,14 @@ class AttrArray(numpy.ndarray):
         Usage: AttrArray.new(array([1, 2, 3, 4]), {'attr1': val1, 'attr2': val2})
         """
         if not isinstance(data, numpy.ndarray):
-	    arr = numpy.array(data)  # assume it is a Python list or any other valid data type for arrays
-	else:
-	    arr = data 
-        attrArr = arr.view(AttrArray)
+            arr = numpy.array(data)  # assume it is a Python list or any other valid data type for arrays
+        else:
+            arr = data
+
+        attrArr = arr.view(cls)
         attrArr.attr = attr
         return attrArr
+
 
 def asAttrArray(data, attr):
     return AttrArray.new(data, attr)
@@ -318,9 +320,9 @@ class TaggedArray(AttrArray):
         if len(tags) != len(data):
             raise ValueError('Number of keys must match size of array')
         if not isinstance(data, numpy.ndarray):
-	    arr = numpy.array(data)  # assume it is a Python list or any other valid data type for arrays
-	else:
-	    arr = data 
+            arr = numpy.array(data)  # assume it is a Python list or any other valid data type for arrays
+        else:
+            arr = data
 	
         taggedArr = arr.view(cls)
         taggedArr.attr = tags

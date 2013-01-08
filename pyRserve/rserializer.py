@@ -99,32 +99,31 @@ class RSerializer(object):
         elif dtTypeCode == rtypes.DT_SEXP:
             startPos = self._fp.tell()
             self._fp.write(b'\0\0\0\0')
-            length = self._serializeExpr(o)
+            length = self.serializeExpr(o)
             self._fp.seek(startPos)
             self._writeDataHeader(dtTypeCode, length)
         else:
             raise NotImplementedError('no support for DT-type %x' % dtTypeCode)
         self._dataSize += length + 4
 
-    def _serializeExpr(self, o, rTypeHint=None):
-        if not rTypeHint:
-            if isinstance(o, numpy.ndarray):
-                rTypeHint = rtypes.numpyMap[o.dtype.type]
-            else:
-                rTypeHint = type(o)
+    def serializeExpr(self, o):
+        if isinstance(o, numpy.ndarray):
+            rTypeCode = rtypes.numpyMap[o.dtype.type]
+        else:
+            rTypeCode = type(o)
         try:
-            s_func = self.serializeMap[rTypeHint]
+            s_func = self.serializeMap[rTypeCode]
         except KeyError:
-            raise NotImplementedError('Serialization of "%s" not implemented' % rTypeHint)
+            raise NotImplementedError('Serialization of "%s" not implemented' % rTypeCode)
         startPos = self._fp.tell()
         if DEBUG:
-            print('Serializing expr %r with rTypeCode=%s using function %s' % (o, rTypeHint, s_func))
-        s_func(self, o, rTypeCode=rTypeHint)
+            print('Serializing expr %r with rTypeCode=%s using function %s' % (o, rTypeCode, s_func))
+        s_func(self, o)
         # determine and return the length of actual R expression data:
         return self._fp.tell() - startPos
 
     @fmap(NoneType, rtypes.XT_NULL)
-    def s_null(self, o, rTypeCode=rtypes.XT_NULL):
+    def s_null(self, o):
         """Send Python's None to R, resulting in NULL there"""
         # For NULL only the header needs to be written, there is no data body.
         self._writeDataHeader(rtypes.XT_NULL, 4)
@@ -144,22 +143,12 @@ class RSerializer(object):
             print('Writing string: %2d bytes: %s' % (length, repr(paddedString)))
         self._fp.write(paddedString)
 
-    @fmap(*rtypes.STRING_TYPES)
-    def s_xt_array_str(self, o, rTypeCode=None):
-        # Works for single strings, lists of strings, and numpy arrays of strings (dtype 'S' or 'O')
-        if type(o) in rtypes.STRING_TYPES:
-            # single string, convert it into string list which is how R internally handles atomic data
-            o = [o]
-        bo = [byteEncode(d) for d in o]
-        zeroSeparatedString = b'\0'.join(bo)
-        padLength = padLen4(zeroSeparatedString)
-        length = len(zeroSeparatedString) + padLength
-        self._writeDataHeader(rtypes.XT_ARRAY_STR, length)
-        self._fp.write(zeroSeparatedString)
-        self._fp.write(b'\0\1\1\1'[:padLength])
+    ################ Arrays #########################################
 
-    def __s_xt_array_numeric_tag_data(self, o):
-        # Determine which tags the array must be given:
+    def __s_write_xt_array_tag_data(self, o):
+        """Write tag data of an array, like dimension for a multi-dim array, or other information found
+        Return appropriate rTypeCode.
+        """
         xt_tag_list = []
         if o.ndim > 1:
             xt_tag_list.append((b'dim', numpy.array(o.shape, numpy.int32)))
@@ -168,61 +157,84 @@ class RSerializer(object):
 
         attrFlag = rtypes.XT_HAS_ATTR if xt_tag_list else 0
         rTypeCode = rtypes.numpyMap[o.dtype.type] | attrFlag
-        self._writeDataHeader(rTypeCode, 0)
+        self._writeDataHeader(rTypeCode, 0) # write length of zero for now, will be corrected later
         if attrFlag:
             self.s_xt_tag_list(xt_tag_list)
         return rTypeCode
 
-    @fmap(rtypes.XT_ARRAY_CPLX, rtypes.XT_ARRAY_DOUBLE, rtypes.XT_ARRAY_INT)
-    def s_xt_array_numeric(self, o, rTypeCode=None):
-        '''
-        @param o: numpy array or subclass (e.g. TaggedArray)
-        @note: If o is multi-dimensional a tagged array is created. Also if o is of type TaggedArray.
-        '''
-        if o.dtype in (numpy.int64, numpy.long):
-            if -sys.maxsize <= o.min() and o.max() <= sys.maxsize:
-                # even though this type of array is 'long' its values still fit into a normal int32 array. Good!
-                o = o.astype(numpy.int32)
-            else:
-                raise ValueError('Cannot serialize long integer arrays with values outside sys.maxsize range')
-
-        startPos = self._fp.tell()
-        rTypeCode = self.__s_xt_array_numeric_tag_data(o)
-
-        # TODO: make this also work on big endian machines (data must be written in little-endian!!)
-        self._fp.write(o.tostring())
-        length = self._fp.tell() - startPos - 4  # subtract length of header==4 bytes
-        self._fp.seek(startPos)
+    def __s_update_xt_array_header(self, headerPos, rTypeCode):
+        """Update length information of xt array header which has been previously temporarily set to 0 in
+        __s_write_xt_array_tag_data()
+        @arg headerPos: file position where header information should be written.
+        @arg rTypeCode
+        """
+        length = self._fp.tell() - headerPos - 4  # subtract length of header (4 bytes), does not count to payload!
+        self._fp.seek(headerPos)
         self._writeDataHeader(rTypeCode, length)
         self._fp.seek(0, os.SEEK_END)
-        
+
+    @fmap(*rtypes.STRING_TYPES)
+    def s_xt_array_str(self, o):
+        """Serialize single string object"""
+        arr = numpy.array([o])
+        self.s_xt_array_str(arr)
+
+    @fmap(rtypes.XT_ARRAY_STR)
+    def s_xt_array_str(self, o):
+        """Serialize array of strings"""
+        startPos = self._fp.tell()
+        rTypeCode = self.__s_write_xt_array_tag_data(o)
+
+        # reshape into 1d array:
+        o1d = o.reshape(o.size, order='F')
+        # Byte-encode them:
+        bo = [byteEncode(d) for d in o1d]
+        # add empty string to that the following join with \0 adds an additional zero at the end of the last string!
+        bo.append(b'')
+        # Concatenate them as null-terminated strings:
+        nullTerminatedStrings = b'\0'.join(bo)
+
+        padLength = padLen4(nullTerminatedStrings)
+        self._fp.write(nullTerminatedStrings)
+        self._fp.write(b'\1\1\1\1'[:padLength])
+
+        # Update the array header:
+        self.__s_update_xt_array_header(startPos, rTypeCode)
+
+    @fmap(bool, numpy.bool_)
+    def s_atom_to_xt_array_boolean(self, o):
+        """Render single boolean items into their corresponding array counterpart in r.
+
+        Always convert a boolean atomic value into a specialized boolean R vector.
+        """
+        arr = numpy.array([o])
+        self.s_xt_array_boolean(arr)
+
     @fmap(rtypes.XT_ARRAY_BOOL)
-    def s_xt_array_boolean(self, o, rTypeCode=None):
+    def s_xt_array_boolean(self, o):
         '''
         @param o: numpy array or subclass (e.g. TaggedArray) with boolean values
         @note: If o is multi-dimensional a tagged array is created. Also if o is of type TaggedArray.
         '''
         startPos = self._fp.tell()
-        rTypeCode = self.__s_xt_array_numeric_tag_data(o)
+        rTypeCode = self.__s_write_xt_array_tag_data(o)
 
         # A boolean vector starts with its number of boolean values in the vector (as int32):
         structCode = '<'+rtypes.structMap[int]
-        self._fp.write(struct.pack(structCode, len(o)))
-        # Then write the boolean values themselves:
-        data = o.tostring()
+        self._fp.write(struct.pack(structCode, o.size))
+        # Then write the boolean values themselves. Note that R expects binary array data in Fortran order,
+        # so prepare this accordingly:
+        data = o.tostring(order='F')
         self._fp.write(data)
         # Finally pad the binary data to be of a multiple of four in length:
         self._fp.write(padLen4(data) * b'\xff')
-        
-        # Update the vector header:
-        length = self._fp.tell() - startPos - 4  # subtract length of header==4 bytes
-        self._fp.seek(startPos)
-        self._writeDataHeader(rTypeCode, length)
-        self._fp.seek(0, os.SEEK_END)
+
+        # Update the array header:
+        self.__s_update_xt_array_header(startPos, rTypeCode)
 
     @fmap(int, numpy.int32, long, numpy.int64, numpy.long, float, numpy.float64,
           complex, numpy.complex, numpy.complex64, numpy.complex128)
-    def s_atom_to_xt_array_numeric(self, o, rTypeCode=None):
+    def s_atom_to_xt_array_numeric(self, o):
         """Render single numeric items into their corresponding array counterpart in R"""
         if isinstance(o, (long, numpy.int64, numpy.long)):
             if -sys.maxsize <= o <= sys.maxsize:
@@ -242,17 +254,34 @@ class RSerializer(object):
             self._writeDataHeader(rTypeCode, length)
             self._fp.write(struct.pack(structCode, o))
 
-    @fmap(bool, numpy.bool_)
-    def s_atom_to_xt_array_boolean(self, o, rTypeCode=None):
-        """Render single boolean items into their corresponding array counterpart in r.
+    @fmap(rtypes.XT_ARRAY_CPLX, rtypes.XT_ARRAY_DOUBLE, rtypes.XT_ARRAY_INT)
+    def s_xt_array_numeric(self, o):
+        '''
+        @param o: numpy array or subclass (e.g. TaggedArray)
+        @note: If o is multi-dimensional a tagged array is created. Also if o is of type TaggedArray.
+        '''
+        if o.dtype in (numpy.int64, numpy.long):
+            if -sys.maxsize <= o.min() and o.max() <= sys.maxsize:
+                # even though this type of array is 'long' its values still fit into a normal int32 array. Good!
+                o = o.astype(numpy.int32)
+            else:
+                raise ValueError('Cannot serialize long integer arrays with values outside sys.maxsize range')
 
-        Always convert a boolean atomic value into a specialized boolean R vector.
-        """
-        arr = numpy.array([o])
-        self.s_xt_array_boolean(arr)
+        startPos = self._fp.tell()
+        rTypeCode = self.__s_write_xt_array_tag_data(o)
+
+        # TODO: make this also work on big endian machines (data must be written in little-endian!!)
+
+        # Note: R expects binary array data in Fortran order, so prepare this accordingly:
+        self._fp.write(o.tostring(order='F'))
+
+        # Update the array header:
+        self.__s_update_xt_array_header(startPos, rTypeCode)
+
+    ############### Vectors and Tag lists ####################################################
 
     @fmap(list, TaggedList)
-    def s_xt_vector(self, o, rTypeCode=None):
+    def s_xt_vector(self, o):
         'Render all objects of given python list into generic r vector'
         startPos = self._fp.tell()
         # remember start position for calculating length in bytes of entire list content
@@ -261,35 +290,34 @@ class RSerializer(object):
         if attrFlag:
             self.s_xt_tag_list([(b'names', numpy.array(o.keys))])
         for v in o:
-            self._serializeExpr(v)
+            self.serializeExpr(v)
         length = self._fp.tell() - startPos
         self._fp.seek(startPos)
         # now write header again with correct length information
         self._writeDataHeader(rtypes.XT_VECTOR | attrFlag, length - 4)  # subtract 4 (omit list header!)
         self._fp.seek(0, os.SEEK_END)
-        
-    def s_xt_tag_list(self, o, rTypeCode=None):
+
+    def s_xt_tag_list(self, o):
         startPos = self._fp.tell()
         self._writeDataHeader(rtypes.XT_LIST_TAG, 0)
         for tag, data in o:
-            self._serializeExpr(data)
-            self._serializeExpr(tag, rTypeHint=rtypes.XT_SYMNAME)
+            self.serializeExpr(data)
+            self.s_string_or_symbol(tag, rTypeCode=rtypes.XT_SYMNAME)
         length = self._fp.tell() - startPos
         self._fp.seek(startPos)
         # now write header again with correct length information
         self._writeDataHeader(rtypes.XT_LIST_TAG, length - 4)  # subtract 4 (omit list header!)
         self._fp.seek(0, os.SEEK_END)
         
-        
-        
 
     ############################################################
     #### class methods for calling specific Rserv functions #### 
 
     @classmethod
-    def rEval(cls, aString, fp=None):
+    def rEval(cls, aString, fp=None, void=False):
         """Create binary code for evaluating a string expression remotely in Rserve"""
-        s = cls(rtypes.CMD_eval, fp=fp)
+        cmd = rtypes.CMD_voidEval if void else rtypes.CMD_eval
+        s = cls(cmd, fp=fp)
         s.serialize(aString, dtTypeCode=rtypes.DT_STRING)
         return s.finalize()
     

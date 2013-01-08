@@ -38,22 +38,27 @@ def test_eval_strings():
     """Test plain string, byte-strings, unicodes (depending on Python version)"""
     assert conn.r("''") == ''
     assert conn.r("'abc'") == 'abc'
-    if PY3:
-        # make sure also byte-strings are handled successfully in Python3.x
-        assert conn.r(b"'abc'") == 'abc'
-    else:
-        # make sure also unicode strings are handled successfully in Python2.x
-        # Since u'abc' would raise a SyntaxError when this module is loaded in Py3 we have to create the unicode
-        # string via eval at runtime (only when Py2 is being used):
-        unicode_str = eval("""u'"abc"'""")
-        assert type(unicode_str) is unicode
-        assert conn.r(unicode_str) == 'abc'
 
-        # test via call to ident function with single argument:
-        assert conn.r.ident(eval("u'abc'")) == 'abc'
+    # make sure also byte-strings are handled successfully. Makes no difference in PY2, but in PY3 it does:
+    assert conn.r(b"'abc'") == 'abc'
 
     # test via call to ident function with single argument:
     assert conn.r.ident('abc') == 'abc'
+
+    try:
+        # make sure also unicode strings are handled successfully in Python2.x
+        # Since u'abc' would raise a SyntaxError when this module is loaded in Py3 < 3.3 we have to create the unicode
+        # string via eval at runtime:
+        unicode_str = eval("""u'"abc"'""")
+    except SyntaxError:
+        # outdated PY3 version, so just skip the rest
+        return
+
+    assert conn.r(unicode_str) == 'abc'
+
+    # test via call to ident function with single argument:
+    assert conn.r.ident(eval("u'abc'")) == 'abc'
+
 
 def test_eval_string_arrays():
     """Test for string arrays"""
@@ -62,6 +67,21 @@ def test_eval_string_arrays():
 
     # test via call to ident function with single argument:
     assert compareArrays(conn.r.ident(numpy.array(['abc', 'def'])), numpy.array(['abc', 'def']))
+
+def test_eval_unicode_arrays():
+    """Test for unicode arrays. The ident function should return the same array, just not as unicode"""
+    try:
+        u1 = eval("u'abc'")
+        u2 = eval("u'def'")
+    except SyntaxError:
+        # Python 3 below 3.3 does not accept the u'' operator, just skip this test!
+        return
+
+    # test via call to ident function with single argument:
+    assert conn.r.ident(numpy.array([u1])) == 'abc'
+    assert compareArrays(conn.r.ident(numpy.array([u1, u2])), numpy.array(['abc', 'def']))
+
+
 
 ### Test integers
 
@@ -198,6 +218,12 @@ def test_eval_bool_arrays():
     # test via call to ident function with single argument:
     assert compareArrays(conn.r.ident(numpy.array([True, False, False])), numpy.array([True, False, False]))
 
+def test_empty_boolean_array():
+    """Check that zero-length boolean ('logical') array is returned fine"""
+    conn.r('empty_bool_arr = as.logical(c())')
+    assert compareArrays(conn.r.empty_bool_arr, numpy.array([], dtype=bool))
+
+
 ### Test null value
 def test_null_value():
     """Test NULL value, which is None in Python"""
@@ -244,35 +270,74 @@ def test_tagged_lists():
 ### Test more numpy arrays
 ### Many have been test above, but generally only 1-d arrays. Let's look at arrays with higher dimensions
 
-def test_2d_array_c_order():
-    """Arrays can be returned with data in C-order, or Fortran-order. C-order is the default, and used in this test"""
-    arr = numpy.array([[1,2,3], [4,5,6]])
-    res = conn.r.ident(arr)
-    assert compareArrays(res, arr)
-    assert res.shape == arr.shape
 
-    # create a 2d array directly in R and compare it again:
-    conn.r('arr = c(1, 2, 3, 4, 5, 6)')
-    conn.r('dim(arr) = c(2, 3)')
+def test_2d_arrays_created_in_python():
+    """Check that transferring various arrays to R preserves columns, rows, and shape. """
+    bools   = [True, False, True, True]
+    strings = ['abc', 'def', 'ghi', 'jkl']
+    arrays = [
+        numpy.arange(6).reshape((2,3), order='C'),     # same as: numpy.array([[1,2,3], [4,5,6]])
+        numpy.arange(6).reshape((2,3), order='F'),     # same as: numpy.array([[1,3,5], [2,4,6]])
+        numpy.array(bools).reshape((2,2), order='C'),  # same as: numpy.array([[True, False], [True, True]])
+        numpy.array(bools).reshape((2,2), order='F'),  # same as: numpy.array([[True, True], [False, True]])
+        numpy.array(strings).reshape((2,2), order='C'),
+        numpy.array(strings).reshape((2,2), order='F'),
+    ]
+
+    for arr in arrays:
+        res = conn.r.ident(arr)
+        assert res.shape == arr.shape
+        assert compareArrays(res, arr)
+
+        # assign array within R namespace and check some cols and rows:
+        conn.r.arr = arr
+        # check that 2nd row (last row) is equal:
+        assert compareArrays(arr[1], conn.r('arr[2,]'))
+        # check that 2nd column (middle col) is equal:
+        assert compareArrays(arr[:, 1], conn.r('arr[,2]'))
+
+
+def test_2d_numeric_array_created_in_R():
+    """Create an array in R, transfer it to python, and check that columns, rows, and shape are preserved.
+    Note: Arrays in R are always in Fortran order, i.e. first index moves fastest.
+
+    The array in R looks like:
+         [,1] [,2] [,3]
+    [1,]    1    3    5
+    [2,]    2    4    6
+    """
+    arr = conn.r('arr = array(1:6, dim=c(2, 3))')
     assert compareArrays(conn.r.arr, arr)
 
+    # check that 2nd row (last row) is equal:
+    assert len(arr[1]) == len(conn.r('arr[2,]')) == 3
+    assert compareArrays(arr[1], conn.r('arr[2,]'))
 
-def test_2d_array_fortran_order():
-    """Arrays can be returned with data in C-order, or Fortran-order. fortran-order is checked here"""
-    # create separate Rserve connection with arrayOrder set to Fortran
-    c = rconn.connect(arrayOrder='F')   # also create ident function on server side
-    c.r(('ident <- function(v) { v }'))
-    arr = numpy.array([[1,2,3], [4,5,6]])
-    res = c.r.ident(arr)
-    fortran_arr = numpy.array([[1, 4], [2, 5], [3, 6]])
-    assert compareArrays(res, fortran_arr)
-    assert res.shape == fortran_arr.shape
+    # check that 2nd column (middle col) is equal:
+    assert len(arr[:, 1]) == len(conn.r('arr[,2]')) == 2
+    assert compareArrays(arr[:, 1], conn.r('arr[,2]'))
 
 def test_tagged_array():
     res = conn.r('c(a=1.,b=2.,c=3.)')
     exp_res = TaggedArray.new(numpy.array([1., 2., 3.,]), ['a', 'b', 'c'])
     assert compareArrays(res, exp_res)
     assert res.keys() == exp_res.keys()  # compare the tags of both arrays
+
+
+def test_very_large_result_array():
+    """Check that a SEXP with XT_LARGE set in header is properly parsed """
+    res = conn.r('c(1:9999999)')
+    assert res.size == 9999999
+
+
+def test_eval_void():
+    """Check that conn.voidEval() does not return any result in contrast to conn.eval()"""
+    assert conn.r('a=1') == 1.0
+    assert conn.eval('a=1') == 1.0
+    assert conn.voidEval('a=1') is None
+    assert conn.eval('a=1', void=True) is None
+    assert conn.r('a=1', void=True) is None
+
 
 ### Test evaluation of some R functions
 
@@ -284,7 +349,6 @@ def test_eval_sequence():
 
     # now make Python-style call to the R function:
     assert compareArrays(conn.r.seq(1, 5), numpy.array(range(1, 6)))
-
 
 def test_eval_polyroot():
     # first string evaluate of R expression:

@@ -4,12 +4,13 @@ from . import rtypes
 from .rexceptions import RConnectionRefused, REvalError, PyRserveClosed
 from .rserializer import rEval, rAssign
 from .rparser import rparse
+from .misc import hexString
 
 RSERVEPORT = 6311
 DEBUG = False
 
 
-def connect(host='', port=RSERVEPORT, atomicArray=False, arrayOrder='C'):
+def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False):
     """Open a connection to an Rserve instance
     Params:
     - host: provide hostname where Rserve runs, or leave as empty string to connect to localhost
@@ -18,14 +19,14 @@ def connect(host='', port=RSERVEPORT, atomicArray=False, arrayOrder='C'):
                    is returned. Otherwise the array is returned unmodified. Default: True
     - arrayOrder:  The order in which data in multi-dimensional arrays is returned.
                    Provide 'C' for c-order, F for fortran. Default: 'C'
+    - defaultVoid: If True then calls to conn.r('...') don't return a result by default
     """
 #    if host in (None, ''):
 #        # On Win32 it seems that passing an empty string as 'localhost' does not work
 #        # So just to be sure provide the full local hostname if None or '' were passed.
 #        host = socket.gethostname()
     assert port is not None, 'port number must be given'
-    assert arrayOrder in ('C', 'F'), 'array order must be either "C" for c-order or "F" for fortran order'
-    return RConnector(host, port, atomicArray, arrayOrder)
+    return RConnector(host, port, atomicArray, defaultVoid)
 
 
 
@@ -40,11 +41,11 @@ def checkIfClosed(func):
 
 class RConnector(object):
     """Provide a network connector to an Rserve process"""
-    def __init__(self, host, port, atomicArray, arrayOrder):
+    def __init__(self, host, port, atomicArray, defaultVoid):
         self.host = host
         self.port = port
         self.atomicArray = atomicArray
-        self.arrayOrder  = arrayOrder   # must be either 'C' or 'F' (for fortran)
+        self.defaultVoid = defaultVoid
         self.connect()
         self.r = RNameSpace(self)
         self.ref = RNameSpaceReference(self)
@@ -78,30 +79,44 @@ class RConnector(object):
         self.sock.close()
         self.__closed = True
         
-    def _reval(self, aString):
-        rEval(aString, fp=self.sock)
+    def _reval(self, aString, void):
+        rEval(aString, fp=self.sock, void=void)
         
     @checkIfClosed
-    def eval(self, aString, **kwargs):
-        '@brief Evaluate a string expression through Rserve and return the result transformed into python objects'
+    def eval(self, aString, atomicArray=None, void=False):
+        """Evaluate a string expression through Rserve and return the result transformed into python objects"""
         if not type(aString in rtypes.STRING_TYPES):
             raise TypeError('Only string evaluation is allowed')
-        self._reval(aString)
+        self._reval(aString, void)
         if DEBUG:
             # Read entire data into memory en bloque, it's easier to debug
             src = self._receive()
-            print('Raw response:', repr(src))
-        atomicArray = kwargs.get('atomicArray', self.atomicArray)
-        arrayOrder = kwargs.get('arrayOrder', self.arrayOrder)
+            print('Raw response: %s' % hexString(src))
+        else:
+            src = self.sock
+
+        if atomicArray is None:
+            # if not specified, use the global default:
+            atomicArray = self.atomicArray
+
         try:
-            return rparse(self.sock, atomicArray=atomicArray, arrayOrder=arrayOrder)
+            return rparse(src, atomicArray=atomicArray)
         except REvalError:
-            # R has reported an evaulation error, so let's obtain a descriptive explanation
+            # R has reported an evaluation error, so let's obtain a descriptive explanation
             # about why the error has occurred. R allows to retrieve the error message
             # of the last exception via a built-in function called 'geterrmessage()'.
             errorMsg = self.eval('geterrmessage()').strip()
             raise REvalError(errorMsg)
-            
+        except:
+            # Any other error has occurred - empty input stream and re-raise exception afterwards
+            self._receive()
+            raise
+
+    @checkIfClosed
+    def voidEval(self, aString):
+        """Evaluate a string expression through Rserve without returning any result data"""
+        self.eval(aString, void=True)
+
     @checkIfClosed
     def _receive(self):
         '@brief Receive the result from a previous call to rserve.'
@@ -123,7 +138,7 @@ class RConnector(object):
         rAssign(name, o, self.sock)
         # Rserv sends an emtpy confirmation message, or error message in case of an error.
         # rparse() will raise an Exception in the latter case.
-        rparse(self.sock, atomicArray=self.atomicArray, arrayOrder=self.arrayOrder)
+        rparse(self.sock, atomicArray=self.atomicArray)
 
     @checkIfClosed
     def getRexp(self, name):
@@ -201,8 +216,10 @@ class RNameSpace(object):
         else:
             return self._rconn.getRexp(name)
 
-    def __call__(self, aString, **kwargs):
-        return self._rconn.eval(aString, **kwargs)
+    def __call__(self, aString, atomicArray=None, void=None):
+        if void is None:
+            void = self._rconn.defaultVoid
+        return self._rconn.eval(aString, atomicArray=atomicArray, void=void)
 
 
 class RNameSpaceReference(object):
