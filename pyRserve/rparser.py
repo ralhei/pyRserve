@@ -94,25 +94,23 @@ class Lexer(object):
         if DEBUG:
             print('response ok? %s (responseCode=%x), error-code: %x, message size: %d' % \
                 (self.responseOK, self.responseCode,  self.errCode,  self.messageSize))
+        # store total size of message in case buffer needs to be emptied after an error occurred:
+        self.totalMessageSize = self.lexpos + self.messageSize
         return self.messageSize
 
     def clearSocketData(self):
         '''
         If for any reason the parsing process returns an error, make sure that all data from
         a socket is removed to avoid data pollution with further parsing attempts.
-        This should only be called after self.readHeader() has been executed.
+        This must only be called after self.readHeader() has been executed.
         '''
-        if type(self.fp) != socket.socket:  #hasattr(self.fp, '_sock'):
-            # probably not a socket. Nothing to do here.
+        if not isinstance(self.fp, socket.socket):
+            # not a socket. Nothing to do here.
             return
-        self.fp.setblocking(0)
-        try:
-            while 1:
-                self.fp.recv(SOCKET_BLOCK_SIZE)
-        except:
-            pass
-        finally:
-            self.fp.setblocking(1)
+        bytesLeft = self.totalMessageSize - self.lexpos
+        while bytesLeft > 0:
+            d = self.fp.recv(SOCKET_BLOCK_SIZE)
+            bytesLeft -= len(d)
 
     def read(self, length):
         '''
@@ -340,7 +338,6 @@ class RParser(object):
                 print('%s Attribute:' % self.__ind)
             lexeme.setAttr(self._parseExpr())
             self.indentLevel -= 1
-        #import pdb;pdb.set_trace()
         lexeme.data = self.parserMap.get(lexeme.rTypeCode, self[None])(self, lexeme)
         self.indentLevel -= 1
         return lexeme
@@ -405,7 +402,7 @@ class RParser(object):
                         data = asAttrArray(data, {tag: value})
         return data
 
-    @fmap(XT_VECTOR, XT_LANG_NOTAG, XT_LIST_NOTAG)
+    @fmap(XT_VECTOR, XT_VECTOR_EXP, XT_LANG_NOTAG, XT_LIST_NOTAG)
     def xt_vector(self, lexeme):
         '''
         A vector is e.g. return when sending "list('abc','def')" to R. It can contain mixed
@@ -415,6 +412,9 @@ class RParser(object):
         is known in advance.
         The end of this REXP can only be detected by keeping track of how many bytes
         have been consumed (lexeme.length!) until the end of the REXP has been reached.
+
+        A vector expression (type 0x1a) is according to Rserve docs the same as XT_VECTOR. For now
+        just a list with the expression content is returned in this case.
         '''
         finalLexpos = self.lexer.lexpos + lexeme.dataLength
         if DEBUG:

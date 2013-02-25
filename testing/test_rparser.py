@@ -267,6 +267,17 @@ def test_tagged_lists():
     # NOTE: The following fails in the rserializer because of the missing tag of the 2nd element:  <<<<--------- TODO!!
     # conn.r.ident(TaggedList([("n","Fred"), 2.0, ("c_ages", 5.5)])
 
+def test_vector_expression():
+    """Tests for typecode 0x1a XT_VECTOR_EXP - returns the expression content as python list"""
+    # first empty expression
+    res = conn.r('expression()')
+    assert res == []
+
+    # second expression with content
+    res = conn.r('expression("1+1")')
+    assert res == ['1+1']
+
+
 ### Test more numpy arrays
 ### Many have been test above, but generally only 1-d arrays. Let's look at arrays with higher dimensions
 

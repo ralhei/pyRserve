@@ -21,10 +21,10 @@ def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False):
                    Provide 'C' for c-order, F for fortran. Default: 'C'
     - defaultVoid: If True then calls to conn.r('...') don't return a result by default
     """
-#    if host in (None, ''):
-#        # On Win32 it seems that passing an empty string as 'localhost' does not work
-#        # So just to be sure provide the full local hostname if None or '' were passed.
-#        host = socket.gethostname()
+    if host in (None, ''):
+        # On Win32 it seems that passing an empty string as 'localhost' does not work
+        # So just to be sure provide the full local hostname if None or '' were passed.
+        host = 'localhost'
     assert port is not None, 'port number must be given'
     return RConnector(host, port, atomicArray, defaultVoid)
 
@@ -107,10 +107,6 @@ class RConnector(object):
             # of the last exception via a built-in function called 'geterrmessage()'.
             errorMsg = self.eval('geterrmessage()').strip()
             raise REvalError(errorMsg)
-        except:
-            # Any other error has occurred - empty input stream and re-raise exception afterwards
-            self._receive()
-            raise
 
     @checkIfClosed
     def voidEval(self, aString):

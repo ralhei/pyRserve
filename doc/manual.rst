@@ -31,6 +31,10 @@ To connect to a different location host and port can be specified explicitly::
 
   pyRserve.connect(host='localhost', port=6311)
 
+.. NOTE::
+   On some windows versions it might be necessary to always provide 'localhost' for connecting to a locally
+   running Rserve instance.
+
 The resulting connection handle can tell you where it is connected to::
 
   >>> conn

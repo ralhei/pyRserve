@@ -26,13 +26,16 @@ consider it `beta`-status.
 
 Changes
 ----------------
-* V 0.7.0rc1 (2013-01-08)
+* V 0.7.0 (2013-02-25)
     * Fixed problem when receiving very large result sets from R (added support for XT_LARGE header flag)
     * Correctly translate multi-dimensional R arrays into numpy arrays (preserve axes the right way)
       Removed 'arrayOrder' keyword argument as a consequence. API CHANGE - PLEASE ADAPT YOUR CODE!
     * Support for conn.voidEval and conn.eval and new 'defaultVoid'-kw argument in the connect() function
     * Fixed bug in receiving multi-dimensional boolean (logical) arrays from R
     * Added support for multi-dimensional string arrays
+    * added support for XT_VECTOR_EXPR type generated e.g. via "expression()" in R (will return a list
+      with the expression content as list content)
+    * windows users can now connect to localhost by pyRserve.connect() (omitting 'localhost' parameter)
 
 * V 0.6.0 (2012-06-25)
     * support for Python3.x
