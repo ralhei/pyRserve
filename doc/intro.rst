@@ -29,7 +29,8 @@ Changes
 * V 0.7.0 (2013-02-25)
     * Fixed problem when receiving very large result sets from R (added support for XT_LARGE header flag)
     * Correctly translate multi-dimensional R arrays into numpy arrays (preserve axes the right way)
-      Removed 'arrayOrder' keyword argument as a consequence. API CHANGE - PLEASE ADAPT YOUR CODE!
+      Removed 'arrayOrder' keyword argument as a consequence.
+      THIS IS AN API CHANGE - PLEASE CHECK AND ADAPT YOUR CODE, ESPECIALLY IF YOU USE MULTI-DIM ARRAYS!!
     * Support for conn.voidEval and conn.eval and new 'defaultVoid'-kw argument in the connect() function
     * Fixed bug in receiving multi-dimensional boolean (logical) arrays from R
     * Added support for multi-dimensional string arrays
@@ -90,7 +91,7 @@ License
 -------
 
 pyRserve has been written by `Ralph Heinkel (www.ralph-heinkel.com) <http://www.ralph-heinkel.com/>`_ and is
-released under `MIT license <http://packages.python.org/pyRserve/license.html>`_.
+released under `MIT license <http://pythonhosted.org/pyRserve/license.html>`_.
 
 
 Quick Installation
