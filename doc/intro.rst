@@ -13,19 +13,27 @@ it can run on a remote machine and all variable  access and function calls will 
 Furthermore - and this makes everything feel very pythonic - all data structures will automatically be converted
 from native R to native Python and numpy types and back.
 
-Why is pyRserve still 'beta'?
+Status of pyRserve
 ------------------------------------------------------
 
 The question behind that usually is: Can pyRserve already be used for real work?
 
-Well, pyRserve has been used at various companies in production mode for over two years now. So it is pretty stable
-and many things work as they should.
-
-However it is not complete yet - there are a few loose ends which should still be improved. Until then I still
-consider it `beta`-status.
+Well, pyRserve has been used at various companies in production mode for over
+three years now. So it is pretty stable and many things work as they should.
+However it is not complete yet - there are a few loose ends which should still
+be improved.
 
 Changes
 ----------------
+* V 0.7.2 (2013-07-19)
+    * Tested with Python 3.3.x, R 3.0.1 and Rserve 1.7.0
+    * Updated documentation accordingly
+    * Code cleanup for pep8 (mostly)
+
+* V 0.7.1 (2013-06-23)
+    * Added link to new GitHub repository
+    * fixed URL to documentation
+
 * V 0.7.0 (2013-02-25)
     * Fixed problem when receiving very large result sets from R (added support for XT_LARGE header flag)
     * Correctly translate multi-dimensional R arrays into numpy arrays (preserve axes the right way)
@@ -83,9 +91,11 @@ This package has been mainly developed under Linux, and hence should run on all 
  as on Mac OS X. pyRserve has also been successfully used on Win32 machines. Unittests have been used on the Linux
  and Mac OS X side, however they might just work fine for Win32.
 
-It has been tested run with Python 2.6.x, 2.7.x and Python 3.2.
+It has been tested run with Python 2.6, 2.7.x, 3.2, and 3.3.
 
-The latest development has been tested with R 2.13.1 and Rserve 0.6.6.
+The latest development has been tested with R 3.0.1 and Rserve 1.7.0, but it
+also should work with R 2.13.1 and newer. Rserve is suppported
+from version 0.6.6 on.
 
 License
 -------
@@ -96,7 +106,9 @@ released under `MIT license <http://pythonhosted.org/pyRserve/license.html>`_.
 
 Quick Installation
 -------------------
-Make sure that Numpy is installed. Actually ``easy_install pyRserve`` should install numpy if it is missing.
+
+Make sure that Numpy is installed (version 1.4.x or higher).
+Actually ``easy_install pyRserve`` should install numpy if it is missing.
 
 Then from your unix/windows command line run::
 
@@ -106,9 +118,15 @@ or download the tar.gz or zip package. After unpacking run ``python setup.py ins
 
 Actually ``easy_install pyRserve`` should install numpy if it is missing. If it fails please use ``pip`` instead.
 
+
+Source Code repository
+----------------------
+
+pyRserve is now hosted on GitHub at `<https://github.com/ralhei/pyRserve>`_.
+
+
 Documentation
 ----------------
-
 Documentation can be found at `<http://packages.python.org/pyRserve/>`_.
 
 

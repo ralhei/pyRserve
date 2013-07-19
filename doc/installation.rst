@@ -9,32 +9,34 @@ websites at `<http://www.r-project.org/>`_ and `<http://www.rforge.net/Rserve/>`
 Installing R from sources
 -------------------------
 
-For R being able to run Rserve properly it has to be installed with the ``--enable-R-shlib`` option.
+For R being able to run Rserve properly it has to be installed with the
+``--enable-R-shlib`` option.
 
 The following command show how to do this for the sources. Make sure you have a
 fortran compiler installed, otherwise installation will not be possible.
 
 On Unix this looks like::
 
-  tar -xzf R-2.13.1.tar.gz       # or whatever version you are using
-  cd R-2.13.1
+  tar -xzf R-3.0.1.tar.gz       # or whatever version you are using
+  cd R-3.0.1
   ./configure --enable-R-shlib
   make
   make install
 
-For Windows it might be just enough to install a prebuilt R package. The same might be true for
-some Linux distributions, just make sure to install a version which also contains all headers 
-necessary for compiling Rserve in the next step.
+For Windows it might be just enough to install a prebuilt R package. The same
+might be true for some Linux distributions, just make sure to install a
+version which also contains all headers necessary for compiling Rserve in the
+next step.
 
 Installing Rserve
 ------------------
 
 If you have already downloaded the tar file then from your command line run::
 
-  R CMD INSTALL Rserve_0.6-6.tar.gz
+  R CMD INSTALL Rserve_1.7-0.tar.gz
 
-Note that you have to run at least version 0.6.6 to get the unittests to work. Older versions of Rserve have a severe
-implementation bug.
+Note that you have to run at least version 0.6.6 to get the unittests to work.
+Older versions of Rserve have a severe implementation bug.
 
 Installing pyRserve
 -------------------
@@ -48,9 +50,12 @@ Then from your unix/windows command line run::
 
   easy_install pyRserve
 
-Note: pyRserve requires numpy. ``easy_install`` should install numpy automatically if it's not there yet. However cases
-have been reported where ``easy_install`` fails doing this. The solution is to either install numpy manually, or use `pip`
-instead of ``easy_install``. ``pip`` can be obtained from `<http://pypi.python.org/pypi/pip>`_.
+Note: pyRserve requires numpy. ``easy_install`` should install numpy
+automatically if it's not there yet. However cases have been reported where
+``easy_install`` fails doing this. The solution is to either install numpy
+manually, or use `pip` instead of ``easy_install``. ``pip`` can be obtained
+from `<http://pypi.python.org/pypi/pip>`_.
+
+Currently supported Python versions are 2.7, 3.2, and 3.3.
 
 In the next section you'll find instructions how to use everything together.
-  

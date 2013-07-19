@@ -1,6 +1,11 @@
-import sys, datetime
+"""
+Unittesting module for rparser
+"""
+import sys
+import datetime
 ###
-import numpy, py
+import numpy
+import py
 ###
 
 sys.path.insert(0, '..')
@@ -12,14 +17,17 @@ from pyRserve.taggedContainers import TaggedList, TaggedArray
 
 from testtools import start_pyRserve, compareArrays
 
-
 conn = None  # will be set to Rserve-connection in setup_module()
+
 
 def setup_module(module):
     module.rProc = start_pyRserve()
-    module.conn = rconn.connect()          # <---- THIS CREATES A MODULE-WIDE CONNECTION OBJECT TO RSERVE
-    # create an 'ident' function which just returns its argument. Needed for testing below.
+    # CREATE A MODULE-WIDE CONNECTION OBJECT TO RSERVE
+    module.conn = rconn.connect()
+    # create an 'ident' function which just returns its argument.
+    # Needed for testing below.
     module.conn.r('ident <- function(v) { v }')
+
 
 def teardown_module(module):
     try:
@@ -29,17 +37,22 @@ def teardown_module(module):
         #if not module.rProc.poll():
         #    module.rProc.kill()
     except AttributeError:
-        # probably Rserve process did not startup so the rProc object is not available.
+        # probably Rserve process did not startup so the rProc object is
+        # not available.
         pass
+
 
 ######################################
 ### Test strings
 def test_eval_strings():
-    """Test plain string, byte-strings, unicodes (depending on Python version)"""
+    """
+    Test plain string, byte-strings, unicodes (depending on Python version)
+    """
     assert conn.r("''") == ''
     assert conn.r("'abc'") == 'abc'
 
-    # make sure also byte-strings are handled successfully. Makes no difference in PY2, but in PY3 it does:
+    # make sure also byte-strings are handled successfully.
+    # Makes no difference in PY2, but in PY3 it does:
     assert conn.r(b"'abc'") == 'abc'
 
     # test via call to ident function with single argument:
@@ -47,8 +60,9 @@ def test_eval_strings():
 
     try:
         # make sure also unicode strings are handled successfully in Python2.x
-        # Since u'abc' would raise a SyntaxError when this module is loaded in Py3 < 3.3 we have to create the unicode
-        # string via eval at runtime:
+        # Since u'abc' would raise a SyntaxError when this module is loaded
+        # in Py3 < 3.3 we have to create the unicode string via eval at
+        # runtime:
         unicode_str = eval("""u'"abc"'""")
     except SyntaxError:
         # outdated PY3 version, so just skip the rest
@@ -62,31 +76,42 @@ def test_eval_strings():
 
 def test_eval_string_arrays():
     """Test for string arrays"""
-    assert compareArrays(conn.r("'abc'", atomicArray=True), numpy.array(['abc']))
-    assert compareArrays(conn.r("c('abc', 'def')"), numpy.array(['abc', 'def']))
+    assert compareArrays(conn.r("'abc'", atomicArray=True),
+                         numpy.array(['abc']))
+    assert compareArrays(conn.r("c('abc', 'def')"),
+                         numpy.array(['abc', 'def']))
 
     # test via call to ident function with single argument:
-    assert compareArrays(conn.r.ident(numpy.array(['abc', 'def'])), numpy.array(['abc', 'def']))
+    assert compareArrays(conn.r.ident(numpy.array(['abc', 'def'])),
+                         numpy.array(['abc', 'def']))
+
 
 def test_eval_unicode_arrays():
-    """Test for unicode arrays. The ident function should return the same array, just not as unicode"""
+    """
+    Test for unicode arrays. The ident function should return the
+    same array, just not as unicode
+    """
     try:
         u1 = eval("u'abc'")
         u2 = eval("u'def'")
     except SyntaxError:
-        # Python 3 below 3.3 does not accept the u'' operator, just skip this test!
+        # Python 3 below 3.3 does not accept the u'' operator,
+        # just skip this test!
         return
 
     # test via call to ident function with single argument:
     assert conn.r.ident(numpy.array([u1])) == 'abc'
-    assert compareArrays(conn.r.ident(numpy.array([u1, u2])), numpy.array(['abc', 'def']))
-
+    assert compareArrays(conn.r.ident(numpy.array([u1, u2])),
+                         numpy.array(['abc', 'def']))
 
 
 ### Test integers
 
 def test_eval_integers():
-    """Test different types and sizes of integers. Note that R converts all integers into floats"""
+    """
+    Test different types and sizes of integers.
+    Note that R converts all integers into floats
+    """
     res = conn.r("0")
     assert res == 0.0
     assert type(res) is float
@@ -101,25 +126,36 @@ def test_eval_integers():
     # test via call to ident function with single argument:
     assert conn.r.ident(5) == 5
 
+
 def test_eval_long():
-    """Test long integers. Going beyond sys.maxsize works with eval() because in R all integers are converted
-    to floats right away. However sending a long as functional parameter should raise a NotImplementedError if
+    """
+    Test long integers. Going beyond sys.maxsize works with eval() because
+    in R all integers are converted to floats right away. However sending a
+    long as functional parameter should raise a NotImplementedError if
     its value is outside the normal integer range (i.e. sys.maxsize).
     """
     assert conn.r("%d" % sys.maxsize) == sys.maxsize
-    assert conn.r("%d" % (sys.maxsize*2)) == sys.maxsize*2  # these are long integers, handled as floats in R via eval()
+    # Next test for long integers, handled as floats in R via eval():
+    assert conn.r("%d" % (sys.maxsize*2)) == sys.maxsize*2
 
-    # The syntax like 234L only exists in Python2! So use long in Py2. in Python3 everything is of type <int>
-    # Send a long value which is still within below the sys.maxsize. It it automatically converted to a normal int
-    # in the rserializer and hence should work fine:
+    # The syntax like 234L only exists in Python2! So use long in Py2. I
+    # n Python3 everything is of type <int>
+    # Send a long value which is still within below the sys.maxsize.
+    # It it automatically converted to a normal int in the rserializer and
+    # hence should work fine:
     toLong = int if PY3 else long  # No 'long' function in PY3
     assert conn.r.ident(toLong(123))
 
-    # Here comes the problem - there is no native 64bit integer on the R side, so this should raise a ValueError
+    # Here comes the problem - there is no native 64bit integer on the R side,
+    # so this should raise a ValueError
     py.test.raises(ValueError, conn.r.ident, sys.maxsize*2)
 
+
 def test_eval_integer_arrays():
-    """Test integer arrays. The result from R is actually always a numpy float array"""
+    """
+    Test integer arrays. The result from R is actually always a numpy
+    float array
+    """
     assert compareArrays(conn.r("266", atomicArray=True), numpy.array([266]))
     assert compareArrays(conn.r("c(55, -35)"), numpy.array([55.0, -35.0]))
     res = conn.r("c(55, -35)")
@@ -132,19 +168,26 @@ def test_eval_integer_arrays():
     assert res.dtype == numpy.int
 
     # test via call to ident function with single argument:
-    assert compareArrays(conn.r.ident(numpy.array([1, 5])), numpy.array([1, 5]))
+    assert compareArrays(conn.r.ident(numpy.array([1, 5])),
+                         numpy.array([1, 5]))
+
 
 def test_eval_long_arrays():
-    """est calling with a long array where all values are smaller than sys.maxsize. Such an array is internally
-    handled as a 32bit integer array and hence should work/
+    """
+    Test calling with a long array where all values are smaller than
+    sys.maxsize. Such an array is internally handled as a 32bit integer array
+    and hence should work.
     """
     toLong = int if PY3 else long  # No 'long' function in PY3
     arr64 = numpy.array([-sys.maxsize, toLong(5)], dtype=numpy.int64)
     assert compareArrays(conn.r.ident(arr64), arr64)
 
-    # Here again comes the problem: a int64 array with values beyong sys.maxsize. This should raise a valueerror:
-    arr64big = numpy.array([toLong(-32000056789), toLong(5)], dtype=numpy.int64)
+    # Here again comes the problem: a int64 array with values beyong
+    # sys.maxsize. This should raise a valueerror:
+    arr64big = numpy.array([toLong(-32000056789), toLong(5)],
+                           dtype=numpy.int64)
     py.test.raises(ValueError, conn.r.ident, arr64big)
+
 
 ### Test floats
 
@@ -161,16 +204,20 @@ def test_eval_floats():
     # test via call to ident function with single argument:
     assert conn.r.ident(5.5) == 5.5
 
+
 def test_eval_float_arrays():
     """Test float arrays"""
-    assert compareArrays(conn.r("266.5", atomicArray=True), numpy.array([266.5]))
+    assert compareArrays(conn.r("266.5", atomicArray=True),
+                         numpy.array([266.5]))
     assert compareArrays(conn.r("c(55.2, -35.7)"), numpy.array([55.2, -35.7]))
     res = conn.r("c(55.5, -35.5)")
     assert isinstance(res, numpy.ndarray)
     assert res.dtype == numpy.float
 
     # test via call to ident function with single argument:
-    assert compareArrays(conn.r.ident(numpy.array([1.7, 5.6])), numpy.array([1.7, 5.6]))
+    assert compareArrays(conn.r.ident(numpy.array([1.7, 5.6])),
+                         numpy.array([1.7, 5.6]))
+
 
 ### Test complex numbers
 
@@ -185,6 +232,7 @@ def test_eval_complex():
     # test via call to ident function with single argument:
     assert conn.r.ident(5.5-3.3j) == 5.5-3.3j
 
+
 def test_eval_complex_arrays():
     """Test complex number arrays"""
     res = conn.r("complex(real = 5.5, imaginary = 6.6)", atomicArray=True)
@@ -196,17 +244,19 @@ def test_eval_complex_arrays():
     arr = numpy.array([(5.5+6.6j), (-3.0-6j)])
     assert compareArrays(conn.r.ident(arr), arr)
 
+
 ### Test boolean values
 
 def test_eval_bool():
     """Test boolean values"""
     res = conn.r('TRUE')
-    assert res == True
+    assert res is True
     assert type(res) == bool
-    assert conn.r('FALSE') == False
+    assert conn.r('FALSE') is False
 
     # test via call to ident function with single argument:
-    assert conn.r.ident(True) == True
+    assert conn.r.ident(True) is True
+
 
 def test_eval_bool_arrays():
     """Test boolean arrays"""
@@ -216,7 +266,9 @@ def test_eval_bool_arrays():
     assert compareArrays(conn.r('c(TRUE, FALSE)'), numpy.array([True, False]))
 
     # test via call to ident function with single argument:
-    assert compareArrays(conn.r.ident(numpy.array([True, False, False])), numpy.array([True, False, False]))
+    assert compareArrays(conn.r.ident(numpy.array([True, False, False])),
+                         numpy.array([True, False, False]))
+
 
 def test_empty_boolean_array():
     """Check that zero-length boolean ('logical') array is returned fine"""
@@ -232,6 +284,7 @@ def test_null_value():
 
 ### Test list function
 
+
 def test_lists():
     """Test lists which directtly translate into Python lists"""
     assert conn.r('list()') == []
@@ -241,7 +294,8 @@ def test_lists():
     # with numbers, same type and mixed
     assert conn.r('list(1)') == [1]
     assert conn.r('list(1, 5)') == [1, 5]
-    assert conn.r('list(1, complex(real = 5.5, imaginary = -3.3))') == [1, 5.5-3.3j]
+    assert conn.r('list(1, complex(real = 5.5, imaginary = -3.3))') == \
+        [1, 5.5-3.3j]
 
     # make a Python-style call to the list-function:
     assert conn.r.list(1, 2, 5) == [1, 2, 5]
@@ -249,26 +303,37 @@ def test_lists():
     # test via call to ident function with single argument:
     assert conn.r.ident([1, 2, 5]) == [1, 2, 5]
 
+
 def test_tagged_lists():
-    """Tests 'tagged' lists, i.e. lists which allow to address their items via name, not only via index.
+    """
+    Tests 'tagged' lists, i.e. lists which allow to address their items via
+    name, not only via index.
     Those R lists are translated into 'TaggedList'-objects in Python.
     """
     res = conn.r('list(husband="otto")')
     assert res == TaggedList([("husband", "otto")])
     # a mixed list, where the 2nd item has no tag:
 
-    exp_res = TaggedList([("n","Fred"), ("v", 2.0), ("c_ages", numpy.array([1.0, 2.0]))])
+    exp_res = TaggedList([("n", "Fred"), ("v", 2.0),
+                          ("c_ages", numpy.array([1.0, 2.0]))])
     res = conn.r('list(n="Fred", v=2, c_ages=c(1, 2))')
-    assert repr(res) == repr(exp_res)                     # do string comparison because of complex nested data!
+    # do string comparison because of complex nested data!
+    assert repr(res) == repr(exp_res)
 
     # test via call to ident function with single argument:
-    assert repr(conn.r.ident(exp_res)) == repr(exp_res)   # do string comparison because of complex nested data!
+    # do string comparison because of complex nested data!
+    assert repr(conn.r.ident(exp_res)) == repr(exp_res)
 
-    # NOTE: The following fails in the rserializer because of the missing tag of the 2nd element:  <<<<--------- TODO!!
+    # NOTE: The following fails in the rserializer because of the missing tag
+    # of the 2nd element:  <<<<--------- TODO!!
     # conn.r.ident(TaggedList([("n","Fred"), 2.0, ("c_ages", 5.5)])
 
+
 def test_vector_expression():
-    """Tests for typecode 0x1a XT_VECTOR_EXP - returns the expression content as python list"""
+    """
+    Tests for typecode 0x1a XT_VECTOR_EXP - returns the expression content
+    as python list
+    """
     # first empty expression
     res = conn.r('expression()')
     assert res == []
@@ -279,20 +344,28 @@ def test_vector_expression():
 
 
 ### Test more numpy arrays
-### Many have been test above, but generally only 1-d arrays. Let's look at arrays with higher dimensions
+### Many have been test above, but generally only 1-d arrays. Let's look at
+### arrays with higher dimensions
 
 
 def test_2d_arrays_created_in_python():
-    """Check that transferring various arrays to R preserves columns, rows, and shape. """
-    bools   = [True, False, True, True]
+    """
+    Check that transferring various arrays to R preserves columns, rows,
+    and shape.
+    """
+    bools = [True, False, True, True]
     strings = ['abc', 'def', 'ghi', 'jkl']
     arrays = [
-        numpy.arange(6).reshape((2,3), order='C'),     # same as: numpy.array([[1,2,3], [4,5,6]])
-        numpy.arange(6).reshape((2,3), order='F'),     # same as: numpy.array([[1,3,5], [2,4,6]])
-        numpy.array(bools).reshape((2,2), order='C'),  # same as: numpy.array([[True, False], [True, True]])
-        numpy.array(bools).reshape((2,2), order='F'),  # same as: numpy.array([[True, True], [False, True]])
-        numpy.array(strings).reshape((2,2), order='C'),
-        numpy.array(strings).reshape((2,2), order='F'),
+        # next is same as: numpy.array([[1,2,3], [4,5,6]])
+        numpy.arange(6).reshape((2, 3), order='C'),
+        # next is same as: numpy.array([[1,3,5], [2,4,6]])
+        numpy.arange(6).reshape((2, 3), order='F'),
+        # next is same as: numpy.array([[True, False], [True, True]])
+        numpy.array(bools).reshape((2, 2), order='C'),
+        # next is same as: numpy.array([[True, True], [False, True]])
+        numpy.array(bools).reshape((2, 2), order='F'),
+        numpy.array(strings).reshape((2, 2), order='C'),
+        numpy.array(strings).reshape((2, 2), order='F'),
     ]
 
     for arr in arrays:
@@ -309,8 +382,11 @@ def test_2d_arrays_created_in_python():
 
 
 def test_2d_numeric_array_created_in_R():
-    """Create an array in R, transfer it to python, and check that columns, rows, and shape are preserved.
-    Note: Arrays in R are always in Fortran order, i.e. first index moves fastest.
+    """
+    Create an array in R, transfer it to python, and check that columns,
+    rows, and shape are preserved.
+    Note: Arrays in R are always in Fortran order, i.e. first index moves
+    fastest.
 
     The array in R looks like:
          [,1] [,2] [,3]
@@ -328,9 +404,10 @@ def test_2d_numeric_array_created_in_R():
     assert len(arr[:, 1]) == len(conn.r('arr[,2]')) == 2
     assert compareArrays(arr[:, 1], conn.r('arr[,2]'))
 
+
 def test_tagged_array():
     res = conn.r('c(a=1.,b=2.,c=3.)')
-    exp_res = TaggedArray.new(numpy.array([1., 2., 3.,]), ['a', 'b', 'c'])
+    exp_res = TaggedArray.new(numpy.array([1., 2., 3.]), ['a', 'b', 'c'])
     assert compareArrays(res, exp_res)
     assert res.keys() == exp_res.keys()  # compare the tags of both arrays
 
@@ -342,7 +419,10 @@ def test_very_large_result_array():
 
 
 def test_eval_void():
-    """Check that conn.voidEval() does not return any result in contrast to conn.eval()"""
+    """
+    Check that conn.voidEval() does not return any result in contrast to
+    conn.eval()
+    """
     assert conn.r('a=1') == 1.0
     assert conn.eval('a=1') == 1.0
     assert conn.voidEval('a=1') is None
@@ -361,30 +441,42 @@ def test_eval_sequence():
     # now make Python-style call to the R function:
     assert compareArrays(conn.r.seq(1, 5), numpy.array(range(1, 6)))
 
+
 def test_eval_polyroot():
     # first string evaluate of R expression:
     res = conn.r('polyroot(c(-39.141,151.469,401.045))')
-    exp_res = numpy.array([ 0.1762039 +1.26217745e-29j, -0.5538897 -1.26217745e-29j])
+    exp_res = numpy.array([0.1762039 + 1.26217745e-29j,
+                           -0.5538897 - 1.26217745e-29j])
     assert compareArrays(res, exp_res)
 
     # now make Python-style call to the R function:
-    assert compareArrays(conn.r.polyroot(conn.r.c(-39.141,151.469, 401.045)), exp_res)
+    assert compareArrays(conn.r.polyroot(conn.r.c(-39.141, 151.469, 401.045)),
+                         exp_res)
+
 
 def test_eval_very_convoluted_function_result():
-    """The result of this call is a highly nested data structure. Have fun on evaluation it!"""
+    """
+    The result of this call is a highly nested data structure.
+    Have fun on evaluation it!
+    """
     res = conn.r('x<-1:20; y<-x*2; lm(y~x)')
     assert res.__class__ == TaggedList
     # check which tags the TaggedList has:
-    assert res.keys == ['coefficients', 'residuals', 'effects', 'rank', 'fitted.values', 'assign', 'qr', 'df.residual',
+    assert res.keys == ['coefficients', 'residuals', 'effects', 'rank',
+                        'fitted.values', 'assign', 'qr', 'df.residual',
                         'xlevels', 'call', 'terms', 'model']
-    assert compareArrays(res['coefficients'], TaggedArray.new(numpy.array([-0.,  2.]), ['(Intercept)', 'x']))
+    assert compareArrays(res['coefficients'],
+                         TaggedArray.new(numpy.array([-0.,  2.]),
+                                         ['(Intercept)', 'x']))
     # ... many more tags could be tested here ...
+
 
 ### Some more tests
 def test_rAssign_method():
-    'test "rAssign" class method of RSerializer'
-    hexd = b'\x20\x00\x00\x00\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x04\x00\x00\x76\x00'\
-           b'\x00\x00\x0a\x08\x00\x00\x20\x04\x00\x00\x01\x00\x00\x00'
+    """test "rAssign" class method of RSerializer"""
+    hexd = b'\x20\x00\x00\x00\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+           b'\x00\x04\x04\x00\x00\x76\x00\x00\x00\x0a\x08\x00\x00\x20\x04' \
+           b'\x00\x00\x01\x00\x00\x00'
     assert rserializer.rAssign('v', 1) == hexd
 
     # now assign a value via the connector:
@@ -393,12 +485,15 @@ def test_rAssign_method():
 
 
 def test_rEval_method():
-    hexd = b'\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x04\x00\x00\x61\x3d\x31\x00'
+    """test "rEval" method"""
+    hexd = b'\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+           b'\x00\x04\x04\x00\x00\x61\x3d\x31\x00'
     assert rserializer.rEval('a=1') == hexd
 
 
 def test_serialize_DT_INT():
-    hexd = b'\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x007\x00\x00\x00'
+    hexd = b'\x03\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+           b'\x00\x01\x04\x00\x007\x00\x00\x00'
     s = rserializer.RSerializer(rtypes.CMD_eval)
     s.serialize(55, dtTypeCode=rtypes.DT_INT)
     res = s.finalize()
@@ -411,8 +506,9 @@ def test_serialize_unsupported_object_raises_exception():
 
 
 def test_eval_illegal_variable_lookup():
-    """Calling an invalid variable lookup should result in a proper exception. Also the connector should be still
-    usable afterwards.
+    """
+    Calling an invalid variable lookup should result in a proper exception.
+    Also the connector should be still usable afterwards.
     """
     try:
         conn.r('x')
@@ -421,16 +517,20 @@ def test_eval_illegal_variable_lookup():
     # check that connection still works:
     assert conn.r('1') == 1
 
+
 def test_eval_illegal_R_statement():
-    """Calling an R statement lookup should result in a proper exception. Also the connector should be still
-    usable afterwards.
+    """
+    Calling an R statement lookup should result in a proper exception.
+    Also the connector should be still usable afterwards.
     """
     try:
         conn.r('-%r\0/455')
     except REvalError as msg:
-        assert str(msg) == ""  # unfortunately this does not return a proper error message
+        # unfortunately this does not return a proper error message:
+        assert str(msg) == ""
     # check that connection still works:
     assert conn.r('1') == 1
+
 
 #######################
 # some more tests

@@ -1,3 +1,6 @@
+"""
+Exception classes for pyRserve
+"""
 
 
 class PyRserveError(Exception):
@@ -5,7 +8,7 @@ class PyRserveError(Exception):
 
 
 class REvalError(PyRserveError):
-    'Indicates an error raised by R itself (not by Rserve)'
+    """Indicates an error raised by R itself (not by Rserve)"""
     pass
 
 

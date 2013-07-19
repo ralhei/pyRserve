@@ -1,3 +1,4 @@
+"""pyRserve package"""
 import warnings
 from .version import __version__
 
@@ -7,5 +8,3 @@ del warnings
 
 from .rconn import connect
 from .taggedContainers import TaggedList, TaggedArray, AttrArray
-
-
