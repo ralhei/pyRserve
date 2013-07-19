@@ -29,6 +29,7 @@ Changes
     * Tested with Python 3.3.x, R 3.0.1 and Rserve 1.7.0
     * Updated documentation accordingly
     * Code cleanup for pep8 (mostly)
+    * Marked code as production stable
 
 * V 0.7.1 (2013-06-23)
     * Added link to new GitHub repository
