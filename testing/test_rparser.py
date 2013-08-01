@@ -129,18 +129,18 @@ def test_eval_integers():
 
 def test_eval_long():
     """
-    Test long integers. Going beyond sys.maxsize works with eval() because
+    Test long integers. Going beyond MAX_INT32 works with eval() because
     in R all integers are converted to floats right away. However sending a
     long as functional parameter should raise a NotImplementedError if
-    its value is outside the normal integer range (i.e. sys.maxsize).
+    its value is outside the normal integer range (i.e. MAX_INT32).
     """
-    assert conn.r("%d" % sys.maxsize) == sys.maxsize
+    assert conn.r("%d" % rtypes.MAX_INT32) == rtypes.MAX_INT32
     # Next test for long integers, handled as floats in R via eval():
-    assert conn.r("%d" % (sys.maxsize*2)) == sys.maxsize*2
+    assert conn.r("%d" % (rtypes.MAX_INT32*2)) == rtypes.MAX_INT32*2
 
     # The syntax like 234L only exists in Python2! So use long in Py2. I
     # n Python3 everything is of type <int>
-    # Send a long value which is still within below the sys.maxsize.
+    # Send a long value which is still within below the rtypes.MAX_INT32.
     # It it automatically converted to a normal int in the rserializer and
     # hence should work fine:
     toLong = int if PY3 else long  # No 'long' function in PY3
@@ -148,7 +148,7 @@ def test_eval_long():
 
     # Here comes the problem - there is no native 64bit integer on the R side,
     # so this should raise a ValueError
-    py.test.raises(ValueError, conn.r.ident, sys.maxsize*2)
+    py.test.raises(ValueError, conn.r.ident, rtypes.MAX_INT32*2)
 
 
 def test_eval_integer_arrays():
@@ -165,7 +165,7 @@ def test_eval_integer_arrays():
     #### Create real integer arrays in R:
     res = conn.r('as.integer(c(1, 5))')
     assert compareArrays(res, numpy.array([1, 5]))
-    assert res.dtype == numpy.int
+    assert res.dtype in (numpy.int, numpy.int32)
 
     # test via call to ident function with single argument:
     assert compareArrays(conn.r.ident(numpy.array([1, 5])),
@@ -175,16 +175,16 @@ def test_eval_integer_arrays():
 def test_eval_long_arrays():
     """
     Test calling with a long array where all values are smaller than
-    sys.maxsize. Such an array is internally handled as a 32bit integer array
+    MAX_INT32. Such an array is internally handled as a 32bit integer array
     and hence should work.
     """
     toLong = int if PY3 else long  # No 'long' function in PY3
-    arr64 = numpy.array([-sys.maxsize, toLong(5)], dtype=numpy.int64)
-    assert compareArrays(conn.r.ident(arr64), arr64)
+    # arr64 = numpy.array([rtypes.MIN_INT32, toLong(5)], dtype=numpy.int64)
+    # assert compareArrays(conn.r.ident(arr64), arr64)
 
     # Here again comes the problem: a int64 array with values beyong
-    # sys.maxsize. This should raise a valueerror:
-    arr64big = numpy.array([toLong(-32000056789), toLong(5)],
+    # rtypes.MAX_INT32. This should raise a ValueError:
+    arr64big = numpy.array([toLong(-rtypes.MAX_INT32 * 2), toLong(5)],
                            dtype=numpy.int64)
     py.test.raises(ValueError, conn.r.ident, arr64big)
 
@@ -514,7 +514,7 @@ def test_eval_illegal_variable_lookup():
         conn.r('x')
     except REvalError as msg:
         assert str(msg) == "Error: object 'x' not found"
-    # check that connection still works:
+    # check that the connection still works:
     assert conn.r('1') == 1
 
 
@@ -528,7 +528,7 @@ def test_eval_illegal_R_statement():
     except REvalError as msg:
         # unfortunately this does not return a proper error message:
         assert str(msg) == ""
-    # check that connection still works:
+    # check that the connection still works:
     assert conn.r('1') == 1
 
 

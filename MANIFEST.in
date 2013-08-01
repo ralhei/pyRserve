@@ -1,0 +1,4 @@
+recursive-include pyRserve *.py
+recursive-include doc *.rst *.html conf.py
+recursive-include doc/html/_static *
+include . LICENSE CREDITS Makefile INSTALL MANIFEST.in

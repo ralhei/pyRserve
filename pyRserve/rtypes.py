@@ -4,9 +4,14 @@ types module for pyRserve
 import numpy
 from pyRserve.misc import PY3
 
+# some general constants:
 SOCKET_BLOCK_SIZE = 4096
-RHEADER_SIZE      =   16
+MAX_INT32 = 2**31 - 1
+MIN_INT32 = -MAX_INT32
 
+# Rserve constants and mappings ###############################################
+
+RHEADER_SIZE = 16             # Rserve header size
 
 CMD_RESP = 0x10000            # all responses have this flag set
 

@@ -108,25 +108,29 @@ class Lexer(object):
                   'message size: %d' %
                   (self.responseOK, self.responseCode,
                    self.errCode, self.messageSize))
-            # store total size of message in case buffer needs to be emptied
-            # after an error occurred:
-        self.totalMessageSize = self.lexpos + self.messageSize
         return self.messageSize
 
     def clearSocketData(self):
         """
         If for any reason the parsing process returns an error, make sure that
         all data from a socket is removed to avoid data pollution with further
-        parsing attempts. This must only be called after self.readHeader() has
-        been executed.
+        parsing attempts.
         """
         if not isinstance(self.fp, socket.socket):
             # not a socket. Nothing to do here.
             return
-        bytesLeft = self.totalMessageSize - self.lexpos
-        while bytesLeft > 0:
-            d = self.fp.recv(SOCKET_BLOCK_SIZE)
-            bytesLeft -= len(d)
+        # Switch socket into non-blocking mode and read from it until it
+        # is empty (and hence socket.error is raised):
+        self.fp.setblocking(False)
+        try:
+            while True:
+                self.fp.recv(SOCKET_BLOCK_SIZE)
+        except socket.error:
+            # socket has no more data, it can be considered as cleared
+            pass
+        finally:
+            # Now set it back to blocking mode (no matter what exception):
+            self.fp.setblocking(True)
 
     def read(self, length):
         """

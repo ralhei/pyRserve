@@ -35,8 +35,17 @@ If you have already downloaded the tar file then from your command line run::
 
   R CMD INSTALL Rserve_1.7-0.tar.gz
 
-Note that you have to run at least version 0.6.6 to get the unittests to work.
-Older versions of Rserve have a severe implementation bug.
+Older versions of Rserve might also work, the earliest function version however
+seems to be 0.6.6.
+
+.. NOTE::
+   Rserve usually daemonizes itself after starting from the command
+   line. If you want to prevent this from happening (e.g. because you would
+   like to control Rserve by a process management tool like ``supervisord``)
+   then Rserve has to be install with the special ``-DNODAEMON`` compiler flag::
+
+     PKG_CPPFLAGS=-DNODAEMON  R CMD INSTALL Rserve_1.7-0.tar.gz
+
 
 Installing pyRserve
 -------------------

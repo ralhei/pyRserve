@@ -269,14 +269,14 @@ class RSerializer(object):
         Render single numeric items into their corresponding array counterpart
         in R
         """
-        if isinstance(o, (long, numpy.int64, numpy.long)):
-            if -sys.maxsize <= o <= sys.maxsize:
+        if isinstance(o, (int, long, numpy.int64, numpy.long)):
+            if rtypes.MIN_INT32 <= o <= rtypes.MAX_INT32:
                 # even though this type of data is 'long' it still fits into a
                 # normal integer. Good!
                 o = int(o)
             else:
                 raise ValueError('Cannot serialize long integers larger than '
-                                 'sys.maxsize (2**31-1)')
+                                 'MAX_INT32 (**31-1)')
 
         rTypeCode = rtypes.atom2ArrMap[type(o)]
         structCode = '<'+rtypes.structMap[type(o)]
@@ -297,13 +297,13 @@ class RSerializer(object):
                is of type TaggedArray.
         """
         if o.dtype in (numpy.int64, numpy.long):
-            if -sys.maxsize <= o.min() and o.max() <= sys.maxsize:
+            if rtypes.MIN_INT32 <= o.min() and o.max() <= rtypes.MAX_INT32:
                 # even though this type of array is 'long' its values still
                 # fit into a normal int32 array. Good!
                 o = o.astype(numpy.int32)
             else:
                 raise ValueError('Cannot serialize long integer arrays with '
-                                 'values outside sys.maxsize range')
+                                 'values outside MAX_INT32 (2**31-1) range')
 
         startPos = self._fp.tell()
         rTypeCode = self.__s_write_xt_array_tag_data(o)

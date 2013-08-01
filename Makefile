@@ -33,7 +33,7 @@ _backup:
 
 
 test:
-	(cd  pyRserve; py.test)
+	(cd  testing; py.test)
 
 coverage:
 	pyTest=`which py.test` ; \
