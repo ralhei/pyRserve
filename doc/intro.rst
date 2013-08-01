@@ -25,6 +25,10 @@ be improved.
 
 Changes
 ----------------
+* V 0.7.3 (2013-08-01)
+    * Added missing MANIFEST.in to produce a complete tgz package (now includes docs etc)
+    * Fixed bug on x64 machines when handling integers larger than 2**31
+
 * V 0.7.2 (2013-07-19)
     * Tested with Python 3.3.x, R 3.0.1 and Rserve 1.7.0
     * Updated documentation accordingly
