@@ -15,7 +15,7 @@ from pyRserve.misc import PY3
 from pyRserve.rexceptions import REvalError
 from pyRserve.taggedContainers import TaggedList, TaggedArray
 
-from testtools import start_pyRserve, compareArrays
+from testtools import start_pyRserve, compareArrays, RSERVE_PORT
 
 conn = None  # will be set to Rserve-connection in setup_module()
 
@@ -23,7 +23,12 @@ conn = None  # will be set to Rserve-connection in setup_module()
 def setup_module(module):
     module.rProc = start_pyRserve()
     # CREATE A MODULE-WIDE CONNECTION OBJECT TO RSERVE
-    module.conn = rconn.connect()
+    try:
+        module.conn = rconn.connect(port=RSERVE_PORT)
+    finally:
+        # make sure we shutdown the running Rserve instance before
+        # raising the error:
+        module.rProc.terminate()
     # create an 'ident' function which just returns its argument.
     # Needed for testing below.
     module.conn.r('ident <- function(v) { v }')
@@ -540,3 +545,12 @@ def test_rvarproxy():
     conn.r.a = [1, 2, 3]
     assert conn.ref.a.__class__ == RVarProxy
     assert conn.ref.a.value() == [1, 2, 3]
+
+
+def test_help_message():
+    """Check that a help message is properly delivered from R for a function"""
+    help_msg = conn.r.sapply.__doc__
+    assert help_msg is not None
+    # remove the extra underscore formatting characters from the help message:
+    help_msg = help_msg.replace('_\x08', '')
+    assert help_msg.startswith('Apply a Function over a List or Vector')

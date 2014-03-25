@@ -284,8 +284,6 @@ If R is properly installed including its help messages those can be retrieved di
 Also here no surprise - just do it the Python way through the ``__doc__`` attribute::
 
   >>> print conn.r.sapply.__doc__
-  lapply                 package:base                 R Documentation
-   
   Apply a Function over a List or Vector
    
   Description:
@@ -295,8 +293,11 @@ Also here no surprise - just do it the Python way through the ``__doc__`` attrib
   of 'X'.
   [...]
 
-Of course this only works for functions which provide documentation. For all others ``__doc__`` just returns ``None``.
+Of course this only works for functions which provide documentation.
+For all others ``__doc__`` just returns ``None``.
 
+To get the help text displayed nicely with a pager (e.g. 'less') you can call
+``conn.r.sapply.help()``.
 
 
 Applying an R function as argument to another function

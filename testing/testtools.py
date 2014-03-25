@@ -8,20 +8,24 @@ import socket
 from numpy import ndarray, float, float32, float64, complex, complex64, \
     complex128
 
+# default port of R is 6311, but to avoid clashes with running Rserve
+# instances use 6312 instead here for unittesting:
+RSERVE_PORT = 6312
+
 
 def start_pyRserve():
     """Setup connection to remote Rserve for unittesting"""
-    RPORT = 6311
-    # Start Rserve
-    rProc = subprocess.Popen(['R', 'CMD', 'Rserve.dbg', '--no-save'],
-                             stdout=open('/dev/null'), stderr=subprocess.PIPE)
-    # wait a moment until Rserve starts listening on RPORT
+    # Start Rserve (in debug mode to ensure that it does not daemonize!!)
+    rProc = subprocess.Popen(
+        ['R', 'CMD', 'Rserve.dbg', '--no-save', '--RS-port', str(RSERVE_PORT)],
+        stdout=open('/dev/null'), stderr=subprocess.PIPE)
+    # wait a moment until Rserve starts listening on RSERVE_PORT
     time.sleep(0.6)
     if rProc.poll():
         # process has already terminated, so provide its output on stderr
         # to the user:
         raise RuntimeError('Rserve has terminated prematurely with the '
-                           'following message:  %s' % rProc.stderr.read())
+                           'following message: %s' % rProc.stderr.read())
 
     # store original socket timeout and set timeout to new value during startup
     # of Rserve:
@@ -35,7 +39,7 @@ def start_pyRserve():
     while cnt < 10:
         try:
             # open a socket connection to Rserve
-            rserv.connect(('', RPORT))
+            rserv.connect(('', RSERVE_PORT))
         except socket.error:
             time.sleep(0.3)
             cnt += 1
@@ -45,7 +49,7 @@ def start_pyRserve():
     else:
         # after trying 10 times we still got no connection to Rserv - something
         # must be wrong.
-        raise RuntimeError('Could not connect to Rserv over the network')
+        raise RuntimeError('Could not connect to Rserve')
 
     # set back original default timeout value:
     socket.setdefaulttimeout(defaultTimeout)
@@ -62,7 +66,7 @@ def start_pyRserve():
 
 
 def compareArrays(arr1, arr2):
-    """Compare two (possibly nested) arrays"""
+    """Helper function to compare two (possibly nested) numpy arrays"""
     def _compareArrays(arr1, arr2):
         assert arr1.shape == arr2.shape
         for idx in range(len(arr1)):

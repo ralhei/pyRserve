@@ -3,6 +3,7 @@ Module providing functionality to connect to a running Rserve instance
 """
 import socket
 import time
+import pydoc
 ###
 from . import rtypes
 from .rexceptions import RConnectionRefused, REvalError, PyRserveClosed
@@ -300,21 +301,44 @@ class RFuncProxy(RBaseProxy):
     def __call__(self, *args, **kw):
         return self._rconn.callFunc(self._name, *args, **kw)
 
+    # command to send to R in order to get the help for a function in text
+    # format:
+    R_HELP = "capture.output(tools:::Rd2txt(utils:::.getHelpFile(help(%s))))"
+
     @property
     def __doc__(self):
+        """
+        There are different ways to get the help message from R:
+        # The the package db file:
+        pkgRdDB = tools:::fetchRdDB(file.path(find.package('base'),
+                                              'help', 'base'))
+        # show all available topics in the help package:
+        names(pkgRdDB)
+        # convert the 'lapply' help message to text (from the base package):
+        tools::Rd2txt(pkgRdDB[['lapply']])
+        # capture this output into a variable:
+        a <- capture.output(tools::Rd2txt(pkgRdDB[['lapply']]))
+        Disadvantage: One needs to know the package beforehand.
+
+        Better:
+        Everything in one line and better (doesn't need to know the pkg):
+        a <- capture.output(tools:::Rd2txt(utils:::.getHelpFile(help(sapply))))
+        """
         try:
-            d = self._rconn.eval('readLines(as.character(help(%s)))' %
-                                 self._name)
+            d = self._rconn.eval(self.R_HELP % self._name)
         except REvalError:
             # probably no help available, unfortunately there is no specific
             # code for this...
             return None
+        # Join the list of strings:
         helpstring = '\n'.join(d)
-        helpstring = helpstring.replace('_\x08', '')
+        # remove some obscure characters:
+        #helpstring = helpstring.replace('_\x08', '')
         return helpstring
 
     def help(self):
-        print(self.__doc__)
+        """Directly page the help message to the terminal (e.g. via less)"""
+        pydoc.pager(self.__doc__)
 
     def __getattr__(self, name):
         """Allow for nested name space calls, e.g. 't.test' """
@@ -330,7 +354,7 @@ class RFuncProxy(RBaseProxy):
             # an error is only raised if neither such a function or variable
             # exists at all!
             raise NameError('no such variable or function "%s" '
-                            'defined in Rserve' % concatName)
+                            'defined in R' % concatName)
         return RFuncProxy(concatName, self._rconn)
 
 

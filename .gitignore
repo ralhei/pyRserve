@@ -1,0 +1,6 @@
+*.pyc
+MANIFEST
+dist
+doc/doctrees
+doc/html
+doc/pyRserve.html.zip
