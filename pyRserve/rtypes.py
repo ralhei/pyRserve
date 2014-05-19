@@ -13,11 +13,26 @@ MIN_INT32 = -MAX_INT32
 
 RHEADER_SIZE = 16             # Rserve header size
 
+
 CMD_RESP = 0x10000            # all responses have this flag set
 
 RESP_OK  = CMD_RESP | 0x0001  # command succeeded; returned parameters depend
                               #   on the command issued
 RESP_ERR = CMD_RESP | 0x0002  # command failed, check stats code
+
+
+CMD_OOB         = 0x20000     # out-of-band data - i.e. unsolicited messages
+
+OOB_SEND        = CMD_OOB | 0x1000 # OOB send - unsolicited SEXP sent from the
+                                   # R instance to the client. 12 LSB are
+                                   # reserved for application-specific code
+OOB_MSG         = CMD_OOB | 0x2000 # OOB message - unsolicited message sent
+                                   # from the R instance to the client
+                                   # requiring a response. 12 LSB are reserved
+                                   # for application-specific code
+OOB_STREAM_READ = CMD_OOB | 0x4000 # OOB stream read request - server requests
+                                   # streaming data from the client (typically
+                                   # streaming input for computation)
 
 ###############################################################################
 # Error codes
