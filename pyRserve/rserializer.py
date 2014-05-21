@@ -380,7 +380,7 @@ class RSerializer(object):
     @classmethod
     def rSerializeResponse(cls, Rexp, fp=None):
         # mainly used for unittesting
-        s = cls(rtypes.CMD_RESP | rtypes.RESP_OK, fp=fp)
+        s = cls(rtypes.RESP_OK, fp=fp)
         s.serialize(Rexp, dtTypeCode=rtypes.DT_SEXP)
         return s.finalize()
 
