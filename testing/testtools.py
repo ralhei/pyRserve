@@ -1,6 +1,7 @@
 """
 Some helper functions for unit testing
 """
+import os
 import subprocess
 import time
 import socket
@@ -8,12 +9,15 @@ import socket
 from numpy import ndarray, float, float32, float64, complex, complex64, \
     complex128
 
+RSERVE_PATH = subprocess.check_output(['R', '--vanilla', '--slave', '-e', 'cat(system.file(package="Rserve", "libs", .Platform$r_arch, "Rserve.dbg"))'])
+HERE_PATH = os.path.dirname(os.path.realpath(__file__))
+
 
 def start_pyRserve():
     """Setup connection to remote Rserve for unittesting"""
     RPORT = 6311
     # Start Rserve
-    rProc = subprocess.Popen(['R', 'CMD', 'Rserve.dbg', '--no-save'],
+    rProc = subprocess.Popen(['R', 'CMD', RSERVE_PATH, '--no-save', '--RS-conf', os.path.join(HERE_PATH, 'test.conf')],
                              stdout=open('/dev/null'), stderr=subprocess.PIPE)
     # wait a moment until Rserve starts listening on RPORT
     time.sleep(0.6)
