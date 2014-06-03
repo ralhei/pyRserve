@@ -6,7 +6,7 @@ import time
 ###
 from . import rtypes
 from .rexceptions import RConnectionRefused, REvalError, PyRserveClosed
-from .rserializer import rEval, rAssign
+from .rserializer import rEval, rAssign, rShutdown
 from .rparser import rparse
 from .misc import hexString
 
@@ -94,6 +94,10 @@ class RConnector(object):
 
     def _reval(self, aString, void):
         rEval(aString, fp=self.sock, void=void)
+
+    def shutdown(self):
+        rShutdown(fp=self.sock)
+        self.close()
 
     @checkIfClosed
     def eval(self, aString, atomicArray=None, void=False):
