@@ -2,7 +2,7 @@
 Serializer class to convert Python objects into a binary data stream for
 sending them to Rserve.
 """
-__all__ = ['reval', 'rassign', 'rSerializeResponse']
+__all__ = ['reval', 'rassign', 'rSerializeResponse', 'rShutdown']
 
 import struct
 import os
@@ -378,6 +378,11 @@ class RSerializer(object):
         return s.finalize()
 
     @classmethod
+    def rShutdown(cls, fp=None):
+        s = cls(rtypes.CMD_shutdown, fp=fp)
+        return s.finalize()
+
+    @classmethod
     def rSerializeResponse(cls, Rexp, fp=None):
         # mainly used for unittesting
         s = cls(rtypes.CMD_RESP | rtypes.RESP_OK, fp=fp)
@@ -389,3 +394,4 @@ class RSerializer(object):
 rEval = RSerializer.rEval
 rAssign = RSerializer.rAssign
 rSerializeResponse = RSerializer.rSerializeResponse
+rShutdown = RSerializer.rShutdown
