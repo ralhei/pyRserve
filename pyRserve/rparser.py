@@ -620,5 +620,3 @@ class Closure(object):
 
     def __repr__(self):
         return '<Closure instance %d>' % id(self)
-
-#kate: space-indent on; indent-width 4

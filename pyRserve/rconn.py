@@ -390,5 +390,3 @@ if __name__ == '__main__':
     conn.r('func2 <- function(a1, a2) { list(a1, a2) }')
     conn.r('funcKW <- function(a1=1, a2=4) { list(a1, a2) }')
     conn.r('squared<-function(t) t^2')
-
-#kate: space-indent on; indent-width 4
