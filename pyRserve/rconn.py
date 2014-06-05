@@ -19,6 +19,23 @@ def _defaultOOBCallback(data, code=0):
     return None
 
 
+class OOBCallback(object):
+    """Sets up conn with a new callback when entering the `with` block and
+    restores the old one when exiting
+    """
+    def __init__(self, conn, callback):
+        self.conn = conn
+        self.callback = callback
+
+    def __enter__(self):
+        self.old_callback = self.conn.oobCallback
+        self.conn.oobCallback = self.callback
+        return self.conn
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.conn.oobCallback = self.old_callback
+
+
 def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False,
             oobCallback=_defaultOOBCallback):
     """Open a connection to an Rserve instance

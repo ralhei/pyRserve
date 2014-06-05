@@ -11,7 +11,7 @@ import py
 
 sys.path.insert(0, '..')
 from pyRserve import rtypes, rserializer, rconn
-from pyRserve.rconn import RVarProxy
+from pyRserve.rconn import RVarProxy, OOBCallback
 from pyRserve.misc import PY3
 from pyRserve.rexceptions import REvalError
 from pyRserve.taggedContainers import TaggedList, TaggedArray
@@ -557,23 +557,14 @@ def test_oob_callback():
     collect = []
     def collectMSG(data, code=0):
         collect.append( (code, data) )
-    conn.oobCallback, oldCB = collectMSG, conn.oobCallback
 
-    conn.r('self.oobSend(1)')
-    conn.r('self.oobMessage(2, code=10L)')
+    with OOBCallback(conn, collectMSG):
+        conn.r('self.oobSend(1)')
+        conn.r('self.oobMessage(2, code=10L)')
 
-    assert collect == [(0, 1), (10, 2)]
-
-    conn.oobCallback = oldCB
+        assert collect == [(0, 1), (10, 2)]
 
 def test_oob_callback_result():
-    """Tests OOB with registered callbacks returning things"""
-    def returnOne(data, code=0):
-        return 1
-    conn.oobCallback, oldCB = returnOne, conn.oobCallback
-
-    assert conn.r('stopifnot(self.oobMessage(NULL) == 1L)') is None
-
-    conn.oobCallback = oldCB
-
-#kate: space-indent on; indent-width 4;
+    """Tests OOB with a registered callback returning a one"""
+    with OOBCallback(conn, lambda data, code=0: 1):
+        assert conn.r('stopifnot(self.oobMessage(NULL) == 1L)') is None
