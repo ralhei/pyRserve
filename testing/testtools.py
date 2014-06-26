@@ -33,8 +33,7 @@ def start_pyRserve():
     socket.setdefaulttimeout(1)
 
     rserv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    cnt = 0
-    # give it a maximum of 10 tries with some sleep in between to wait for
+    cnt = 0# give it a maximum of 10 tries with some sleep in between to wait for
     # Rserve to come into action!
     while cnt < 10:
         try:

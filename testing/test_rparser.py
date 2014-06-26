@@ -542,9 +542,11 @@ def test_rvarproxy():
     assert conn.ref.a.__class__ == RVarProxy
     assert conn.ref.a.value() == [1, 2, 3]
 
+
 def test_oob_send():
     """Tests OOB without registering a callback"""
     assert conn.r('self.oobSend("foo")') is True
+
 
 def test_oob_message():
     """Tests OOB Message. Should not lock up, and without callbacks,
@@ -552,17 +554,20 @@ def test_oob_message():
     """
     assert conn.r('stopifnot(self.oobMessage("foo") == NULL)') is None
 
+
 def test_oob_callback():
     """Tests OOB with one registered callback"""
     collect = []
+
     def collectMSG(data, code=0):
-        collect.append( (code, data) )
+        collect.append((code, data))
 
     with OOBCallback(conn, collectMSG):
         conn.r('self.oobSend(1)')
         conn.r('self.oobMessage(2, code=10L)')
 
         assert collect == [(0, 1), (10, 2)]
+
 
 def test_oob_callback_result():
     """Tests OOB with a registered callback returning a one"""
