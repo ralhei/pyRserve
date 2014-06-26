@@ -577,3 +577,59 @@ In the ``res``-result data structure above there are also objects of a container
    >>> res['estimate']['mean of y']
    5.5
 
+Out Of Bounds messages (OOB)
+----------------------------
+
+Starting with version 1.7, Rserve allows OOB messages to be sent from R to Rserve clients.
+
+This capability requires to start Rserve with a configuration enabling it, and loading Rserve itself as a library into the server. Both is easily accomplished in a config file like this::
+
+   oob enable
+   eval library(Rserve)
+
+OOB messaging works by calling ``self.oobSend`` or ``self.oobMessage`` in R, e.g.::
+
+   >>> conn.eval('self.oobSend(1)')
+   True
+
+This does nothing but to indicate that it works. For real usefulness, one needs to register a callback that gets called with the sent data and user code as parameters::
+
+   >>> conn.oobCallback = lambda data, code: print(code, data)
+   >>> conn.eval('self.oobSend("foo")') #user code is 0 per default
+   <<< 0 foo
+   True
+
+The other function, ``self.oobMessage`` executes the callback and gives its return value to R::
+
+   >>> conn.oobCallback = lambda data, code: data**code
+   >>> conn.voidEval('dc <- self.oobMessage(2, 3)')
+   >>> conn.r.dc
+   8
+
+The user code might be useful to create a callback convention used for switching callbacks based on agreed-upon codes::
+
+   >>> C_PRINT = conn.r.C_PRINT = 0
+   >>> C_ECHO  = conn.r.C_ECHO  = 1
+   >>> C_STORE = conn.r.C_STORE = 2
+   >>> store = []
+   >>> functions = {
+   ...     C_PRINT: lambda data: print('<<<', data),
+   ...     C_ECHO:  lambda data: data,
+   ...     C_STORE: store.append,
+   ... }
+   >>> def dispatch(data, code):
+   ...     return functions[code](data)
+   >>> conn.oobCallback = dispatch
+   >>> 
+   >>> conn.eval('self.oobMessage('foo', C_PRINT)')
+   <<< foo
+   >>> conn.eval('self.oobMessage('foo', C_ECHO)')
+   'foo'
+   >>> conn.eval('self.oobMessage('foo', C_STORE)')
+   >>> store
+   [1]
+   >>> conn.eval('self.oobMessage('foo', 3)')
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+   KeyError: 3
+
