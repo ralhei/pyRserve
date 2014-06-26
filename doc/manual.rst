@@ -66,6 +66,15 @@ To check the status of the connection use::
 
    Then restart Rserve.
 
+
+Shutting down Rserve remotely
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you need to shutdown Rserve from your client connection the following command can be called:
+
+  >>> conn.shutdown()
+
+
 String evaluation in R
 -------------------------------
 
