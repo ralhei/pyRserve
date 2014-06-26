@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Unittesting module for rparser
 """
@@ -10,7 +11,7 @@ import py
 
 sys.path.insert(0, '..')
 from pyRserve import rtypes, rserializer, rconn
-from pyRserve.rconn import RVarProxy
+from pyRserve.rconn import RVarProxy, OOBCallback
 from pyRserve.misc import PY3
 from pyRserve.rexceptions import REvalError
 from pyRserve.taggedContainers import TaggedList, TaggedArray
@@ -540,3 +541,30 @@ def test_rvarproxy():
     conn.r.a = [1, 2, 3]
     assert conn.ref.a.__class__ == RVarProxy
     assert conn.ref.a.value() == [1, 2, 3]
+
+def test_oob_send():
+    """Tests OOB without registering a callback"""
+    assert conn.r('self.oobSend("foo")') is True
+
+def test_oob_message():
+    """Tests OOB Message. Should not lock up, and without callbacks,
+    NULL should be sent back to R. (None → NULL)
+    """
+    assert conn.r('stopifnot(self.oobMessage("foo") == NULL)') is None
+
+def test_oob_callback():
+    """Tests OOB with one registered callback"""
+    collect = []
+    def collectMSG(data, code=0):
+        collect.append( (code, data) )
+
+    with OOBCallback(conn, collectMSG):
+        conn.r('self.oobSend(1)')
+        conn.r('self.oobMessage(2, code=10L)')
+
+        assert collect == [(0, 1), (10, 2)]
+
+def test_oob_callback_result():
+    """Tests OOB with a registered callback returning a one"""
+    with OOBCallback(conn, lambda data, code=0: 1):
+        assert conn.r('stopifnot(self.oobMessage(NULL) == 1L)') is None

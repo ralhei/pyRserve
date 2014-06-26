@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Module providing functionality to connect to a running Rserve instance
 """
@@ -6,15 +7,37 @@ import time
 ###
 from . import rtypes
 from .rexceptions import RConnectionRefused, REvalError, PyRserveClosed
-from .rserializer import rEval, rAssign, rShutdown
-from .rparser import rparse
+from .rserializer import rEval, rAssign, rSerializeResponse, rShutdown
+from .rparser import rparse, OOBMessage
 from .misc import hexString
 
 RSERVEPORT = 6311
 DEBUG = False
 
 
-def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False):
+def _defaultOOBCallback(data, code=0):
+    return None
+
+
+class OOBCallback(object):
+    """Sets up conn with a new callback when entering the `with` block and
+    restores the old one when exiting
+    """
+    def __init__(self, conn, callback):
+        self.conn = conn
+        self.callback = callback
+
+    def __enter__(self):
+        self.old_callback = self.conn.oobCallback
+        self.conn.oobCallback = self.callback
+        return self.conn
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.conn.oobCallback = self.old_callback
+
+
+def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False,
+            oobCallback=_defaultOOBCallback):
     """Open a connection to an Rserve instance
     Params:
     - host: provide hostname where Rserve runs, or leave as empty string to
@@ -30,6 +53,12 @@ def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False):
             Provide 'C' for c-order, F for fortran. Default: 'C'
     - defaultVoid:
             If True then calls to conn.r('..') don't return a result by default
+    - oobCallback:
+            Callback to be executed when self.oobSend/oobMessage is called from
+            R. The callback receives the submitted data and a user code as
+            parameters. If self.oobMessage was used, the result value of the
+            callback is sent back to R.
+            Default: lambda data, code=0: None (oobMessage will return NULL)
     """
     if host in (None, ''):
         # On Win32 it seems that passing an empty string as 'localhost' does
@@ -37,7 +66,7 @@ def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False):
         # or '' were passed.
         host = 'localhost'
     assert port is not None, 'port number must be given'
-    return RConnector(host, port, atomicArray, defaultVoid)
+    return RConnector(host, port, atomicArray, defaultVoid, oobCallback)
 
 
 def checkIfClosed(func):
@@ -50,11 +79,13 @@ def checkIfClosed(func):
 
 class RConnector(object):
     """Provide a network connector to an Rserve process"""
-    def __init__(self, host, port, atomicArray, defaultVoid):
+    def __init__(self, host, port, atomicArray, defaultVoid,
+                 oobCallback=_defaultOOBCallback):
         self.host = host
         self.port = port
         self.atomicArray = atomicArray
         self.defaultVoid = defaultVoid
+        self.oobCallback = oobCallback
         self.connect()
         self.r = RNameSpace(self)
         self.ref = RNameSpaceReference(self)
@@ -92,12 +123,15 @@ class RConnector(object):
         self.sock.close()
         self.__closed = True
 
-    def _reval(self, aString, void):
-        rEval(aString, fp=self.sock, void=void)
-
     def shutdown(self):
         rShutdown(fp=self.sock)
         self.close()
+
+    def _reval(self, aString, void):
+        rEval(aString, fp=self.sock, void=void)
+
+    def _rrespond(self, aObj):
+        rSerializeResponse(aObj, fp=self.sock)
 
     @checkIfClosed
     def eval(self, aString, atomicArray=None, void=False):
@@ -120,7 +154,21 @@ class RConnector(object):
             atomicArray = self.atomicArray
 
         try:
-            return rparse(src, atomicArray=atomicArray)
+            message = rparse(src, atomicArray=atomicArray)
+            # Before the result is returned, 0-∞ OOB messages may be sent
+            while isinstance(message, OOBMessage):
+                if DEBUG:
+                    print('OOB Message received:', message)
+                ret = self.oobCallback(message.data, message.userCode)
+                if message.type == rtypes.OOB_MSG:
+                    self._rrespond(ret)
+
+                if isinstance(src, (str, bytes)):
+                    # This is no stream, so we have to cut off data
+                    src = src[len(message):]
+
+                message = rparse(src, atomicArray=atomicArray)
+            return message
         except REvalError:
             # R has reported an evaluation error, so let's obtain a descriptive
             # explanation about why the error has occurred. R allows to
@@ -329,7 +377,7 @@ class RFuncProxy(RBaseProxy):
 
         concatName = "%s.%s" % (self._name, name)
         try:
-            isFunction = self._rconn.isFunction(concatName)
+            self._rconn.isFunction(concatName)
         except:
             # an error is only raised if neither such a function or variable
             # exists at all!
