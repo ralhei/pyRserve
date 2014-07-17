@@ -316,8 +316,8 @@ depending how how one sees them).
 
 Fortunately this is as easy as you would expect::
 
-  >>> conn.voidEval('double <-- function(x) { x*2 }')
-  >>> conn.r.sapply(array([1, 2, 3]), conn.r.double)
+  >>> conn.voidEval('double <- function(x) { x*2 }')
+  >>> conn.r.sapply(numpy.array([1, 2, 3]), conn.r.double)
   array([ 2.,  4.,  6.])
 
 Here a Python array and a function defined in R are provided as arguments to the R function ``sapply``.
