@@ -9,16 +9,25 @@ import socket
 from numpy import ndarray, float, float32, float64, complex, complex64, \
     complex128
 
-RSERVE_PATH = subprocess.check_output(['R', '--vanilla', '--slave', '-e', 'cat(system.file(package="Rserve", "libs", .Platform$r_arch, "Rserve.dbg"))'])
+RSERVE_PATH = subprocess.check_output(
+    ['R', '--vanilla', '--slave', '-e',
+     'cat(system.file(package="Rserve", "libs", '
+     '.Platform$r_arch, "Rserve.dbg"))'])
 HERE_PATH = os.path.dirname(os.path.realpath(__file__))
+
+# Use different port from default to avoid clashes with regular Rserve
+# running on same machine:
+RPORT = 6355
 
 
 def start_pyRserve():
     """Setup connection to remote Rserve for unittesting"""
-    RPORT = 6311
     # Start Rserve
-    rProc = subprocess.Popen(['R', 'CMD', RSERVE_PATH, '--no-save', '--RS-conf', os.path.join(HERE_PATH, 'test.conf')],
-                             stdout=open('/dev/null'), stderr=subprocess.PIPE)
+    rProc = subprocess.Popen(
+        ['R', 'CMD', RSERVE_PATH, '--no-save', '--RS-conf',
+         os.path.join(HERE_PATH, 'test.conf'),
+         '--RS-port', str(RPORT)],
+        stdout=open('/dev/null'), stderr=subprocess.PIPE)
     # wait a moment until Rserve starts listening on RPORT
     time.sleep(0.6)
     if rProc.poll():
@@ -33,7 +42,8 @@ def start_pyRserve():
     socket.setdefaulttimeout(1)
 
     rserv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    cnt = 0# give it a maximum of 10 tries with some sleep in between to wait for
+    cnt = 0
+    # give it a maximum of 10 tries with some sleep in between to wait for
     # Rserve to come into action!
     while cnt < 10:
         try:
@@ -66,19 +76,19 @@ def start_pyRserve():
 
 def compareArrays(arr1, arr2):
     """Compare two (possibly nested) arrays"""
-    def _compareArrays(arr1, arr2):
-        assert arr1.shape == arr2.shape
-        for idx in range(len(arr1)):
-            if isinstance(arr1[idx], ndarray):
-                _compareArrays(arr1[idx], arr2[idx])
+    def _compareArrays(xarr1, xarr2):
+        assert xarr1.shape == xarr2.shape
+        for idx in range(len(xarr1)):
+            if isinstance(xarr1[idx], ndarray):
+                _compareArrays(xarr1[idx], xarr2[idx])
             else:
-                if type(arr1[idx]) in [float, float32, float64, complex,
-                                       complex64, complex128]:
+                if type(xarr1[idx]) in [float, float32, float64, complex,
+                                        complex64, complex128]:
                     # make a comparison which works for floats and complex
                     # numbers
-                    assert abs(arr1[idx] - arr2[idx]) < 0.000001
+                    assert abs(xarr1[idx] - xarr2[idx]) < 0.000001
                 else:
-                    assert arr1[idx] == arr2[idx]
+                    assert xarr1[idx] == xarr2[idx]
     try:
         _compareArrays(arr1, arr2)
     except TypeError:

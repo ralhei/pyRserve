@@ -16,7 +16,7 @@ from pyRserve.misc import PY3
 from pyRserve.rexceptions import REvalError
 from pyRserve.taggedContainers import TaggedList, TaggedArray
 
-from testtools import start_pyRserve, compareArrays
+from testtools import start_pyRserve, compareArrays, RPORT
 
 conn = None  # will be set to Rserve-connection in setup_module()
 
@@ -24,7 +24,11 @@ conn = None  # will be set to Rserve-connection in setup_module()
 def setup_module(module):
     module.rProc = start_pyRserve()
     # CREATE A MODULE-WIDE CONNECTION OBJECT TO RSERVE
-    module.conn = rconn.connect()
+    try:
+        module.conn = rconn.connect(port=RPORT)
+    except:
+        module.rProc.terminate()
+        raise
     # create an 'ident' function which just returns its argument.
     # Needed for testing below.
     module.conn.r('ident <- function(v) { v }')
@@ -472,6 +476,14 @@ def test_eval_very_convoluted_function_result():
     # ... many more tags could be tested here ...
 
 
+def test_sapply_with_func_proxy_argument():
+    """
+    Test calling sapply providing a proxy object to a R function as argument
+    """
+    res = conn.r.sapply(-5, conn.r.abs)
+    assert res == 5
+
+
 ### Some more tests
 def test_rAssign_method():
     """test "rAssign" class method of RSerializer"""
@@ -525,10 +537,9 @@ def test_eval_illegal_R_statement():
     Also the connector should be still usable afterwards.
     """
     try:
-        conn.r('-%r\0/455')
-    except REvalError as msg:
-        # unfortunately this does not return a proper error message:
-        assert str(msg) == ""
+        conn.r('x-%r\0/455')
+    except REvalError:
+        pass
     # check that the connection still works:
     assert conn.r('1') == 1
 

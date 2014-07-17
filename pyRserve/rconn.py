@@ -81,14 +81,16 @@ class RConnector(object):
     """Provide a network connector to an Rserve process"""
     def __init__(self, host, port, atomicArray, defaultVoid,
                  oobCallback=_defaultOOBCallback):
+        self.sock = None
+        self.__closed = True
         self.host = host
         self.port = port
         self.atomicArray = atomicArray
         self.defaultVoid = defaultVoid
         self.oobCallback = oobCallback
-        self.connect()
         self.r = RNameSpace(self)
         self.ref = RNameSpaceReference(self)
+        self.connect()
 
     def __repr__(self):
         txt = 'Closed handle' if self.isClosed else 'Handle'
@@ -229,7 +231,7 @@ class RConnector(object):
             # SPECIAL HANDLING FOR "rm()":
             # Calling "rm" with real values instead of reference to values
             # works, however it doesn't produce the desired effect (it only
-            # removes our temporaily created variables). To avoid confusion for
+            # removes temporaily created variables). To avoid confusion for
             # the users a check is applied here to make sure that "args" only
             # contains variable or function references (proxies) and NOT
             # values!
@@ -239,14 +241,17 @@ class RConnector(object):
         argNames = []
         for idx, arg in enumerate(args):
             if isinstance(arg, RBaseProxy):
-                argName = arg.name
+                argName = arg.__name__
             else:
+                # a real python value is passed. Set a value of an artificial
+                # variable on the R side, memorize its name for making the
+                # actual call to the function below
                 argName = 'arg_%d_' % idx
                 self.setRexp(argName, arg)
             argNames.append(argName)
         for key, value in kw.items():
             if isinstance(value, RBaseProxy):
-                argName = value.name
+                argName = value.__name__
             else:
                 argName = 'kwarg_%s_' % key
                 self.setRexp(argName, value)
@@ -331,32 +336,32 @@ class RBaseProxy(object):
     Do not use this directly, only its subclasses.
     """
     def __init__(self, name, rconn):
-        self._name = name
+        self.__name__ = name
         self._rconn = rconn
 
 
 class RVarProxy(RBaseProxy):
     """Proxy for a reference to a variable in R"""
     def __repr__(self):
-        return '<RVarProxy to variable "%s">' % self._name
+        return '<RVarProxy to variable "%s">' % self.__name__
 
     def value(self):
-        return self._rconn.getRexp(self._name)
+        return self._rconn.getRexp(self.__name__)
 
 
 class RFuncProxy(RBaseProxy):
     """Proxy for function calls to Rserve"""
     def __repr__(self):
-        return '<RFuncProxy to function "%s">' % self._name
+        return '<RFuncProxy to function "%s">' % self.__name__
 
     def __call__(self, *args, **kw):
-        return self._rconn.callFunc(self._name, *args, **kw)
+        return self._rconn.callFunc(self.__name__, *args, **kw)
 
     @property
     def __doc__(self):
         try:
             d = self._rconn.eval('readLines(as.character(help(%s)))' %
-                                 self._name)
+                                 self.__name__)
         except REvalError:
             # probably no help available, unfortunately there is no specific
             # code for this...
@@ -373,9 +378,9 @@ class RFuncProxy(RBaseProxy):
         if name == '__name__':
             # this is useful for py.test which does some code inspection
             # during runtime
-            return self._name
+            return self.__name__
 
-        concatName = "%s.%s" % (self._name, name)
+        concatName = "%s.%s" % (self.__name__, name)
         try:
             self._rconn.isFunction(concatName)
         except:
@@ -386,7 +391,7 @@ class RFuncProxy(RBaseProxy):
         return RFuncProxy(concatName, self._rconn)
 
 
-if __name__ == '__main__':
+def _test_main():
     import os
     import readline
     import atexit
@@ -411,3 +416,7 @@ if __name__ == '__main__':
     conn.r('func2 <- function(a1, a2) { list(a1, a2) }')
     conn.r('funcKW <- function(a1=1, a2=4) { list(a1, a2) }')
     conn.r('squared<-function(t) t^2')
+
+
+if __name__ == '__main__':
+    _test_main()
