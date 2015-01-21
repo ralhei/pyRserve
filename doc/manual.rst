@@ -631,11 +631,11 @@ on agreed-upon codes::
    ...     return functions[code](data)
    >>> conn.oobCallback = dispatch
    >>>
-   >>> conn.eval('self.oobMessage('foo', C_PRINT)')
+   >>> conn.eval('self.oobMessage("foo", C_PRINT)')
    <<< foo
-   >>> conn.eval('self.oobMessage('foo', C_ECHO)')
+   >>> conn.eval('self.oobMessage("foo", C_ECHO)')
    'foo'
-   >>> conn.eval('self.oobMessage('foo', C_STORE)')
+   >>> conn.eval('self.oobMessage("foo", C_STORE)')
    >>> store
    ['foo']
    >>> conn.eval('self.oobMessage('foo', 3)')
