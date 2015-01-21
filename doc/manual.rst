@@ -589,7 +589,7 @@ library into the server. Both is easily accomplished in a config file (e.g. ``oo
    oob enable
    eval library(Rserve)
 
-Then start Rserve using this config file:
+Then start Rserve using this config file::
 
    R CMD Rserve --RS-conf oob.conf
 
