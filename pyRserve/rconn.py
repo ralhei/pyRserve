@@ -73,7 +73,17 @@ def checkIfClosed(func):
     def decoCheckIfClosed(self, *args, **kw):
         if self.isClosed:
             raise PyRserveClosed('Connection to Rserve already closed')
-        return func(self, *args, **kw)
+        try:
+            return func(self, *args, **kw)
+        except socket.error, msg:
+            # import pdb;pdb.set_trace()
+            if msg.strerror in ['Connection reset by peer', 'Broken pipe']:
+                # seems like the connection to Rserve has died, so mark
+                # the connection as closed
+                self.close()
+                raise PyRserveClosed('Connection to Rserve already closed')
+            else:
+                raise
     return decoCheckIfClosed
 
 
@@ -125,6 +135,7 @@ class RConnector(object):
         self.sock.close()
         self.__closed = True
 
+    @checkIfClosed
     def shutdown(self):
         rShutdown(fp=self.sock)
         self.close()
