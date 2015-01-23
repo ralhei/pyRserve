@@ -637,7 +637,7 @@ on agreed-upon codes::
    'foo'
    >>> conn.eval('self.oobMessage('foo', C_STORE)')
    >>> store
-   [1]
+   ['foo']
    >>> conn.eval('self.oobMessage('foo', 3)')
    Traceback (most recent call last):
      File "<stdin>", line 1, in <module>
