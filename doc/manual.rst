@@ -589,7 +589,7 @@ library into the server. Both is easily accomplished in a config file (e.g. ``oo
    oob enable
    eval library(Rserve)
 
-Then start Rserve using this config file:
+Then start Rserve using this config file::
 
    R CMD Rserve --RS-conf oob.conf
 
@@ -630,12 +630,12 @@ on agreed-upon codes::
    >>> def dispatch(data, code):
    ...     return functions[code](data)
    >>> conn.oobCallback = dispatch
-   >>>
-   >>> conn.eval('self.oobMessage('foo', C_PRINT)')
+   >>> 
+   >>> conn.eval('self.oobMessage("foo", C_PRINT)')
    <<< foo
-   >>> conn.eval('self.oobMessage('foo', C_ECHO)')
+   >>> conn.eval('self.oobMessage("foo", C_ECHO)')
    'foo'
-   >>> conn.eval('self.oobMessage('foo', C_STORE)')
+   >>> conn.eval('self.oobMessage("foo", C_STORE)')
    >>> store
    ['foo']
    >>> conn.eval('self.oobMessage('foo', 3)')
@@ -655,18 +655,18 @@ For that first create an R function which returns progress information
 during a "complicated" calculation:
 
    >>> r_func = """
-   big_job <- function(x)
-   {
-       a <- x*2
-       self.oobSend('25% done')
-       b <- a * a
-       self.oobSend('50% done')
-       c <- a + b
-       self.oobSend('75% done')
-       d <- c**2
-       self.oobSend('100% done')
-       -1 * d
-   }"""
+   ... big_job <- function(x)
+   ... {
+   ...     a <- x*2
+   ...     self.oobSend('25% done')
+   ...     b <- a * a
+   ...     self.oobSend('50% done')
+   ...     c <- a + b
+   ...     self.oobSend('75% done')
+   ...     d <- c**2
+   ...     self.oobSend('100% done')
+   ...     -1 * d
+   ... }"""
    >>> conn.eval(r_func)
 
 Then create a progress report function, register it as a callback and
