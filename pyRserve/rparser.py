@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Parser module for pyRserve
 """
@@ -12,6 +13,40 @@ from .taggedContainers import TaggedList, asTaggedArray, asAttrArray
 
 DEBUG = 0
 
+
+class OOBMessage(object):
+    """OOB Message
+
+    - type: OOB_SEND or OOB_MSG or OOB_STREAM_READ
+    - userCode: user-defined code passed to self.oobSend/oobMessage
+    - data: user-sent data or None
+    - messageSize: number of bytes in user-sent data
+    """
+    def __init__(self, type, userCode, data=None, messageSize=0):
+        self.type = type
+        self.userCode = userCode
+        self.data = data
+        self.messageSize = messageSize
+
+    def __len__(self):
+        return self.messageSize + 16 #header
+
+
+class Command(object):
+    """Wrapper around the command bitfield calculating and storing its properties
+    Magic extracted from RSProtocol.h
+    """
+    def __init__(self, code):
+        self.code = code
+        #Rserve 1.7 or’s the command with CMD_RESP even if it’s a OOB instead
+        fixedOOBCode = code & ~CMD_RESP
+
+        self.isOOB = bool(code & CMD_OOB)
+        self.oobType = fixedOOBCode & 0x0ffff000
+        self.oobUserCode = fixedOOBCode & 0xfff
+
+        self.errCode = (code >> 24) & 127
+        self.responseCode = code & 0xfffff #lowest 20 bit
 
 class Lexeme(list):
     """Basic Lexeme class for parsing binary data coming from Rserve"""
@@ -59,7 +94,9 @@ class EndOfDataError(RserveError):
 
 
 class Lexer(object):
-    #
+    """Rserve message lexer
+    Can either read a OOBMessage or a R Object
+    """
     lexerMap = {}
     fmap = FunctionMapper(lexerMap)
 
@@ -87,27 +124,50 @@ class Lexer(object):
         Called initially when reading fresh data from an input source
         (file or socket). Reads header which contains data like response/error
         code and size of data entire package.
+
+        QAP1 header structure parts (16 bytes total):
+
+            [ 0-3 ] (int) command
+            [ 4-7 ] (int) length of the message (bits 0-31)
+            [ 8-11] (int) offset of the data part
+            [12-15] (int) length of the message (bits 32-63)
         """
         self.lexpos = 0
-        # First three bytes encode a 24bit response code, add an additional
-        # zero bytes and convert it:
-        self.responseCode = struct.unpack(b'<i', self.read(3) + b'\x00')[0]
-        if self.responseCode == RESP_OK:
-            self.responseOK = True
-        elif self.responseCode == RESP_ERR:
-            self.responseOK = False
-        else:
-            self.clearSocketData()
-            raise ValueError('Received illegal response code (%x)' %
-                             self.responseCode)
-        self.errCode = self.__unpack(XT_BYTE)
+
+        command = Command(struct.unpack('<I', self.read(4))[0])
         self.messageSize = self.__unpack(XT_INT)
-        self.read(8)  # read additional 8 bytes from header -- CLEARIFY THIS!!
-        if DEBUG:
-            print('response ok? %s (responseCode=%x), error-code: %x, '
-                  'message size: %d' %
-                  (self.responseOK, self.responseCode,
-                   self.errCode, self.messageSize))
+        dataOffset = self.__unpack(XT_INT)
+        messageSize2 = self.__unpack(XT_INT) #TODO: add to message size
+
+        self.isOOB = command.isOOB
+        if self.isOOB:
+            # FIXME: Rserve has a bug(?) that sets CMD_RESP on
+            #        OOB commands so we clear it for now
+            self.oobType = command.oobType
+            self.oobUserCode = command.oobUserCode
+
+            if DEBUG:
+                print('oob type: %x, oob user code: %x, message size: %d' %
+                    (self.oobType, self.oobUserCode, self.messageSize))
+        else:
+            self.errCode = command.errCode
+
+            self.responseCode = command.responseCode
+            if self.responseCode == RESP_OK:
+                self.responseOK = True
+            elif self.responseCode == RESP_ERR:
+                self.responseOK = False
+            else:
+                self.clearSocketData()
+                raise ValueError('Received illegal response code (%x)' %
+                                self.responseCode)
+
+            if DEBUG:
+                print('response ok? %s (responseCode=%x), error-code: %x, '
+                    'message size: %d' %
+                    (self.responseOK, self.responseCode,
+                    self.errCode, self.messageSize))
+
         return self.messageSize
 
     def clearSocketData(self):
@@ -347,9 +407,11 @@ class RParser(object):
         """
         self.indentLevel = 1
         self.lexer.readHeader()
+
+        message = None
         if self.lexer.messageSize > 0:
             try:
-                return self._parse()
+                message = self._parse()
             except:
                 # If any error is raised during lexing and parsing, make sure
                 # that the entire data is read from the input source if it is
@@ -362,10 +424,15 @@ class RParser(object):
                 rserve_err_msg = ERRORS[self.lexer.errCode]
             except KeyError:
                 raise REvalError("R evaluation error (code=%d)" %
-                                 self.lexer.errCode)
+                                self.lexer.errCode)
             else:
                 raise RResponseError('Response error %s (error code=%d)' %
-                                     (rserve_err_msg, self.lexer.errCode))
+                                    (rserve_err_msg, self.lexer.errCode))
+
+        if self.lexer.isOOB:
+            return OOBMessage(self.lexer.oobType, self.lexer.oobUserCode, message, self.lexer.messageSize)
+        else:
+            return message
 
     def _parse(self):
         dataLexeme = self.lexer.nextExprHdr()

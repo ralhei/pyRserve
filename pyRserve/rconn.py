@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Module providing functionality to connect to a running Rserve instance
 """
@@ -7,15 +8,37 @@ import pydoc
 ###
 from . import rtypes
 from .rexceptions import RConnectionRefused, REvalError, PyRserveClosed
-from .rserializer import rEval, rAssign
-from .rparser import rparse
+from .rserializer import rEval, rAssign, rSerializeResponse, rShutdown
+from .rparser import rparse, OOBMessage
 from .misc import hexString
 
 RSERVEPORT = 6311
 DEBUG = False
 
 
-def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False):
+def _defaultOOBCallback(data, code=0):
+    return None
+
+
+class OOBCallback(object):
+    """Sets up conn with a new callback when entering the `with` block and
+    restores the old one when exiting
+    """
+    def __init__(self, conn, callback):
+        self.conn = conn
+        self.callback = callback
+
+    def __enter__(self):
+        self.old_callback = self.conn.oobCallback
+        self.conn.oobCallback = self.callback
+        return self.conn
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.conn.oobCallback = self.old_callback
+
+
+def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False,
+            oobCallback=_defaultOOBCallback):
     """Open a connection to an Rserve instance
     Params:
     - host: provide hostname where Rserve runs, or leave as empty string to
@@ -31,6 +54,12 @@ def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False):
             Provide 'C' for c-order, F for fortran. Default: 'C'
     - defaultVoid:
             If True then calls to conn.r('..') don't return a result by default
+    - oobCallback:
+            Callback to be executed when self.oobSend/oobMessage is called from
+            R. The callback receives the submitted data and a user code as
+            parameters. If self.oobMessage was used, the result value of the
+            callback is sent back to R.
+            Default: lambda data, code=0: None (oobMessage will return NULL)
     """
     if host in (None, ''):
         # On Win32 it seems that passing an empty string as 'localhost' does
@@ -38,27 +67,41 @@ def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False):
         # or '' were passed.
         host = 'localhost'
     assert port is not None, 'port number must be given'
-    return RConnector(host, port, atomicArray, defaultVoid)
+    return RConnector(host, port, atomicArray, defaultVoid, oobCallback)
 
 
 def checkIfClosed(func):
     def decoCheckIfClosed(self, *args, **kw):
         if self.isClosed:
             raise PyRserveClosed('Connection to Rserve already closed')
-        return func(self, *args, **kw)
+        try:
+            return func(self, *args, **kw)
+        except socket.error, msg:
+            # import pdb;pdb.set_trace()
+            if msg.strerror in ['Connection reset by peer', 'Broken pipe']:
+                # seems like the connection to Rserve has died, so mark
+                # the connection as closed
+                self.close()
+                raise PyRserveClosed('Connection to Rserve already closed')
+            else:
+                raise
     return decoCheckIfClosed
 
 
 class RConnector(object):
     """Provide a network connector to an Rserve process"""
-    def __init__(self, host, port, atomicArray, defaultVoid):
+    def __init__(self, host, port, atomicArray, defaultVoid,
+                 oobCallback=_defaultOOBCallback):
+        self.sock = None
+        self.__closed = True
         self.host = host
         self.port = port
         self.atomicArray = atomicArray
         self.defaultVoid = defaultVoid
-        self.connect()
+        self.oobCallback = oobCallback
         self.r = RNameSpace(self)
         self.ref = RNameSpaceReference(self)
+        self.connect()
 
     def __repr__(self):
         txt = 'Closed handle' if self.isClosed else 'Handle'
@@ -93,8 +136,16 @@ class RConnector(object):
         self.sock.close()
         self.__closed = True
 
+    @checkIfClosed
+    def shutdown(self):
+        rShutdown(fp=self.sock)
+        self.close()
+
     def _reval(self, aString, void):
         rEval(aString, fp=self.sock, void=void)
+
+    def _rrespond(self, aObj):
+        rSerializeResponse(aObj, fp=self.sock)
 
     @checkIfClosed
     def eval(self, aString, atomicArray=None, void=False):
@@ -117,7 +168,21 @@ class RConnector(object):
             atomicArray = self.atomicArray
 
         try:
-            return rparse(src, atomicArray=atomicArray)
+            message = rparse(src, atomicArray=atomicArray)
+            # Before the result is returned, 0-∞ OOB messages may be sent
+            while isinstance(message, OOBMessage):
+                if DEBUG:
+                    print('OOB Message received:', message)
+                ret = self.oobCallback(message.data, message.userCode)
+                if message.type == rtypes.OOB_MSG:
+                    self._rrespond(ret)
+
+                if isinstance(src, (str, bytes)):
+                    # This is no stream, so we have to cut off data
+                    src = src[len(message):]
+
+                message = rparse(src, atomicArray=atomicArray)
+            return message
         except REvalError:
             # R has reported an evaluation error, so let's obtain a descriptive
             # explanation about why the error has occurred. R allows to
@@ -178,7 +243,7 @@ class RConnector(object):
             # SPECIAL HANDLING FOR "rm()":
             # Calling "rm" with real values instead of reference to values
             # works, however it doesn't produce the desired effect (it only
-            # removes our temporaily created variables). To avoid confusion for
+            # removes temporaily created variables). To avoid confusion for
             # the users a check is applied here to make sure that "args" only
             # contains variable or function references (proxies) and NOT
             # values!
@@ -188,14 +253,17 @@ class RConnector(object):
         argNames = []
         for idx, arg in enumerate(args):
             if isinstance(arg, RBaseProxy):
-                argName = arg.name
+                argName = arg.__name__
             else:
+                # a real python value is passed. Set a value of an artificial
+                # variable on the R side, memorize its name for making the
+                # actual call to the function below
                 argName = 'arg_%d_' % idx
                 self.setRexp(argName, arg)
             argNames.append(argName)
         for key, value in kw.items():
             if isinstance(value, RBaseProxy):
-                argName = value.name
+                argName = value.__name__
             else:
                 argName = 'kwarg_%s_' % key
                 self.setRexp(argName, value)
@@ -280,26 +348,26 @@ class RBaseProxy(object):
     Do not use this directly, only its subclasses.
     """
     def __init__(self, name, rconn):
-        self._name = name
+        self.__name__ = name
         self._rconn = rconn
 
 
 class RVarProxy(RBaseProxy):
     """Proxy for a reference to a variable in R"""
     def __repr__(self):
-        return '<RVarProxy to variable "%s">' % self._name
+        return '<RVarProxy to variable "%s">' % self.__name__
 
     def value(self):
-        return self._rconn.getRexp(self._name)
+        return self._rconn.getRexp(self.__name__)
 
 
 class RFuncProxy(RBaseProxy):
     """Proxy for function calls to Rserve"""
     def __repr__(self):
-        return '<RFuncProxy to function "%s">' % self._name
+        return '<RFuncProxy to function "%s">' % self.__name__
 
     def __call__(self, *args, **kw):
-        return self._rconn.callFunc(self._name, *args, **kw)
+        return self._rconn.callFunc(self.__name__, *args, **kw)
 
     # command to send to R in order to get the help for a function in text
     # format:
@@ -325,7 +393,7 @@ class RFuncProxy(RBaseProxy):
         a <- capture.output(tools:::Rd2txt(utils:::.getHelpFile(help(sapply))))
         """
         try:
-            d = self._rconn.eval(self.R_HELP % self._name)
+            d = self._rconn.eval(self.R_HELP % self.__name__)
         except REvalError:
             # probably no help available, unfortunately there is no specific
             # code for this...
@@ -333,7 +401,7 @@ class RFuncProxy(RBaseProxy):
         # Join the list of strings:
         helpstring = '\n'.join(d)
         # remove some obscure characters:
-        #helpstring = helpstring.replace('_\x08', '')
+        # helpstring = helpstring.replace('_\x08', '')
         return helpstring
 
     def help(self):
@@ -345,11 +413,11 @@ class RFuncProxy(RBaseProxy):
         if name == '__name__':
             # this is useful for py.test which does some code inspection
             # during runtime
-            return self._name
+            return self.__name__
 
-        concatName = "%s.%s" % (self._name, name)
+        concatName = "%s.%s" % (self.__name__, name)
         try:
-            isFunction = self._rconn.isFunction(concatName)
+            self._rconn.isFunction(concatName)
         except:
             # an error is only raised if neither such a function or variable
             # exists at all!
@@ -358,7 +426,7 @@ class RFuncProxy(RBaseProxy):
         return RFuncProxy(concatName, self._rconn)
 
 
-if __name__ == '__main__':
+def _test_main():
     import os
     import readline
     import atexit
@@ -383,3 +451,7 @@ if __name__ == '__main__':
     conn.r('func2 <- function(a1, a2) { list(a1, a2) }')
     conn.r('funcKW <- function(a1=1, a2=4) { list(a1, a2) }')
     conn.r('squared<-function(t) t^2')
+
+
+if __name__ == '__main__':
+    _test_main()

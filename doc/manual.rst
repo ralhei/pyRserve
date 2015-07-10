@@ -2,7 +2,7 @@ pyRserve manual
 ===============
 
 This manual is written in sort of a `walk-through`-style. All examples can be tried out on the Python
-command line as you read through it. 
+command line as you read through it.
 
 Setting up a connection to Rserve
 ------------------------------------
@@ -13,8 +13,8 @@ First of all startup Rserve if it is not yet running::
 
 If you started it on your local machine (i.e. ``localhost``) without any extra options Rserve should be listening on
 port 6311 (its default). R puts itself into daemon mode, meaning that your shell comes back, and you have no way to
-shutdown R via ``ctrl-C`` (you need to call ``kill`` with it's process id). However ``Rserve`` can be started in 
-debug mode during development. In this mode it'll print messages to stdout helping you to see whether your 
+shutdown R via ``ctrl-C`` (you need to call ``kill`` with it's process id). However ``Rserve`` can be started in
+debug mode during development. In this mode it'll print messages to stdout helping you to see whether your
 connection works etc. To do so `Rserve` needs to be started like::
 
   $ R CMD Rserve.dbg
@@ -66,10 +66,19 @@ To check the status of the connection use::
 
    Then restart Rserve.
 
+
+Shutting down Rserve remotely
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you need to shutdown Rserve from your client connection the following command can be called:
+
+  >>> conn.shutdown()
+
+
 String evaluation in R
 -------------------------------
 
-Having established a connection to Rserve you can run the first commands on it. A valid R command can be executed 
+Having established a connection to Rserve you can run the first commands on it. A valid R command can be executed
 by making a call to the R name space via the connection's `eval()` method, providing a string as argument which
 contains valid R syntax::
 
@@ -209,8 +218,8 @@ Furthermore the following containers are supported:
 * AttrArray
 * TaggedArray
 
-Lists can be nested arbitrarily, containing other lists, numbers, or arrays. ``TaggedList``, ``AttrArray``, and 
-``TaggedArray`` are 
+Lists can be nested arbitrarily, containing other lists, numbers, or arrays. ``TaggedList``, ``AttrArray``, and
+``TaggedArray`` are
 special containers to handle very R-specific result types. They will be explained further down in the manual.
 
 The following example shows how to assign a python list with mixed data types to an R variable called ``aList``,
@@ -284,32 +293,31 @@ If R is properly installed including its help messages those can be retrieved di
 Also here no surprise - just do it the Python way through the ``__doc__`` attribute::
 
   >>> print conn.r.sapply.__doc__
+  lapply                 package:base                 R Documentation
+
   Apply a Function over a List or Vector
-   
+
   Description:
-   
+
   'lapply' returns a list of the same length as 'X', each element of
   which is the result of applying 'FUN' to the corresponding element
   of 'X'.
   [...]
 
-Of course this only works for functions which provide documentation.
-For all others ``__doc__`` just returns ``None``.
+Of course this only works for functions which provide documentation. For all others ``__doc__`` just returns ``None``.
 
-To get the help text displayed nicely with a pager (e.g. 'less') you can call
-``conn.r.sapply.help()``.
 
 
 Applying an R function as argument to another function
 ---------------------------------------------------------
 
-A typical application in R is to apply a vector to a function, especially via ``sapply`` and its brothers (or sisters, 
+A typical application in R is to apply a vector to a function, especially via ``sapply`` and its brothers (or sisters,
 depending how how one sees them).
 
 Fortunately this is as easy as you would expect::
 
-  >>> conn.voidEval('double <-- function(x) { x*2 }')
-  >>> conn.r.sapply(array([1, 2, 3]), conn.r.double)
+  >>> conn.voidEval('double <- function(x) { x*2 }')
+  >>> conn.r.sapply(numpy.array([1, 2, 3]), conn.r.double)
   array([ 2.,  4.,  6.])
 
 Here a Python array and a function defined in R are provided as arguments to the R function ``sapply``.
@@ -379,9 +387,9 @@ Python, like special types of R classes, complex data frames etc.
 Handling complex result objects from R functions
 ---------------------------------------------------
 
-Some functions in R (especially those doing statistical calculations) return quite complex result objects. 
+Some functions in R (especially those doing statistical calculations) return quite complex result objects.
 
-The T-test is such an example. In the R shell you would see something like this (please ignore the silly values 
+The T-test is such an example. In the R shell you would see something like this (please ignore the silly values
 applied to the t test)::
 
    > t.test(c(1,2,3,1),c(1,6,7,8))
@@ -408,7 +416,7 @@ of the t-test again.
 TaggedLists
 ~~~~~~~~~~~~~~~~
 
-The first special type of container is called "TaggedList". It reflects a list-type object in R where 
+The first special type of container is called "TaggedList". It reflects a list-type object in R where
 items can be accessed in two ways as shown here (this is now pure R code)::
 
   > t <- list(husband="otto", wife="erna", "5th avenue")
@@ -426,7 +434,7 @@ third list item ("5th avenue") is not tagged, so it can only be accessed via its
 
 There is no direct match to any standard Python construct for a ``TaggedList``. Python dictionaries do not preserve
 their elements' order and also don't allow for missing keys (which is why an OrderDict also doesn't help).
-NamedTuples on the other side would do the job but don't allow items to be appended or deleted since they are 
+NamedTuples on the other side would do the job but don't allow items to be appended or deleted since they are
 immutable.
 
 The solution was to provide a special class in Python which is called ``TaggedList``. When accessing the
@@ -462,8 +470,8 @@ tuples. This also demonstrates how a ``TaggedList`` can be created directly in P
 AttrArrays
 ~~~~~~~~~~~~~~~~~
 
-An ``AttrArray`` is simply an normal numpy array, with an additional dictionary attribute called ``attr``. 
-This dicionary is used to store meta data associated to an array retrieved from R. 
+An ``AttrArray`` is simply an normal numpy array, with an additional dictionary attribute called ``attr``.
+This dicionary is used to store meta data associated to an array retrieved from R.
 
 Let's create such an ``AttrArray`` in R, and transfer it into to the Python side::
 
@@ -486,11 +494,11 @@ TaggedArrays
 ~~~~~~~~~~~~~~~~
 
 The third special data type provided by pyRserve is the so called ``TaggedArray``. It provides basically the same
-features as ``TaggedList`` above, however the underlying data type is a numpy-Array instead of a Python list. 
-In fact, a TaggedArray is a direct subclass of ``numpy.ndarray``, enhanced with some new features 
+features as ``TaggedList`` above, however the underlying data type is a numpy-Array instead of a Python list.
+In fact, a TaggedArray is a direct subclass of ``numpy.ndarray``, enhanced with some new features
 like accessing array cells by name as in ``TaggedList``.
 
-For the moment ``TaggedArrays`` only make real sense if they are 1-dimensional, so please do not change 
+For the moment ``TaggedArrays`` only make real sense if they are 1-dimensional, so please do not change
 its shape. The results would not really be predictable.
 
 To create a ``TaggedArray`` on the R side and transfer it to Python type:
@@ -568,4 +576,110 @@ In the ``res``-result data structure above there are also objects of a container
    5.5
    >>> res['estimate']['mean of y']
    5.5
+
+Out Of Bounds messages (OOB)
+----------------------------
+
+Starting with version 1.7, Rserve allows OOB messages to be sent from R to Rserve clients, i.e. it
+allows for nested communication during an ``eval`` call.
+
+This capability requires to start Rserve with a configuration enabling it, and loading Rserve itself as a
+library into the server. Both is easily accomplished in a config file (e.g. ``oob.config``) like this::
+
+   oob enable
+   eval library(Rserve)
+
+Then start Rserve using this config file::
+
+   R CMD Rserve --RS-conf oob.conf
+
+OOB messaging works by calling ``self.oobSend`` or ``self.oobMessage`` in R, e.g.::
+
+   >>> conn.eval('self.oobSend(1)')
+   True
+
+This does nothing but to indicate that it works. For real usefulness, one needs to register a callback
+that gets called with the sent data and user code as parameters::
+
+   >>> def printoobmsg(data, code): print(data, code)
+   ...
+   >>> conn.oobCallback = printoobmsg
+   >>> conn.eval('self.oobSend("foo")')  # user code is 0 per default
+   <<< foo 0
+   True
+
+The other function, ``self.oobMessage`` executes the callback and gives its return value to R::
+
+   >>> conn.oobCallback = lambda data, code: data**code
+   >>> conn.voidEval('dc <- self.oobMessage(2, 3)')
+   >>> conn.r.dc
+   8
+
+The user code might be useful to create a callback convention used for switching callbacks based
+on agreed-upon codes::
+
+   >>> C_PRINT = conn.r.C_PRINT = 0
+   >>> C_ECHO  = conn.r.C_ECHO  = 1
+   >>> C_STORE = conn.r.C_STORE = 2
+   >>> store = []
+   >>> functions = {
+   ...     C_PRINT: lambda data: print('<<<', data),
+   ...     C_ECHO:  lambda data: data,
+   ...     C_STORE: store.append,
+   ... }
+   >>> def dispatch(data, code):
+   ...     return functions[code](data)
+   >>> conn.oobCallback = dispatch
+   >>> 
+   >>> conn.eval('self.oobMessage("foo", C_PRINT)')
+   <<< foo
+   >>> conn.eval('self.oobMessage("foo", C_ECHO)')
+   'foo'
+   >>> conn.eval('self.oobMessage("foo", C_STORE)')
+   >>> store
+   ['foo']
+   >>> conn.eval('self.oobMessage('foo', 3)')
+   Traceback (most recent call last):
+     File "<stdin>", line 1, in <module>
+   KeyError: 3
+
+
+An example showing how nesting of OOB messages works
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The previous examples were showing the bare application of OOB messages,
+but the real power of it comes when one understands how messages are
+getting nested within a ``eval`` call.
+
+For that first create an R function which returns progress information
+during a "complicated" calculation:
+
+   >>> r_func = """
+   ... big_job <- function(x)
+   ... {
+   ...     a <- x*2
+   ...     self.oobSend('25% done')
+   ...     b <- a * a
+   ...     self.oobSend('50% done')
+   ...     c <- a + b
+   ...     self.oobSend('75% done')
+   ...     d <- c**2
+   ...     self.oobSend('100% done')
+   ...     -1 * d
+   ... }"""
+   >>> conn.eval(r_func)
+
+Then create a progress report function, register it as a callback and
+then call the actual R function:
+
+   >>> def progress(msg, code): print msg
+   ...
+   >>> conn.oobCallback = progress
+   >>> res = conn.r.big_job(5)
+   25% done
+   50% done
+   75% done
+   100% done
+   >>> res
+   -12100.0
 

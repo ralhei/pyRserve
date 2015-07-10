@@ -1,7 +1,7 @@
 Installation
 ============
 
-Before pyRserve can be used, R and Rserv have to be installed properly. 
+Before pyRserve can be used, R and Rserv have to be installed properly.
 Installation instructions for both packages are available on their corresponding
 websites at `<http://www.r-project.org/>`_ and `<http://www.rforge.net/Rserve/>`_
 
@@ -33,7 +33,7 @@ Installing Rserve
 
 If you have already downloaded the tar file then from your command line run::
 
-  R CMD INSTALL Rserve_1.7-0.tar.gz
+  R CMD INSTALL Rserve_1.8-0.tar.gz
 
 Older versions of Rserve might also work, the earliest function version however
 seems to be 0.6.6.
@@ -44,7 +44,7 @@ seems to be 0.6.6.
    like to control Rserve by a process management tool like ``supervisord``)
    then Rserve has to be install with the special ``-DNODAEMON`` compiler flag::
 
-     PKG_CPPFLAGS=-DNODAEMON  R CMD INSTALL Rserve_1.7-0.tar.gz
+     PKG_CPPFLAGS=-DNODAEMON  R CMD INSTALL Rserve_1.8-0.tar.gz
 
 
 Installing pyRserve
@@ -57,13 +57,12 @@ pyRserve requires numpy to be installed (``easy_install numpy``).
 
 Then from your unix/windows command line run::
 
-  easy_install pyRserve
+  pip pyRserve
 
-Note: pyRserve requires numpy. ``easy_install`` should install numpy
+Note: pyRserve requires numpy. ``pip`` should install numpy
 automatically if it's not there yet. However cases have been reported where
-``easy_install`` fails doing this. The solution is to either install numpy
-manually, or use `pip` instead of ``easy_install``. ``pip`` can be obtained
-from `<http://pypi.python.org/pypi/pip>`_.
+``easy_install`` fails doing this. The solution is to install numpy
+manually in such a case.
 
 Currently supported Python versions are 2.7, 3.2, and 3.3.
 

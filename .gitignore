@@ -4,3 +4,7 @@ dist
 doc/doctrees
 doc/html
 doc/pyRserve.html.zip
+*~
+*.pyc
+__pycache__
+.idea

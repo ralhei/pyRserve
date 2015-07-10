@@ -25,6 +25,17 @@ be improved.
 
 Changes
 ----------------
+* V 0.8.1 (2014-07-17)
+    * Fixed errors in the documentation, updated outdated parts
+    * For unittesting run Rserve on different port from the default 6311 to
+      avoid clashes with regular Rserve running on the same server
+    * Fixed but when passing a R-function as argument to a function call (e.g. to ``sapply``),
+      added unittest for this
+
+* V 0.8.0 (2014-06-26)
+    * Added support for remote shutdown of Rserve (thanks to Uwe Schmitt)
+    * Added support for Out-Of-Bounds (OOB) messages (thanks to Philipp alias flying-sheep)
+
 * V 0.7.3 (2013-08-01)
     * Added missing MANIFEST.in to produce a complete tgz package (now includes docs etc)
     * Fixed bug on x64 machines when handling integers larger than 2**31
@@ -83,7 +94,7 @@ Changes
 * V 0.3 (2010-06-08)
     * Added conversion of more complex R structures into Python
     * Updated documentation (installation, manual)
-    
+
 * V 0.2 (2010-03-19) Fixed rendering of TaggedArrays
 
 * V 0.1 (2010-01-10) Initial version
@@ -98,8 +109,8 @@ This package has been mainly developed under Linux, and hence should run on all 
 
 It has been tested run with Python 2.6, 2.7.x, 3.2, and 3.3.
 
-The latest development has been tested with R 3.0.1 and Rserve 1.7.0, but it
-also should work with R 2.13.1 and newer. Rserve is suppported
+The latest development has been tested with R 3.0.1 and Rserve 1.8.0, but it
+also should work with R 2.13.1 and newer in that series. Rserve is suppported
 from version 0.6.6 on.
 
 License
@@ -113,15 +124,16 @@ Quick Installation
 -------------------
 
 Make sure that Numpy is installed (version 1.4.x or higher).
-Actually ``easy_install pyRserve`` should install numpy if it is missing.
 
 Then from your unix/windows command line run::
 
-    easy_install pyRserve
-   
-or download the tar.gz or zip package. After unpacking run ``python setup.py install`` from your command line.
+    pip pyRserve
 
-Actually ``easy_install pyRserve`` should install numpy if it is missing. If it fails please use ``pip`` instead.
+For manual installation download the tar.gz or zip package.
+After unpacking, ``cd`` into the pyRserve directory and run ``python setup.py install``
+from the command line.
+
+Actually ``pip pyRserve`` should install numpy if it is missing.
 
 
 Source Code repository
