@@ -559,7 +559,7 @@ class RParser(object):
             data.append(self._postprocessData(self._parseExpr().data))
 
         if lexeme.hasAttr and lexeme.attrTypeCode == XT_LIST_TAG:
-            # The vector is actually a tagge list, i.e. a list which allows
+            # The vector is actually a tagged list, i.e. a list which allows
             # to access its items by name (like in a dictionary). However items
             # are ordered, and there is not necessarily a name available for
             # every item.
@@ -598,6 +598,12 @@ class RParser(object):
         # Closure instance.
         return Closure(lexeme, aList1, aList2)
 
+    @fmap(XT_S4)
+    def xt_s4(self, lexeme):
+        """A S4 object only contains attributes, no other payload"""
+        return S4(lexeme)
+
+
 ##############################################################################
 
 
@@ -620,3 +626,12 @@ class Closure(object):
 
     def __repr__(self):
         return '<Closure instance %d>' % id(self)
+
+
+class S4(object):
+    """Very simple representation of a S4 instance"""
+    def __init__(self, lexeme):
+        self.lexeme = lexeme
+
+    def __repr__(self):
+        return '<S4 attrs=%s>' % repr(self.lexeme.attr)

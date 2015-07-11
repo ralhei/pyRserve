@@ -10,7 +10,7 @@ import py
 ###
 
 sys.path.insert(0, '..')
-from pyRserve import rtypes, rserializer, rconn
+from pyRserve import rtypes, rserializer, rconn, rparser
 from pyRserve.rconn import RVarProxy, OOBCallback
 from pyRserve.misc import PY3
 from pyRserve.rexceptions import REvalError
@@ -348,10 +348,9 @@ def test_vector_expression():
     assert res == ['1+1']
 
 
-### Test more numpy arrays
-### Many have been test above, but generally only 1-d arrays. Let's look at
-### arrays with higher dimensions
-
+# ### Test more numpy arrays
+# ### Many have been test above, but generally only 1-d arrays. Let's look at
+# ### arrays with higher dimensions
 
 def test_2d_arrays_created_in_python():
     """
@@ -484,7 +483,41 @@ def test_sapply_with_func_proxy_argument():
     assert res == 5
 
 
-### Some more tests
+# ### Some more tests
+
+def xtest_parse_s4_result():
+    """
+    S4 are special objects in R, generated e.g. when creating a database
+    connection as shown below:
+
+    in R:
+        install.packages('RSQLite')
+        install.packages('DBI')
+
+    in Python:
+        c.eval("library(RSQLite)")
+        c.eval("con <- dbConnect(RSQLite::SQLite(), dbname='testdb')")
+
+    To avoid the dependency of having RSQLite installed for unittesting
+    the raw result of the
+    """
+    raw = '\x01\x00\x01\x00\xbc\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+          '\x0a\xb8\x00\x00\x87\xb4\x00\x00\x15\xb0\x00\x00\x30\x04\x00\x00' \
+          '\x16\x00\x00\x00\x13\x04\x00\x00\x49\x64\x00\x00\x22\x08\x00\x00' \
+          '\x74\x65\x73\x74\x64\x62\x00\x01\x13\x08\x00\x00\x64\x62\x6e\x61' \
+          '\x6d\x65\x00\x00\x24\x08\x00\x00\x01\x00\x00\x00\x01\xff\xff\xff' \
+          '\x13\x14\x00\x00\x6c\x6f\x61\x64\x61\x62\x6c\x65\x2e\x65\x78\x74' \
+          '\x65\x6e\x73\x69\x6f\x6e\x73\x00\x20\x04\x00\x00\x06\x00\x00\x00' \
+          '\x13\x08\x00\x00\x66\x6c\x61\x67\x73\x00\x00\x00\x22\x04\x00\x00' \
+          '\x00\x01\x01\x01\x13\x04\x00\x00\x76\x66\x73\x00\xa2\x30\x00\x00' \
+          '\x15\x18\x00\x00\x22\x08\x00\x00\x52\x53\x51\x4c\x69\x74\x65\x00' \
+          '\x13\x08\x00\x00\x70\x61\x63\x6b\x61\x67\x65\x00\x53\x51\x4c\x69' \
+          '\x74\x65\x43\x6f\x6e\x6e\x65\x63\x74\x69\x6f\x6e\x00\x01\x01\x01' \
+          '\x13\x08\x00\x00\x63\x6c\x61\x73\x73\x00\x00\x00'
+    res = rparser.rparse(raw)
+    assert isinstance(res, rparser.S4)
+
+
 def test_rAssign_method():
     """test "rAssign" class method of RSerializer"""
     hexd = b'\x20\x00\x00\x00\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
