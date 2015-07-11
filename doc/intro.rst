@@ -25,6 +25,9 @@ be improved.
 
 Changes
 ----------------
+* V 0.8.2 (2015-07-11)
+    * Added support for S4 objects (generated when e.g. creating a db object in R)
+
 * V 0.8.1 (2014-07-17)
     * Fixed errors in the documentation, updated outdated parts
     * For unittesting run Rserve on different port from the default 6311 to
