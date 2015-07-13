@@ -11,7 +11,7 @@ before_install:
 #    - "(cd R-3.2.1; ./configure --prefix=/usr --enable-R-shlib && make && sudo make install)"
 #    - "curl -O http://www.rforge.net/Rserve/snapshot/Rserve_1.8-3.tar.gz"
 #    - "sudo PKG_CPPFLAGS=-DNODAEMON  R CMD INSTALL Rserve_1.8-3.tar.gz"
-    - "echo 'install.packages(\"Rserve\",,\"http://rforge.net/\")' | R --no-save"
+    - "echo 'install.packages(\"Rserve\",,\"http://rforge.net/\")' | sudo R --no-save"
 install: "pip install -r requirements.txt"
 script:
     - "py.test testing"
