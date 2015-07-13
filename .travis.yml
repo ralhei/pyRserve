@@ -6,9 +6,9 @@ before_install:
     - "sudo apt-get install -y gfortran"
     - "curl -O http://cran.r-project.org/src/base/R-3/R-3.2.1.tar.gz"
     - "tar -xzf R-3.2.1.tar.gz"
-    - "(cd R-3.2.1; ./configure --enable-R-shlib && make && make install)"
+    - "(cd R-3.2.1; ./configure --prefix=/usr --enable-R-shlib && make && sudo make install)"
     - "curl -O http://www.rforge.net/Rserve/snapshot/Rserve_1.8-3.tar.gz"
-    - "PKG_CPPFLAGS=-DNODAEMON  R CMD INSTALL Rserve_1.8-3.tar.gz"
+    - "sudo PKG_CPPFLAGS=-DNODAEMON  R CMD INSTALL Rserve_1.8-3.tar.gz"
 install: "pip install -r requirements.txt"
 script:
     - "py.test testing"
