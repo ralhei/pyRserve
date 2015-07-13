@@ -1,6 +1,7 @@
 language:
     - python
     - r
+sudo: required
 python:
     - "2.7"
 before_install:
