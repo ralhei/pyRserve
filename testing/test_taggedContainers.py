@@ -1,8 +1,6 @@
 """
 unittests for classes from taggedContainers
 """
-import sys
-sys.path.insert(0, '..')
 from pyRserve.taggedContainers import TaggedList
 
 

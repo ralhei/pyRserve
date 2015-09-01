@@ -2,21 +2,18 @@
 """
 Unittesting module for rparser
 """
-import sys
 import datetime
 ###
 import numpy
 import py
 ###
-
-sys.path.insert(0, '..')
 from pyRserve import rtypes, rserializer, rconn, rparser
 from pyRserve.rconn import RVarProxy, OOBCallback
 from pyRserve.misc import PY3
 from pyRserve.rexceptions import REvalError
 from pyRserve.taggedContainers import TaggedList, TaggedArray
-
-from testtools import start_pyRserve, compareArrays, RPORT
+###
+from .testtools import start_pyRserve, compareArrays, RPORT
 
 conn = None  # will be set to Rserve-connection in setup_module()
 
@@ -38,9 +35,6 @@ def teardown_module(module):
     try:
         module.conn.close()
         module.rProc.terminate()
-        #time.sleep(0.5)
-        #if not module.rProc.poll():
-        #    module.rProc.kill()
     except AttributeError:
         # probably Rserve process did not startup so the rProc object is
         # not available.
@@ -48,7 +42,8 @@ def teardown_module(module):
 
 
 ######################################
-### Test strings
+# ### Test strings
+
 def test_eval_strings():
     """
     Test plain string, byte-strings, unicodes (depending on Python version)
@@ -110,7 +105,7 @@ def test_eval_unicode_arrays():
                          numpy.array(['abc', 'def']))
 
 
-### Test integers
+# ### Test integers
 
 def test_eval_integers():
     """
@@ -123,7 +118,7 @@ def test_eval_integers():
 
     assert conn.r("1") == 1.0
 
-    #### Create real integers in R:
+    # ### Create real integers in R:
     res = conn.r('as.integer(c(1))')
     assert res == 1
     assert type(res) == int
@@ -167,7 +162,7 @@ def test_eval_integer_arrays():
     assert isinstance(res, numpy.ndarray)
     assert res.dtype == numpy.float
 
-    #### Create real integer arrays in R:
+    # ### Create real integer arrays in R:
     res = conn.r('as.integer(c(1, 5))')
     assert compareArrays(res, numpy.array([1, 5]))
     assert res.dtype in (numpy.int, numpy.int32)
@@ -194,7 +189,7 @@ def test_eval_long_arrays():
     py.test.raises(ValueError, conn.r.ident, arr64big)
 
 
-### Test floats
+# ### Test floats
 
 def test_eval_floats():
     """Test different types and sizes of floats"""
@@ -224,7 +219,7 @@ def test_eval_float_arrays():
                          numpy.array([1.7, 5.6]))
 
 
-### Test complex numbers
+# ### Test complex numbers
 
 def test_eval_complex():
     """Test different types and sizes of complex numbers"""
@@ -250,7 +245,7 @@ def test_eval_complex_arrays():
     assert compareArrays(conn.r.ident(arr), arr)
 
 
-### Test boolean values
+# ### Test boolean values
 
 def test_eval_bool():
     """Test boolean values"""
@@ -281,14 +276,15 @@ def test_empty_boolean_array():
     assert compareArrays(conn.r.empty_bool_arr, numpy.array([], dtype=bool))
 
 
-### Test null value
+# ### Test null value
+
 def test_null_value():
     """Test NULL value, which is None in Python"""
     assert conn.r('NULL') is None
     assert conn.r.ident(None) is None
 
-### Test list function
 
+# ### Test list function
 
 def test_lists():
     """Test lists which directtly translate into Python lists"""
@@ -434,7 +430,7 @@ def test_eval_void():
     assert conn.r('a=1', void=True) is None
 
 
-### Test evaluation of some R functions
+# ### Test evaluation of some R functions
 
 def test_eval_sequence():
     # first string evaluate of R expression:

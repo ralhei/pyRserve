@@ -29,7 +29,7 @@ class OOBMessage(object):
         self.messageSize = messageSize
 
     def __len__(self):
-        return self.messageSize + 16 #header
+        return self.messageSize + 16  # header
 
 
 class Command(object):
@@ -38,7 +38,7 @@ class Command(object):
     """
     def __init__(self, code):
         self.code = code
-        #Rserve 1.7 or’s the command with CMD_RESP even if it’s a OOB instead
+        # Rserve 1.7 or’s the command with CMD_RESP even if it’s a OOB instead
         fixedOOBCode = code & ~CMD_RESP
 
         self.isOOB = bool(code & CMD_OOB)
@@ -46,7 +46,8 @@ class Command(object):
         self.oobUserCode = fixedOOBCode & 0xfff
 
         self.errCode = (code >> 24) & 127
-        self.responseCode = code & 0xfffff #lowest 20 bit
+        self.responseCode = code & 0xfffff  # lowest 20 bit
+
 
 class Lexeme(list):
     """Basic Lexeme class for parsing binary data coming from Rserve"""
@@ -57,6 +58,7 @@ class Lexeme(list):
         self.hasAttr = hasAttr
         self.lexpos = lexpos
         self.attrLexeme = None
+        self.data = None
 
     def setAttr(self, attrLexeme):
         self.attrLexeme = attrLexeme
@@ -75,7 +77,7 @@ class Lexeme(list):
 
     @property
     def dataLength(self):
-        'Return length (in bytes) of actual REXPR data body'
+        """Return length (in bytes) of actual REXPR data body"""
         if self.hasAttr:
             if not self.attrLexeme:
                 raise RuntimeError('Attribute lexeme not yet set')
@@ -118,6 +120,15 @@ class Lexer(object):
             self._read = self.fp.recv
         else:
             self._read = self.fp.read
+        # The following attributes will be set thru 'readHeader()':
+        self.lexpos = None
+        self.messageSize = None
+        self.errCode = None
+        self.responseCode = None
+        self.responseOK = None
+        self.isOOB = False
+        self.oobType = None
+        self.oobUserCode = None
 
     def readHeader(self):
         """
@@ -137,7 +148,7 @@ class Lexer(object):
         command = Command(struct.unpack('<I', self.read(4))[0])
         self.messageSize = self.__unpack(XT_INT)
         dataOffset = self.__unpack(XT_INT)
-        messageSize2 = self.__unpack(XT_INT) #TODO: add to message size
+        messageSize2 = self.__unpack(XT_INT)  # TODO: add to message size
 
         self.isOOB = command.isOOB
         if self.isOOB:
@@ -148,7 +159,7 @@ class Lexer(object):
 
             if DEBUG:
                 print('oob type: %x, oob user code: %x, message size: %d' %
-                    (self.oobType, self.oobUserCode, self.messageSize))
+                      (self.oobType, self.oobUserCode, self.messageSize))
         else:
             self.errCode = command.errCode
 
@@ -160,13 +171,13 @@ class Lexer(object):
             else:
                 self.clearSocketData()
                 raise ValueError('Received illegal response code (%x)' %
-                                self.responseCode)
+                                 self.responseCode)
 
             if DEBUG:
                 print('response ok? %s (responseCode=%x), error-code: %x, '
-                    'message size: %d' %
-                    (self.responseOK, self.responseCode,
-                    self.errCode, self.messageSize))
+                      'message size: %d' %
+                      (self.responseOK, self.responseCode,
+                       self.errCode, self.messageSize))
 
         return self.messageSize
 
@@ -376,6 +387,7 @@ class RParser(object):
         """
         self.lexer = Lexer(src)
         self.atomicArray = atomicArray
+        self.indentLevel = None
 
     def __getitem__(self, key):
         return self.parserMap[key]
@@ -424,13 +436,14 @@ class RParser(object):
                 rserve_err_msg = ERRORS[self.lexer.errCode]
             except KeyError:
                 raise REvalError("R evaluation error (code=%d)" %
-                                self.lexer.errCode)
+                                 self.lexer.errCode)
             else:
                 raise RResponseError('Response error %s (error code=%d)' %
-                                    (rserve_err_msg, self.lexer.errCode))
+                                     (rserve_err_msg, self.lexer.errCode))
 
         if self.lexer.isOOB:
-            return OOBMessage(self.lexer.oobType, self.lexer.oobUserCode, message, self.lexer.messageSize)
+            return OOBMessage(self.lexer.oobType, self.lexer.oobUserCode,
+                              message, self.lexer.messageSize)
         else:
             return message
 
@@ -438,8 +451,8 @@ class RParser(object):
         dataLexeme = self.lexer.nextExprHdr()
         self._debugLog(dataLexeme, isRexpr=False)
         if dataLexeme.rTypeCode == DT_SEXP:
-            expression = self._parseExpr()
-            return self._postprocessData(expression.data)
+            lexeme = self._parseExpr()
+            return self._postprocessData(lexeme.data)
         else:
             raise NotImplementedError()
 
@@ -506,7 +519,7 @@ class RParser(object):
 
     @fmap(None)
     def xt_(self, lexeme):
-        'apply this for atomic data'
+        # apply this for atomic data
         return self._nextExprData(lexeme)
 
     @fmap(XT_ARRAY_BOOL, XT_ARRAY_INT, XT_ARRAY_DOUBLE, XT_ARRAY_STR)

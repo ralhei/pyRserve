@@ -8,9 +8,12 @@ and also R-functions can be called remotely.
 Published under MIT license (see file LICENSE for details).
 
 Some useful links:
-pyRserve: https://pypi.python.org/pypi/pyRserve
-Rserve:   http://www.rforge.net/Rserve/
-R:        http://www.r-project.org/
 
-Travis build status: `https://api.travis-ci.org/ralhei/pyRserve.png?branch=master
-<https://travis-ci.org/ralhei/pyRserve>`_
+- pyRserve: https://pypi.python.org/pypi/pyRserve
+- Rserve:   http://www.rforge.net/Rserve/
+- R:        http://www.r-project.org/
+
+.. |travis| image:: https://api.travis-ci.org/ralhei/pyRserve.png?branch=master
+.. _travis: https://travis-ci.org/ralhei/pyRserve
+
+Travis build status: |travis|_

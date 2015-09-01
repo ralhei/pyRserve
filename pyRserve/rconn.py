@@ -77,7 +77,6 @@ def checkIfClosed(func):
         try:
             return func(self, *args, **kw)
         except socket.error as msg:
-            # import pdb;pdb.set_trace()
             if msg.strerror in ['Connection reset by peer', 'Broken pipe']:
                 # seems like the connection to Rserve has died, so mark
                 # the connection as closed
@@ -441,7 +440,7 @@ def _test_main():
     conn = connect()
     print('"conn" is your handle to rserve. Type e.g. "conn(\'1\')" '
           'for string evaluation.')
-    #r('x<-1:20; y<-x*2; lm(y~x)')
+    # r('x<-1:20; y<-x*2; lm(y~x)')
     sc = open('../testData/test-script.R').read()
     v = conn.r(sc)
     open('r-test-png.png', 'w').write(v[3])
