@@ -76,7 +76,7 @@ def checkIfClosed(func):
             raise PyRserveClosed('Connection to Rserve already closed')
         try:
             return func(self, *args, **kw)
-        except socket.error, msg:
+        except socket.error as msg:
             # import pdb;pdb.set_trace()
             if msg.strerror in ['Connection reset by peer', 'Broken pipe']:
                 # seems like the connection to Rserve has died, so mark
