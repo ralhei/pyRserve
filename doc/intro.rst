@@ -25,6 +25,13 @@ be improved.
 
 Changes
 ----------------
+* V 0.8.3 (2015-09-04)
+    * Fixed exception catching for Python 3.4 (thanks to eeue56)
+    * Some pep8 cleanups
+    * explicit initialization of a number of instance variables in some classes
+    * cleanup of import statements in test modules
+    * Allow for message sizes greater than 4GB coming from R server
+
 * V 0.8.2 (2015-07-11)
     * Added support for S4 objects (generated when e.g. creating a db object in R)
 

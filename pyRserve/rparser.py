@@ -146,9 +146,13 @@ class Lexer(object):
         self.lexpos = 0
 
         command = Command(struct.unpack('<I', self.read(4))[0])
-        self.messageSize = self.__unpack(XT_INT)
+        # Obtain lower 32bit part of message length:
+        messageSize1 = self.__unpack(XT_INT)
         dataOffset = self.__unpack(XT_INT)
-        messageSize2 = self.__unpack(XT_INT)  # TODO: add to message size
+        assert dataOffset == 0, 'dataOffset > 0 is not implemented'
+        # Obtain upper 32bit part of message length:
+        messageSize2 = self.__unpack(XT_INT) << 32  # shift 32bits to the left
+        self.messageSize = messageSize2 + messageSize1
 
         self.isOOB = command.isOOB
         if self.isOOB:
