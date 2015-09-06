@@ -25,6 +25,10 @@ be improved.
 
 Changes
 ----------------
+* V 0.8.4 (2015-09-06)
+    * fixed missing requirements.txt in MANIFEST.in
+    * fixed bug in installer (setup.py)
+
 * V 0.8.3 (2015-09-04)
     * Fixed exception catching for Python 3.4 (thanks to eeue56)
     * Some pep8 cleanups

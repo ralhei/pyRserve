@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 from distutils.core import setup
 
 requirements = open('requirements.txt').read().splitlines()
@@ -11,7 +12,10 @@ f = open(os.path.join(here, 'doc', 'intro.rst'))
 long_description = f.read()
 f.close()
 
-from pyRserve.version import __version__
+# Add pyRserve to sys.path so we can import version.py without importing
+# pyRserve.__init__.py (which would fail since no dependencies are installed):
+sys.path.append('pyRserve')
+from version import __version__
 
 setup(
     name='pyRserve',
