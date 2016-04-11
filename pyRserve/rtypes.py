@@ -11,7 +11,12 @@ MIN_INT32 = -MAX_INT32
 
 # Rserve constants and mappings ###############################################
 
-RHEADER_SIZE = 16             # Rserve header size
+# Main Rserve header size [bytes]
+RHEADER_SIZE = 16
+
+# Header sizes (in SEXPR) without and with XT_LARGE or DT_LARGE flag [bytes]
+SMALL_DATA_HEADER_SIZE = 4
+LARGE_DATA_HEADER_SIZE = 8
 
 
 CMD_RESP = 0x10000            # all responses have this flag set
@@ -251,9 +256,9 @@ DTs = dict([(rTypeCode, dt_name) for (dt_name, rTypeCode) in locals().items()
             if dt_name.startswith('DT_')])
 
 
-BOOL_TRUE   = 1
-BOOL_FALSE  = 0
-BOOL_NA     = 2
+BOOL_TRUE = 1
+BOOL_FALSE = 0
+BOOL_NA = 2
 
 VALID_R_TYPES = [
     DT_SEXP, XT_BOOL, XT_INT, XT_DOUBLE, XT_STR, XT_SYMNAME, XT_VECTOR,

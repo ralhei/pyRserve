@@ -2,13 +2,10 @@
 Serializer class to convert Python objects into a binary data stream for
 sending them to Rserve.
 """
-__all__ = ['reval', 'rassign', 'rSerializeResponse', 'rShutdown']
-
 import struct
 import os
 import socket
 import io
-import sys
 import types
 ###
 import numpy
@@ -16,6 +13,8 @@ import numpy
 from . import rtypes
 from .misc import PY3, FunctionMapper, byteEncode, padLen4, string2bytesPad4
 from .taggedContainers import TaggedList, TaggedArray
+
+__all__ = ['reval', 'rassign', 'rSerializeResponse', 'rShutdown']
 
 # turn on DEBUG to see extra information about what the serializer is
 # doing with your data
@@ -70,6 +69,7 @@ class RSerializer(object):
             return None
 
     def _writeHeader(self, commandType):
+        """Write main header of message for Rserve"""
         # Set length to zero initially, will be fixed in _finalizerHeader()
         # when msg size is determined:
         msg_length_lower = msg_length_higher = 0
@@ -81,26 +81,56 @@ class RSerializer(object):
         self._buffer.write(header)
 
     def finalize(self):
-        # and finally we correctly set the length of the entire data package
-        # (in bytes) minus header size:
-        # dataSize = self._fp.tell() - rtypes.RHEADER_SIZE
-        # TODO: Also handle data larger than 2**32
-        # (use upper part of message length!!)
-        assert self._dataSize < 2**32, \
-            'data larger than 2**32 not yet implemented'
-        self._buffer.seek(4)
+        """Finalize the message package before actually sending/wriring it out.
+        -> Set the length of the entire data package in the general message hdr
+           as number of bytes of the entire message minus the general hdr
+        """
+        # Jump to end of buffer to determine its length:
+        self._buffer.seek(0, os.SEEK_END)
+        messageSize = self._buffer.tell() - rtypes.RHEADER_SIZE
         if DEBUG:
-            print('writing size of header: %2d' % self._dataSize)
-        self._buffer.write(struct.pack('<I', self._dataSize))
+            print('writing size of header: %2d' % messageSize)
+        # Goto position 4 of the general Rserve package header and write the
+        # size of the overall rserve message there. For message size > 2**32
+        # the size is split into two parts, the lower 32 bits are written at
+        # position 4, the higher part is written at position 12 (see QAP1 docs)
+        bin_messageSize = struct.pack('<Q', messageSize)
+        bin_messageSize_lo = bin_messageSize[:4]
+        bin_messageSize_hi = bin_messageSize[4:]
+
+        self._buffer.seek(4)
+        self._buffer.write(bin_messageSize_lo)
+        self._buffer.write('\x00\x00\x00\x00')  # data offset, zero by default
+        self._buffer.write(bin_messageSize_hi)
         return self._getRetVal()
 
     def _writeDataHeader(self, rTypeCode, length):
+        """Write a header for either DataTypes (DT_*) or ExpressionTypes (XT_*)
+
+        According to the documentation of Rserve:
+        -----------------------------------------
+        If the length of the data block is smaller than 2**24 - 16 (fffff0)
+        then the header has a length of 4 bytes and looks like:
+            [1]   rTypeCode
+            [2-4] length of data block (3 bytes/24 bits)
+        If the length of the data is larger, then the rTypeCode of the header
+        has to be OR'ed with XT_LARGE (or DT_LARGE, which is the same). Then
+        the length of the datablock can be encoded in 7 bytes:
+            [1]   rTypeCode
+            [2-4] length of data block (lower three bytes)
+            [5-8] length of data block (upper four bytes)
+
+        However; pyRserve is not capable of dynamic header sizes, so we will
+                 use the large header setup for all data packages no matter of
+                 their size. Simon Urbanek confirmed that this does not cause
+                 any problems with Rserve.
         """
-        A data header consists of 4 bytes:
-        [1]   rTypeCode
-        [2-4] length of data block (3 bytes!!!)
-        """
-        self._buffer.write(struct.pack('<Bi', rTypeCode, length)[:4])
+        rTypeCode |= rtypes.XT_LARGE
+        hdr = struct.pack('<BQ', rTypeCode, length)
+        # cut-off leftover zeros at the right end of the header string
+        # before writing it to the buffer:
+        self._buffer.write(hdr[:rtypes.LARGE_DATA_HEADER_SIZE])
+        return rtypes.LARGE_DATA_HEADER_SIZE
 
     def serialize(self, o, dtTypeCode=rtypes.DT_SEXP):
         # Here the data typecode (DT_* ) of the entire message is written,
@@ -108,21 +138,24 @@ class RSerializer(object):
         if dtTypeCode == rtypes.DT_STRING:
             paddedString = string2bytesPad4(o)
             length = len(paddedString)
-            self._writeDataHeader(dtTypeCode, length)
+            hdrSize = self._writeDataHeader(dtTypeCode, length)
             self._buffer.write(paddedString)
         elif dtTypeCode == rtypes.DT_INT:
-            length = 4
-            self._writeDataHeader(dtTypeCode, length)
+            length = 4   # an integer is encoded as 4 bytes
+            hdrSize = self._writeDataHeader(dtTypeCode, length)
             self._buffer.write(struct.pack('<i', o))
         elif dtTypeCode == rtypes.DT_SEXP:
             startPos = self._buffer.tell()
-            self._buffer.write(b'\0\0\0\0')
+            self._buffer.write(b'\0\0\0\0\0\0\0\0')
             length = self.serializeExpr(o)
             self._buffer.seek(startPos)
-            self._writeDataHeader(dtTypeCode, length)
+            hdrSize = self._writeDataHeader(dtTypeCode, length)
         else:
             raise NotImplementedError('no support for DT-type %x' % dtTypeCode)
-        self._dataSize += length + 4
+        # Jump back to end of buffer to be prepared for writing more data
+        self._buffer.seek(0, os.SEEK_END)
+        # Adjust datasize counter
+        self._dataSize += length + hdrSize
 
     def serializeExpr(self, o):
         if isinstance(o, numpy.ndarray):
@@ -143,7 +176,7 @@ class RSerializer(object):
         return self._buffer.tell() - startPos
 
     @fmap(NoneType, rtypes.XT_NULL)
-    def s_null(self, o):
+    def s_null(self, _):
         """Send Python's None to R, resulting in NULL there"""
         # For NULL only the header needs to be written, there is no data body.
         self._writeDataHeader(rtypes.XT_NULL, 4)
@@ -165,7 +198,7 @@ class RSerializer(object):
                   (length, repr(paddedString)))
         self._buffer.write(paddedString)
 
-    ################ Arrays #########################################
+    # ############### Arrays #########################################
 
     def __s_write_xt_array_tag_data(self, o):
         """
@@ -194,8 +227,8 @@ class RSerializer(object):
                         written.
         @arg rTypeCode
         """
-        # subtract length of header (4 bytes), does not count to payload!
-        length = self._buffer.tell() - headerPos - 4
+        # subtract length of data header (8 bytes), does not count to payload!
+        length = self._buffer.tell() - headerPos - rtypes.LARGE_DATA_HEADER_SIZE
         self._buffer.seek(headerPos)
         self._writeDataHeader(rTypeCode, length)
         self._buffer.seek(0, os.SEEK_END)
@@ -320,7 +353,7 @@ class RSerializer(object):
         # Update the array header:
         self.__s_update_xt_array_header(startPos, rTypeCode)
 
-    ############### Vectors and Tag lists #####################################
+    # ############## Vectors and Tag lists ####################################
 
     @fmap(list, TaggedList)
     def s_xt_vector(self, o):
@@ -337,8 +370,9 @@ class RSerializer(object):
         length = self._buffer.tell() - startPos
         self._buffer.seek(startPos)
         # now write header again with correct length information
-        # subtract 4 (omit list header!)
-        self._writeDataHeader(rtypes.XT_VECTOR | attrFlag, length - 4)
+        # subtract length of list data header:
+        self._writeDataHeader(rtypes.XT_VECTOR | attrFlag,
+                              length - rtypes.LARGE_DATA_HEADER_SIZE)
         self._buffer.seek(0, os.SEEK_END)
 
     def s_xt_tag_list(self, o):
@@ -350,12 +384,13 @@ class RSerializer(object):
         length = self._buffer.tell() - startPos
         self._buffer.seek(startPos)
         # now write header again with correct length information
-        # subtract 4 (omit list header!)
-        self._writeDataHeader(rtypes.XT_LIST_TAG, length - 4)
+        # subtract length of list data header:
+        self._writeDataHeader(rtypes.XT_LIST_TAG,
+                              length - rtypes.LARGE_DATA_HEADER_SIZE)
         self._buffer.seek(0, os.SEEK_END)
 
-    ############################################################
-    #### class methods for calling specific Rserv functions ####
+    # ##########################################################
+    # ### class methods for calling specific Rserv functions ###
 
     @classmethod
     def rEval(cls, aString, fp=None, void=False):

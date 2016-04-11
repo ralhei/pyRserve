@@ -25,6 +25,10 @@ be improved.
 
 Changes
 ----------------
+* V 0.9.0 (2016-04-11)
+    * Full support for data objects larger than 2**24 bytes
+    * Maximum size of message sent to Rserv can now be 2**64 bytes
+
 * V 0.8.4 (2015-09-06)
     * fixed missing requirements.txt in MANIFEST.in
     * fixed bug in installer (setup.py)
