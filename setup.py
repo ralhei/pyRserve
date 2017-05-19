@@ -37,6 +37,7 @@ setup(
         'Operating System :: POSIX',
         'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries',

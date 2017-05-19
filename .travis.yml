@@ -1,6 +1,8 @@
 language: python
 python:
     - "2.7"
+    - "3.4"  # earliest supported 3.x release
+    - "3.6"  # latest python release, update as needed
 before_install:
     - "sudo apt-get update -qq"
     - "sudo apt-get install -y gfortran"
