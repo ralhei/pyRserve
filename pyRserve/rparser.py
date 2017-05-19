@@ -351,8 +351,8 @@ class Lexer(object):
         strList = [stringEncode(byteString) for byteString in bytesStrList]
         return numpy.array(strList)
 
-    @fmap(XT_STR, XT_SYMNAME)
-    def xt_symname(self, lexeme):
+    @fmap(XT_STR)
+    def xt_str(self, lexeme):
         """
         A null-terminated string.
         It's length can be larger than the actual string since it is always a
@@ -362,6 +362,14 @@ class Lexer(object):
         raw = self.read(lexeme.dataLength)
         byteStr = raw.split(b'\0', 1)[0]
         return stringEncode(byteStr)
+
+    @fmap(XT_SYMNAME)
+    def xt_symname(self, lexeme):
+        """
+        Just like a string, but in S4 classes, a special value for NULL exists
+        """
+        string = self.xt_str(lexeme)
+        return None if string == '\x01NULL\x01' else string
 
     @fmap(XT_NULL)
     def xt_null(self, lexeme):
@@ -618,7 +626,10 @@ class RParser(object):
     @fmap(XT_S4)
     def xt_s4(self, lexeme):
         """A S4 object only contains attributes, no other payload"""
-        return S4(lexeme)
+        if lexeme.hasAttr and lexeme.attrTypeCode == XT_LIST_TAG:
+            return S4(lexeme.attr)
+        else:
+            return S4([])
 
 
 ##############################################################################
@@ -645,10 +656,17 @@ class Closure(object):
         return '<Closure instance %d>' % id(self)
 
 
-class S4(object):
+class S4(dict):
     """Very simple representation of a S4 instance"""
-    def __init__(self, lexeme):
-        self.lexeme = lexeme
+    def __init__(self, source=(), **entries):
+        super(S4, self).__init__(source, **entries)
+
+        if 'class' in self:
+            self.classes = self['class']
+            del self['class']
+        else:
+            self.classes = []
 
     def __repr__(self):
-        return '<S4 attrs=%s>' % repr(self.lexeme.attr)
+        attrs = super(S4, self).__repr__()
+        return "<S4 classes={} {}>".format(self.classes, attrs)

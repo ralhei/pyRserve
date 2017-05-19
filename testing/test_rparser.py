@@ -471,6 +471,38 @@ def test_eval_very_convoluted_function_result():
     # ... many more tags could be tested here ...
 
 
+def test_s4():
+    """
+    S4 classes behave like dicts but usually have a 'class' attribute.
+    """
+    res = conn.r('''
+        track <- setClass("track",
+                          slots = c(x="numeric", y="NULL"))
+        track(x = 1:10, y = NULL)
+    ''')
+    assert isinstance(res, rparser.S4)
+    assert res.classes == ['track']
+    assert set(res.keys()) == {'x', 'y'}
+    assert compareArrays(res['x'], numpy.arange(1, 11))
+    assert res['y'] is None
+    assert "<S4 classes=['track'] {" in repr(res)
+
+
+def test_s4_empty():
+    """
+    Rare but possible: S4 classes without attributes.
+    """
+    res = conn.r('''
+        empty <- setClass("empty", slots = c(dummy = 'NULL'))
+        e <- empty()
+        class(e) <- NULL
+        attributes(e) <- NULL
+        e
+    ''')
+    assert isinstance(res, rparser.S4)
+    assert res.classes == []
+
+
 def test_sapply_with_func_proxy_argument():
     """
     Test calling sapply providing a proxy object to a R function as argument
