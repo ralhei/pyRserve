@@ -25,6 +25,11 @@ be improved.
 
 Changes
 ----------------
+* V 0.9.1 (2017-05-19)
+    * Removed a bug on some Python3 versions
+    * Added proper support for S4 objects (`thanks to flying-sheep <https://github.com/flying-sheep>`_)
+    * Added support for Python3 unitests on travis (`thanks to flying-sheep <https://github.com/flying-sheep>`_)
+
 * V 0.9.0 (2016-04-11)
     * Full support for data objects larger than 2**24 bytes
     * Maximum size of message sent to Rserv can now be 2**64 bytes
