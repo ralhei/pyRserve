@@ -284,6 +284,18 @@ def test_null_value():
     assert conn.r.ident(None) is None
 
 
+# ### Test large data objects
+
+def test_large_objects():
+    """Test that data objects larger than 2**24 bytes are supported
+    Sent array back and forth btw Python and R before comparing them.
+    """
+    # make an integer (int32) array a little bit larger than 2**24
+    arr = numpy.arange(2**24 / 4 + 100, dtype=numpy.int32)
+    conn.r.largearr = arr
+    compareArrays(arr, conn.r.largearr)
+
+
 # ### Test list function
 
 def test_lists():
