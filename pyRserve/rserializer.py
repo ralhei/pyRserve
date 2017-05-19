@@ -100,7 +100,7 @@ class RSerializer(object):
 
         self._buffer.seek(4)
         self._buffer.write(bin_messageSize_lo)
-        self._buffer.write('\x00\x00\x00\x00')  # data offset, zero by default
+        self._buffer.write(b'\x00\x00\x00\x00')  # data offset, zero by default
         self._buffer.write(bin_messageSize_hi)
         return self._getRetVal()
 
