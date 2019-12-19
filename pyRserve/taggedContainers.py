@@ -52,9 +52,9 @@ class TaggedList(object):
             except (TypeError, ValueError):
                 value = item
                 key = None
-            finally:
-                self.values.append(value)
-                self.keys.append(key)
+
+            self.values.append(value)
+            self.keys.append(key)
 
     def astuples(self):
         """
