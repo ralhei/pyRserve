@@ -17,8 +17,8 @@ fortran compiler installed, otherwise installation will not be possible.
 
 On Unix this looks like::
 
-  tar -xzf R-3.0.1.tar.gz       # or whatever version you are using
-  cd R-3.0.1
+  tar -xzf R-3.6.2.tar.gz       # or whatever version you are using
+  cd R-3.6.2
   ./configure --enable-R-shlib
   make
   make install
@@ -33,7 +33,7 @@ Installing Rserve
 
 If you have already downloaded the tar file then from your command line run::
 
-  R CMD INSTALL Rserve_1.8-0.tar.gz
+  R CMD INSTALL Rserve_1.8-6.tar.gz
 
 Older versions of Rserve might also work, the earliest function version however
 seems to be 0.6.6.
@@ -50,20 +50,10 @@ seems to be 0.6.6.
 Installing pyRserve
 -------------------
 
-For the following to work you have to have Python's ``setuptools``
-(from `<http://pypi.python.org/pypi/setuptools>`_ ) to be installed.
-
-pyRserve requires numpy to be installed (``easy_install numpy``).
-
-Then from your unix/windows command line run::
+From your unix/windows command line run::
 
   pip pyRserve
 
-Note: pyRserve requires numpy. ``pip`` should install numpy
-automatically if it's not there yet. However cases have been reported where
-``easy_install`` fails doing this. The solution is to install numpy
-manually in such a case.
-
-Currently supported Python versions are 2.7, 3.2, and 3.3.
+Currently supported Python versions are 2.7, 3.6, 3.7, and 3.8.
 
 In the next section you'll find instructions how to use everything together.

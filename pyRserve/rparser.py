@@ -17,7 +17,8 @@ from .rtypes import (
     XT_UNKNOWN, XT_VECTOR, XT_VECTOR_EXP, XTs, structMap, numpyMap
 )
 from .misc import FunctionMapper, byteEncode, stringEncode, PY3
-from .rexceptions import RResponseError, REvalError, EndOfDataError, RParserError
+from .rexceptions import \
+    RResponseError, REvalError, EndOfDataError, RParserError
 from .taggedContainers import TaggedList, asTaggedArray, asAttrArray
 
 DEBUG = 0

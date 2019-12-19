@@ -9,9 +9,9 @@ Published under MIT license (see file LICENSE for details).
 
 Some useful links:
 
-- pyRserve: https://pypi.python.org/pypi/pyRserve
-- Rserve:   http://www.rforge.net/Rserve/
-- R:        http://www.r-project.org/
+- pyRserve: https://pypi.org/project/pyRserve/
+- Rserve:   https://www.rforge.net/Rserve/
+- R:        https://www.r-project.org/
 
 .. |travis| image:: https://api.travis-ci.org/ralhei/pyRserve.png?branch=master
 .. _travis: https://travis-ci.org/ralhei/pyRserve

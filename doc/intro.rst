@@ -13,18 +13,13 @@ it can run on a remote machine and all variable  access and function calls will 
 Furthermore - and this makes everything feel very pythonic - all data structures will automatically be converted
 from native R to native Python and numpy types and back.
 
-Status of pyRserve
-------------------------------------------------------
-
-The question behind that usually is: Can pyRserve already be used for real work?
-
-Well, pyRserve has been used at various companies in production mode for over
-three years now. So it is pretty stable and many things work as they should.
-However it is not complete yet - there are a few loose ends which should still
-be improved.
 
 Changes
 ----------------
+* V 0.9.2 (2019-12-19)
+    * Replaced deprecated numpy.fromstring with numpy.frombuffer
+    * Flake8/pep8 cleanup
+    * Refactored exception hierarchy
 * V 0.9.1 (2017-05-19)
     * Removed a bug on some Python3 versions
     * Added proper support for S4 objects (`thanks to flying-sheep <https://github.com/flying-sheep>`_)
@@ -130,11 +125,9 @@ This package has been mainly developed under Linux, and hence should run on all 
  as on Mac OS X. pyRserve has also been successfully used on Win32 machines. Unittests have been used on the Linux
  and Mac OS X side, however they might just work fine for Win32.
 
-It has been tested run with Python 2.6, 2.7.x, 3.2, and 3.3.
+It has been tested run with Python 2.7.x, 3.6, 3.7, and 3.8
 
-The latest development has been tested with R 3.0.1 and Rserve 1.8.0, but it
-also should work with R 2.13.1 and newer in that series. Rserve is suppported
-from version 0.6.6 on.
+The latest development has been tested with R versions 3.0.1 and 3.6.2, and Rserve 1.8.0 and 1.8.6.
 
 License
 -------
@@ -146,17 +139,13 @@ released under `MIT license <http://pythonhosted.org/pyRserve/license.html>`_.
 Quick Installation
 -------------------
 
-Make sure that Numpy is installed (version 1.4.x or higher).
-
-Then from your unix/windows command line run::
+From your unix/windows command line run::
 
     pip pyRserve
 
 For manual installation download the tar.gz or zip package.
 After unpacking, ``cd`` into the pyRserve directory and run ``python setup.py install``
 from the command line.
-
-Actually ``pip pyRserve`` should install numpy if it is missing.
 
 
 Source Code repository

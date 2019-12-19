@@ -199,7 +199,7 @@ So of course it is then possible to compute values or copy them from Python vari
 
 To retrieve a variable from R just use it as expected::
 
-  >>> print 'A value from R:', conn.r.aVar
+  >>> print('A value from R:', conn.r.aVar)
 
 In its current implementation pyRserve allows to set and access the following base types:
 
@@ -244,7 +244,7 @@ There is nothing special about this, this is just the way R internally deals wit
 Expression evaluation through the R namespace
 ------------------------------------------------
 
-Instead of using `conn.eval('1+1') expressions can also be evaluate by making a function call on the R namespace
+Instead of using `conn.eval('1+1')` expressions can also be evaluate by making a function call on the R namespace
 directly. The following calls are producing the same result:
 
   >>> conn.r('1+1')
@@ -292,7 +292,7 @@ Getting help with functions
 If R is properly installed including its help messages those can be retrieved directly.
 Also here no surprise - just do it the Python way through the ``__doc__`` attribute::
 
-  >>> print conn.r.sapply.__doc__
+  >>> print(conn.r.sapply.__doc__)
   lapply                 package:base                 R Documentation
 
   Apply a Function over a List or Vector
@@ -630,7 +630,7 @@ on agreed-upon codes::
    >>> def dispatch(data, code):
    ...     return functions[code](data)
    >>> conn.oobCallback = dispatch
-   >>> 
+   >>>
    >>> conn.eval('self.oobMessage("foo", C_PRINT)')
    <<< foo
    >>> conn.eval('self.oobMessage("foo", C_ECHO)')
@@ -672,7 +672,7 @@ during a "complicated" calculation:
 Then create a progress report function, register it as a callback and
 then call the actual R function:
 
-   >>> def progress(msg, code): print msg
+   >>> def progress(msg, code): print(msg)
    ...
    >>> conn.oobCallback = progress
    >>> res = conn.r.big_job(5)
