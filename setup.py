@@ -18,10 +18,11 @@ setup(
                 'via network',
     long_description=long_description,
     author='Ralph Heinkel',
-    author_email='rh [at] ralph-heinkel.com',
+    author_email='rh@ralph-heinkel.com',
     url='https://pypi.org/project/pyRserve/',
     packages=['pyRserve'],
     install_requires=requirements,
+    include_package_data=True,
     license='MIT license',
     platforms=['unix', 'linux', 'cygwin', 'win32'],
     classifiers=[

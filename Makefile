@@ -18,25 +18,25 @@ clean:
 	rm -rf build dist *.egg-info MANIFEST.in
 
 upload: docs
-	# This will upload the current version to pypi. Credentials are stored in ~/.pypirc
-	python setup.py register
-	python setup.py sdist upload
+	rm -f dist/*
+	python setup.py sdist bdist_wheel
+	twine upload dist/*
 	echo  "For uploading the latest documentation login to pypi and upload doc/pyRserve.html.zip"
 
 
 backup: clean _backup
 
-_backup: 
+_backup:
 	DIR=`pwd`; bDIR=`basename $$DIR`; cd ..; \
 	tar -czf $${bDIR}_$(DATE).tgz -X $$bDIR/TAR_EXCLUDELIST $$bDIR ; \
 	echo "Created backup ../$${bDIR}_$(DATE).tgz"
 
 
 test:
-	(cd  testing; py.test)
+	pytest testing
 
 coverage:
 	pyTest=`which py.test` ; \
 	rm -f pyRserve/binaryRExpressions.py* ; \
-	(cd pyRserve; coverage run $${pyTest} ; coverage report -m) 
+	(cd pyRserve; coverage run $${pyTest} ; coverage report -m)
 
