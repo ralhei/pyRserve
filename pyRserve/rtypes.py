@@ -340,16 +340,3 @@ atom2ArrMap = {
     numpy.bool:        XT_ARRAY_BOOL,
     numpy.bool_:       XT_ARRAY_BOOL,
     }
-
-
-###############################################################################
-# Some custom exceptions used in the pyRserve package
-
-
-class RserveError(Exception):
-    # base class for all errors for this package
-    pass
-
-
-class RParserError(RserveError):
-    pass

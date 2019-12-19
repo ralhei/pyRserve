@@ -9,15 +9,15 @@ import socket
 import numpy
 
 from .rtypes import (
-    CMD_OOB, CMD_RESP, DT_SEXP, DTs, ERRORS, RESP_ERR, RESP_OK, RParserError,
-    RserveError, SOCKET_BLOCK_SIZE, VALID_R_TYPES, XT_ARRAY_BOOL, XT_ARRAY_CPLX,
+    CMD_OOB, CMD_RESP, DT_SEXP, DTs, ERRORS, RESP_ERR, RESP_OK,
+    SOCKET_BLOCK_SIZE, VALID_R_TYPES, XT_ARRAY_BOOL, XT_ARRAY_CPLX,
     XT_ARRAY_DOUBLE, XT_ARRAY_INT, XT_ARRAY_STR, XT_BOOL, XT_CLOS, XT_DOUBLE,
     XT_HAS_ATTR, XT_INT, XT_INT3, XT_INT7, XT_LANG_NOTAG, XT_LANG_TAG, XT_LARGE,
     XT_LIST_NOTAG, XT_LIST_TAG, XT_NULL, XT_RAW, XT_S4, XT_STR, XT_SYMNAME,
     XT_UNKNOWN, XT_VECTOR, XT_VECTOR_EXP, XTs, structMap, numpyMap
 )
 from .misc import FunctionMapper, byteEncode, stringEncode, PY3
-from .rexceptions import RResponseError, REvalError
+from .rexceptions import RResponseError, REvalError, EndOfDataError, RParserError
 from .taggedContainers import TaggedList, asTaggedArray, asAttrArray
 
 DEBUG = 0
@@ -98,10 +98,6 @@ class Lexeme(list):
     def __str__(self):
         return 'Typecode: %s   Length: %s  hasAttr: %s,  Lexpos: %d' % \
                (hex(self.rTypeCode), self.length, self.hasAttr, self.lexpos)
-
-
-class EndOfDataError(RserveError):
-    pass
 
 
 class Lexer(object):

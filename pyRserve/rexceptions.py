@@ -26,3 +26,11 @@ class RSerializationError(PyRserveError):
 
 class PyRserveClosed(PyRserveError):
     pass
+
+
+class EndOfDataError(PyRserveError):
+    pass
+
+
+class RParserError(PyRserveError):
+    pass
