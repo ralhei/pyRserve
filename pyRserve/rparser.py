@@ -322,7 +322,7 @@ class Lexer(object):
     def xt_array_numeric(self, lexeme):
         raw = self.read(lexeme.dataLength)
         # TODO: swapping...
-        data = numpy.fromstring(raw, dtype=numpyMap[lexeme.rTypeCode])
+        data = numpy.frombuffer(raw, dtype=numpyMap[lexeme.rTypeCode])
         return data
 
     @fmap(XT_ARRAY_BOOL)
@@ -341,7 +341,7 @@ class Lexer(object):
         numBools = self.__unpack(XT_INT, 1)[0]
         # read the actual boolean values, including padding bytes:
         raw = self.read(lexeme.dataLength - 4)
-        data = numpy.fromstring(raw[:numBools],
+        data = numpy.frombuffer(raw[:numBools],
                                 dtype=numpyMap[lexeme.rTypeCode])
         return data
 
