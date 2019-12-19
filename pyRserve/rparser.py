@@ -2,11 +2,20 @@
 """
 Parser module for pyRserve
 """
+import io
 import struct
 import socket
-import io
-###
-from .rtypes import *
+
+import numpy
+
+from .rtypes import (
+    CMD_OOB, CMD_RESP, DT_SEXP, DTs, ERRORS, RESP_ERR, RESP_OK, RParserError,
+    RserveError, SOCKET_BLOCK_SIZE, VALID_R_TYPES, XT_ARRAY_BOOL, XT_ARRAY_CPLX,
+    XT_ARRAY_DOUBLE, XT_ARRAY_INT, XT_ARRAY_STR, XT_BOOL, XT_CLOS, XT_DOUBLE,
+    XT_HAS_ATTR, XT_INT, XT_INT3, XT_INT7, XT_LANG_NOTAG, XT_LANG_TAG, XT_LARGE,
+    XT_LIST_NOTAG, XT_LIST_TAG, XT_NULL, XT_RAW, XT_S4, XT_STR, XT_SYMNAME,
+    XT_UNKNOWN, XT_VECTOR, XT_VECTOR_EXP, XTs, structMap, numpyMap
+)
 from .misc import FunctionMapper, byteEncode, stringEncode, PY3
 from .rexceptions import RResponseError, REvalError
 from .taggedContainers import TaggedList, asTaggedArray, asAttrArray
@@ -418,11 +427,11 @@ class RParser(object):
 
     def _debugLog(self, lexeme, isRexpr=True):
         if DEBUG:
-            l = lexeme
+            lx = lexeme
             typeCodeDict = XTs if isRexpr else DTs
             print('%s %s (%s), hasAttr=%s, lexpos=%d, length=%s' %
-                  (self.__ind, typeCodeDict[l.rTypeCode], hex(l.rTypeCode),
-                   l.hasAttr, l.lexpos, l.length))
+                  (self.__ind, typeCodeDict[lx.rTypeCode], hex(lx.rTypeCode),
+                   lx.hasAttr, lx.lexpos, lx.length))
 
     def parse(self):
         """
@@ -436,7 +445,7 @@ class RParser(object):
         if self.lexer.messageSize > 0:
             try:
                 message = self._parse()
-            except:
+            except Exception:
                 # If any error is raised during lexing and parsing, make sure
                 # that the entire data is read from the input source if it is
                 # a socket, otherwise following attempts to

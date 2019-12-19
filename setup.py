@@ -1,31 +1,25 @@
-#!/usr/bin/env python
-
 import os
-import sys
-from distutils.core import setup
+from setuptools import setup
+from pyRserve import __version__
+
+PACKAGE_NAME = "pyRserve"
 
 requirements = open('requirements.txt').read().splitlines()
 
 # Get long_description from intro.txt:
 here = os.path.dirname(os.path.abspath(__file__))
-f = open(os.path.join(here, 'doc', 'intro.rst'))
-long_description = f.read()
-f.close()
-
-# Add pyRserve to sys.path so we can import version.py without importing
-# pyRserve.__init__.py (which would fail since no dependencies are installed):
-sys.path.append('pyRserve')
-from version import __version__
+with open(os.path.join(here, 'doc', 'intro.rst')) as fp:
+    long_description = fp.read()
 
 setup(
-    name='pyRserve',
+    name=PACKAGE_NAME,
     version=__version__,
     description='A Python client to remotely access the R statistic package '
                 'via network',
     long_description=long_description,
     author='Ralph Heinkel',
     author_email='rh [at] ralph-heinkel.com',
-    url='http://pypi.python.org/pypi/pyRserve/',
+    url='https://pypi.org/project/pyRserve/',
     packages=['pyRserve'],
     install_requires=requirements,
     license='MIT license',

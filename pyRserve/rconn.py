@@ -5,7 +5,7 @@ Module providing functionality to connect to a running Rserve instance
 import socket
 import time
 import pydoc
-###
+
 from . import rtypes
 from .rexceptions import RConnectionRefused, REvalError, PyRserveClosed
 from .rserializer import rEval, rAssign, rSerializeResponse, rShutdown
@@ -16,7 +16,7 @@ RSERVEPORT = 6311
 DEBUG = False
 
 
-def _defaultOOBCallback(data, code=0):
+def _defaultOOBCallback(data, code=0):  # noqa
     return None
 
 
@@ -301,7 +301,7 @@ class RNameSpace(object):
         realname = name[1:] if name.startswith('_') else name
         try:
             isFunction = self._rconn.isFunction(realname)
-        except:
+        except Exception:
             # an error is only raised if neither such a function or variable
             # exists at all!
             raise NameError('no such variable or function "%s" '
@@ -330,7 +330,7 @@ class RNameSpaceReference(object):
         """Return either a reference proxy to a variable to to a function"""
         try:
             isFunction = self._rconn.isFunction(name)
-        except:
+        except Exception:
             # an error is only raised if neither such a function or variable
             # exists at all!
             raise NameError('no such variable or function "%s" '
@@ -417,7 +417,7 @@ class RFuncProxy(RBaseProxy):
         concatName = "%s.%s" % (self.__name__, name)
         try:
             self._rconn.isFunction(concatName)
-        except:
+        except Exception:
             # an error is only raised if neither such a function or variable
             # exists at all!
             raise NameError('no such variable or function "%s" '

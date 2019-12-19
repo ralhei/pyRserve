@@ -36,7 +36,7 @@ class TaggedList(object):
     l.append(y=3)
     l[-1]    # returns 3
     """
-    def __init__(self, initlist=[]):
+    def __init__(self, initlist=()):
         """
         Items in initlist can either be
         - tuples of (key,values)
@@ -318,7 +318,7 @@ class TaggedArray(AttrArray):
     def __getitem__(self, idx_or_name):
         try:
             return numpy.ndarray.__getitem__(self, idx_or_name)
-        except:
+        except Exception:
             pass
         try:
             return numpy.ndarray.__getitem__(self,

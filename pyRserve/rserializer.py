@@ -2,32 +2,26 @@
 Serializer class to convert Python objects into a binary data stream for
 sending them to Rserve.
 """
-import struct
 import os
-import socket
 import io
-import types
-###
+import struct
+import socket
+
 import numpy
-###
+
 from . import rtypes
 from .misc import PY3, FunctionMapper, byteEncode, padLen4, string2bytesPad4
 from .taggedContainers import TaggedList, TaggedArray
-
-__all__ = ['reval', 'rassign', 'rSerializeResponse', 'rShutdown']
 
 # turn on DEBUG to see extra information about what the serializer is
 # doing with your data
 DEBUG = 0
 
+NoneType = type(None)
 
 if PY3:
-    # types.NoneType unfortunately does not exist in Python, so create it:
-    NoneType = type(None)
     # make test work with Python 3 where 'long'-type does not exist:
     long = int
-else:
-    NoneType = types.NoneType
 
 
 class RSerializer(object):
@@ -234,7 +228,7 @@ class RSerializer(object):
         self._buffer.seek(0, os.SEEK_END)
 
     @fmap(*rtypes.STRING_TYPES)
-    def s_xt_array_str(self, o):
+    def s_xt_array_single_str(self, o):
         """Serialize single string object"""
         arr = numpy.array([o])
         self.s_xt_array_str(arr)

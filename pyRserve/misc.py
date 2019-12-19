@@ -60,8 +60,7 @@ def padLen4(aString):
     Calculate how many additional bytes a given string needs to have a length
     of a multiple of 4. A zero-length array is considered a multiple of 4.
     """
-    l = len(aString)
-    mod = divmod(l, 4)[1]
+    mod = divmod(len(aString), 4)[1]
     return 4-mod if mod else 0
 
 

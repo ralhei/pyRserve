@@ -23,7 +23,7 @@ def setup_module(module):
     # CREATE A MODULE-WIDE CONNECTION OBJECT TO RSERVE
     try:
         module.conn = rconn.connect(port=RPORT)
-    except:
+    except Exception:
         module.rProc.terminate()
         raise
     # create an 'ident' function which just returns its argument.
@@ -143,7 +143,7 @@ def test_eval_long():
     # Send a long value which is still within below the rtypes.MAX_INT32.
     # It it automatically converted to a normal int in the rserializer and
     # hence should work fine:
-    toLong = int if PY3 else long  # No 'long' function in PY3
+    toLong = int if PY3 else long  # noqa    No 'long' function in PY3
     assert conn.r.ident(toLong(123))
 
     # Here comes the problem - there is no native 64bit integer on the R side,
@@ -178,7 +178,7 @@ def test_eval_long_arrays():
     MAX_INT32. Such an array is internally handled as a 32bit integer array
     and hence should work.
     """
-    toLong = int if PY3 else long  # No 'long' function in PY3
+    toLong = int if PY3 else long    # noqa   No 'long' function in PY3
     # arr64 = numpy.array([rtypes.MIN_INT32, toLong(5)], dtype=numpy.int64)
     # assert compareArrays(conn.r.ident(arr64), arr64)
 
