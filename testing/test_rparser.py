@@ -80,6 +80,8 @@ def test_eval_string_arrays():
                          numpy.array(['abc']))
     assert compareArrays(conn.r("c('abc', 'def')"),
                          numpy.array(['abc', 'def']))
+    assert compareArrays(conn.r("c('abc', NA, 'def')"),
+                         numpy.array(['abc', None, 'def']))
 
     # test via call to ident function with single argument:
     assert compareArrays(conn.r.ident(numpy.array(['abc', 'def'])),
@@ -264,6 +266,7 @@ def test_eval_bool_arrays():
     assert compareArrays(res, numpy.array([True]))
     assert res.dtype == numpy.bool
     assert compareArrays(conn.r('c(TRUE, FALSE)'), numpy.array([True, False]))
+    assert compareArrays(conn.r('c(TRUE, NA, FALSE)'), numpy.array([True, None, False]))
 
     # test via call to ident function with single argument:
     assert compareArrays(conn.r.ident(numpy.array([True, False, False])),
