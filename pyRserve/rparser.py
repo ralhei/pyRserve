@@ -517,20 +517,20 @@ class RParser(object):
                 # For convenience reasons type-convert it into a native
                 # Python data type:
                 data = data[0]
-                if isinstance(data, (numpy.float, numpy.float64)):
+                if isinstance(data, (float, numpy.float64)):
                     # convert into native python float:
                     data = float(data)
-                elif isinstance(data, (numpy.int, numpy.int32, numpy.int64)):
+                elif isinstance(data, (int, numpy.int32, numpy.int64)):
                     # convert into native int or long, depending on value:
                     data = int(data)
-                elif isinstance(data, (numpy.complex, numpy.complex64,
+                elif isinstance(data, (complex, numpy.complex64,
                                        numpy.complex128)):
                     # convert into native python complex number:
                     data = complex(data)
-                elif isinstance(data, (numpy.string_, numpy.str_)):
+                elif isinstance(data, (numpy.string_, str)):
                     # convert into native python string:
                     data = str(data)
-                elif isinstance(data, (numpy.bool_, numpy.bool, numpy.bool8)):
+                elif isinstance(data, (bool, numpy.bool8)):
                     # convert into native python string
                     data = bool(data)
         return data
