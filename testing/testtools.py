@@ -6,8 +6,7 @@ import subprocess
 import time
 import socket
 
-from numpy import ndarray, float, float32, float64, complex, complex64, \
-    complex128
+from numpy import ndarray, float32, float64, complex64, complex128
 
 RSERVE_PATH = subprocess.check_output(
     ['R', '--vanilla', '--slave', '-e',

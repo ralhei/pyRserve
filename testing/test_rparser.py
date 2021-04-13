@@ -160,12 +160,12 @@ def test_eval_integer_arrays():
     assert compareArrays(conn.r("c(55, -35)"), numpy.array([55.0, -35.0]))
     res = conn.r("c(55, -35)")
     assert isinstance(res, numpy.ndarray)
-    assert res.dtype == numpy.float
+    assert res.dtype == float
 
     # ### Create real integer arrays in R:
     res = conn.r('as.integer(c(1, 5))')
     assert compareArrays(res, numpy.array([1, 5]))
-    assert res.dtype in (numpy.int, numpy.int32)
+    assert res.dtype in (int, numpy.int32)
 
     # test via call to ident function with single argument:
     assert compareArrays(conn.r.ident(numpy.array([1, 5])),
@@ -212,7 +212,7 @@ def test_eval_float_arrays():
     assert compareArrays(conn.r("c(55.2, -35.7)"), numpy.array([55.2, -35.7]))
     res = conn.r("c(55.5, -35.5)")
     assert isinstance(res, numpy.ndarray)
-    assert res.dtype == numpy.float
+    assert res.dtype == float
 
     # test via call to ident function with single argument:
     assert compareArrays(conn.r.ident(numpy.array([1.7, 5.6])),
@@ -238,7 +238,7 @@ def test_eval_complex_arrays():
     res = conn.r("complex(real = 5.5, imaginary = 6.6)", atomicArray=True)
     assert compareArrays(res, numpy.array([(5.5+6.6j)]))
     assert isinstance(res, numpy.ndarray)
-    assert res.dtype == numpy.complex
+    assert res.dtype == complex
 
     # test via call to ident function with single argument:
     arr = numpy.array([(5.5+6.6j), (-3.0-6j)])
@@ -262,7 +262,7 @@ def test_eval_bool_arrays():
     """Test boolean arrays"""
     res = conn.r('TRUE', atomicArray=True)
     assert compareArrays(res, numpy.array([True]))
-    assert res.dtype == numpy.bool
+    assert res.dtype == bool
     assert compareArrays(conn.r('c(TRUE, FALSE)'), numpy.array([True, False]))
 
     # test via call to ident function with single argument:
