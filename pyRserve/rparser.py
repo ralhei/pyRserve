@@ -344,11 +344,13 @@ class Lexer(object):
         # This is handled for us for numeric types since numpy can use it's own
         # nan type, but here we need to help it out.
         if 2 in raw:
-            data = numpy.frombuffer(raw[:numBools], dtype=numpy.int8).astype(numpy.object)
+            data = numpy.frombuffer(raw[:numBools], dtype=numpy.int8).astype(object)
             data[data==2] = None
-            return data
-        data = numpy.frombuffer(raw[:numBools],
-                                dtype=numpyMap[lexeme.rTypeCode])
+        else:
+            data = numpy.frombuffer(
+                raw[:numBools],
+                dtype=numpyMap[lexeme.rTypeCode]
+            )
         return data
 
     @fmap(XT_ARRAY_STR)
