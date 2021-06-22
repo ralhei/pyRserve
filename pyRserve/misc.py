@@ -48,8 +48,6 @@ def byteEncode(aString, encoding='utf-8'):
 def stringEncode(byteData, encoding='utf-8'):
     # check for __name__ not to get faked by Python2.x!
     if PY3 and type(byteData).__name__ == 'bytes':
-        if byteData == b'\xff':
-            return None
         # got a real bytes object, must be python3 !
         return byteData.decode(encoding=encoding)
     else:
