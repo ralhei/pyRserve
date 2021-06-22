@@ -40,7 +40,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyRserve'
-copyright = u'2009-2020 Ralph Heinkel'
+copyright = u'2009-2021 Ralph Heinkel'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

@@ -17,8 +17,9 @@ fortran compiler installed, otherwise installation will not be possible.
 
 On Unix this looks like::
 
-  tar -xzf R-3.6.2.tar.gz       # or whatever version you are using
-  cd R-3.6.2
+  curl -O https://cran.r-project.org/src/base/R-4/R-4.1.0.tar.gz
+  tar -xzf R-4.1.0.tar.gz       # or whatever version you are using
+  cd R-4.1.0
   ./configure --enable-R-shlib
   make
   make install
@@ -33,7 +34,8 @@ Installing Rserve
 
 If you have already downloaded the tar file then from your command line run::
 
-  R CMD INSTALL Rserve_1.8-6.tar.gz
+  curl -O http://www.rforge.net/Rserve/snapshot/Rserve_1.8-8.tar.gz
+  R CMD INSTALL Rserve_1.8-8.tar.gz
 
 Older versions of Rserve might also work, the earliest function version however
 seems to be 0.6.6.
@@ -44,7 +46,7 @@ seems to be 0.6.6.
    like to control Rserve by a process management tool like ``supervisord``)
    then Rserve has to be install with the special ``-DNODAEMON`` compiler flag::
 
-     PKG_CPPFLAGS=-DNODAEMON  R CMD INSTALL Rserve_1.8-0.tar.gz
+     PKG_CPPFLAGS=-DNODAEMON  R CMD INSTALL Rserve_1.8-8.tar.gz
 
 
 Installing pyRserve
@@ -52,8 +54,12 @@ Installing pyRserve
 
 From your unix/windows command line run::
 
-  pip pyRserve
+  pip install pyRserve
 
-Currently supported Python versions are 2.7, 3.6, 3.7, and 3.8.
+If you want to develop or test locally, then also install extra packages for testing::
+
+    pip install pyRserve[testing]
+
+Currently supported Python versions are 2.7, 3.6 to 3.9.
 
 In the next section you'll find instructions how to use everything together.

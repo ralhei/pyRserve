@@ -7,7 +7,6 @@ docs:
 	(cd doc/html; zip -r ../pyRserve.html.zip *.html objects.inv searchindex.js _static/* )
 	echo
 	echo "Sphinx documentation has been created in doc/html/index.html"
-	echo "Use doc/pyRserve.html.zip for uploading the docs to pypi"
 
 clean:
 	find . -name '*.pyc' -exec rm '{}' \;
@@ -17,12 +16,16 @@ clean:
 	find . -name '.coverage' -exec rm '{}' \;
 	rm -rf build dist *.egg-info MANIFEST.in
 
-upload: docs
+upload-prep: docs
 	rm -f dist/*
 	python setup.py sdist bdist_wheel
-	twine upload dist/*
-	echo  "For uploading the latest documentation login to pypi and upload doc/pyRserve.html.zip"
+	twine check dist/*
 
+upload: upload-prep
+	twine upload dist/*
+
+upload-testpypi: upload-prep
+	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 backup: clean _backup
 
@@ -31,12 +34,9 @@ _backup:
 	tar -czf $${bDIR}_$(DATE).tgz -X $$bDIR/TAR_EXCLUDELIST $$bDIR ; \
 	echo "Created backup ../$${bDIR}_$(DATE).tgz"
 
-
 test:
 	pytest testing
 
 coverage:
-	pyTest=`which py.test` ; \
-	rm -f pyRserve/binaryRExpressions.py* ; \
-	(cd pyRserve; coverage run $${pyTest} ; coverage report -m)
-
+	rm -f pyRserve/binaryRExpressions.py*
+	coverage run --source pyRserve -m pytest testing && coverage report --show-missing

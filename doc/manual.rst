@@ -125,7 +125,7 @@ Of course also more complex data types can be sent from R to Python, e.g. lists 
   >>> conn.eval("list(1, 'otto')")
   [1, 'otto']
   >>> conn.eval('c(1, 5, 7)')
-  array([ 1.,  2.])
+  array([ 1., 5., 7.])
 
 As demonstrated here R-lists are converted into plain Python lists whereas R-vectors are converted into numpy
 arrays on the Python side.
@@ -682,4 +682,3 @@ then call the actual R function:
    100% done
    >>> res
    -12100.0
-

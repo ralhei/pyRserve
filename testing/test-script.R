@@ -1,5 +1,5 @@
 # Test file for Ralph with plot returned as raw file
-# 
+#
 # Author: yanabr
 ###############################################################################
 

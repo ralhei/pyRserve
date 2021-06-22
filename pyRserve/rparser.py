@@ -340,12 +340,12 @@ class Lexer(object):
         raw = self.read(lexeme.dataLength - 4)
         # Check if the array contains any NA values (encoded as \x02).
         # If so we need to convert the 2's to None's and use a numpy
-        # array of type Object otherwise numpy will cast the None's into False's. 
+        # array of type Object otherwise numpy will cast the None's into False's.
         # This is handled for us for numeric types since numpy can use it's own
         # nan type, but here we need to help it out.
         if 2 in raw:
             data = numpy.frombuffer(raw[:numBools], dtype=numpy.int8).astype(object)
-            data[data==2] = None
+            data[data == 2] = None
         else:
             data = numpy.frombuffer(
                 raw[:numBools],
