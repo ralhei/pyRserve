@@ -30,11 +30,14 @@ setup(
     },
     keywords='R Rserve',
     packages=['pyRserve'],
+    include_package_data=True,
+    package_data={
+        'pyRserve': ['version.txt'],
+    },
     install_requires=requirements,
     extras_require={
         'testing': requirements_testing
     },
-    include_package_data=True,
     license='MIT license',
     platforms=['unix', 'linux', 'cygwin', 'win32'],
     classifiers=[
