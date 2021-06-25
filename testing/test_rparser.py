@@ -5,46 +5,20 @@ Unittesting module for rparser
 import datetime
 ###
 import numpy
-import py
+import pytest
 ###
-from pyRserve import rtypes, rserializer, rconn, rparser
+from pyRserve import rtypes, rserializer, rparser
 from pyRserve.rconn import RVarProxy, OOBCallback
 from pyRserve.misc import PY3
 from pyRserve.rexceptions import REvalError
 from pyRserve.taggedContainers import TaggedList, TaggedArray
 ###
-from .testtools import start_pyRserve, compareArrays, RPORT
-
-conn = None  # will be set to Rserve-connection in setup_module()
+from .testtools import compareArrays
 
 
-def setup_module(module):
-    module.rProc = start_pyRserve()
-    # CREATE A MODULE-WIDE CONNECTION OBJECT TO RSERVE
-    try:
-        module.conn = rconn.connect(port=RPORT)
-    except Exception:
-        module.rProc.terminate()
-        raise
-    # create an 'ident' function which just returns its argument.
-    # Needed for testing below.
-    module.conn.r('ident <- function(v) { v }')
+# ### Test string evaluations in R
 
-
-def teardown_module(module):
-    try:
-        module.conn.close()
-        module.rProc.terminate()
-    except AttributeError:
-        # probably Rserve process did not startup so the rProc object is
-        # not available.
-        pass
-
-
-######################################
-# ### Test strings
-
-def test_eval_strings():
+def test_eval_strings(conn):
     """
     Test plain string, byte-strings, unicodes (depending on Python version)
     """
@@ -74,7 +48,7 @@ def test_eval_strings():
     assert conn.r.ident(eval("u'abc'")) == 'abc'
 
 
-def test_eval_string_arrays():
+def test_eval_string_arrays(conn):
     """Test for string arrays"""
     assert compareArrays(conn.r("'abc'", atomicArray=True),
                          numpy.array(['abc']))
@@ -88,7 +62,7 @@ def test_eval_string_arrays():
                          numpy.array(['abc', 'def']))
 
 
-def test_eval_unicode_arrays():
+def test_eval_unicode_arrays(conn):
     """
     Test for unicode arrays. The ident function should return the
     same array, just not as unicode
@@ -109,7 +83,7 @@ def test_eval_unicode_arrays():
 
 # ### Test integers
 
-def test_eval_integers():
+def test_eval_integers(conn):
     """
     Test different types and sizes of integers.
     Note that R converts all integers into floats
@@ -129,7 +103,7 @@ def test_eval_integers():
     assert conn.r.ident(5) == 5
 
 
-def test_eval_long():
+def test_eval_long(conn):
     """
     Test long integers. Going beyond MAX_INT32 works with eval() because
     in R all integers are converted to floats right away. However sending a
@@ -150,10 +124,10 @@ def test_eval_long():
 
     # Here comes the problem - there is no native 64bit integer on the R side,
     # so this should raise a ValueError
-    py.test.raises(ValueError, conn.r.ident, rtypes.MAX_INT32*2)
+    pytest.raises(ValueError, conn.r.ident, rtypes.MAX_INT32*2)
 
 
-def test_eval_integer_arrays():
+def test_eval_integer_arrays(conn):
     """
     Test integer arrays. The result from R is actually always a numpy
     float array
@@ -174,7 +148,7 @@ def test_eval_integer_arrays():
                          numpy.array([1, 5]))
 
 
-def test_eval_long_arrays():
+def test_eval_long_arrays(conn):
     """
     Test calling with a long array where all values are smaller than
     MAX_INT32. Such an array is internally handled as a 32bit integer array
@@ -188,12 +162,12 @@ def test_eval_long_arrays():
     # rtypes.MAX_INT32. This should raise a ValueError:
     arr64big = numpy.array([toLong(-rtypes.MAX_INT32 * 2), toLong(5)],
                            dtype=numpy.int64)
-    py.test.raises(ValueError, conn.r.ident, arr64big)
+    pytest.raises(ValueError, conn.r.ident, arr64big)
 
 
 # ### Test floats
 
-def test_eval_floats():
+def test_eval_floats(conn):
     """Test different types and sizes of floats"""
     res = conn.r("0.0")
     assert res == 0.0
@@ -207,7 +181,7 @@ def test_eval_floats():
     assert conn.r.ident(5.5) == 5.5
 
 
-def test_eval_float_arrays():
+def test_eval_float_arrays(conn):
     """Test float arrays"""
     assert compareArrays(conn.r("266.5", atomicArray=True),
                          numpy.array([266.5]))
@@ -223,7 +197,7 @@ def test_eval_float_arrays():
 
 # ### Test complex numbers
 
-def test_eval_complex():
+def test_eval_complex(conn):
     """Test different types and sizes of complex numbers"""
     res = conn.r("complex(real = 0, imaginary = 0)")
     assert res == (0+0j)
@@ -235,7 +209,7 @@ def test_eval_complex():
     assert conn.r.ident(5.5-3.3j) == 5.5-3.3j
 
 
-def test_eval_complex_arrays():
+def test_eval_complex_arrays(conn):
     """Test complex number arrays"""
     res = conn.r("complex(real = 5.5, imaginary = 6.6)", atomicArray=True)
     assert compareArrays(res, numpy.array([(5.5+6.6j)]))
@@ -249,7 +223,7 @@ def test_eval_complex_arrays():
 
 # ### Test boolean values
 
-def test_eval_bool():
+def test_eval_bool(conn):
     """Test boolean values"""
     res = conn.r('TRUE')
     assert res is True
@@ -260,7 +234,7 @@ def test_eval_bool():
     assert conn.r.ident(True) is True
 
 
-def test_eval_bool_arrays():
+def test_eval_bool_arrays(conn):
     """Test boolean arrays"""
     res = conn.r('TRUE', atomicArray=True)
     assert compareArrays(res, numpy.array([True]))
@@ -273,7 +247,7 @@ def test_eval_bool_arrays():
                          numpy.array([True, False, False]))
 
 
-def test_empty_boolean_array():
+def test_empty_boolean_array(conn):
     """Check that zero-length boolean ('logical') array is returned fine"""
     conn.r('empty_bool_arr = as.logical(c())')
     assert compareArrays(conn.r.empty_bool_arr, numpy.array([], dtype=bool))
@@ -281,7 +255,7 @@ def test_empty_boolean_array():
 
 # ### Test null value
 
-def test_null_value():
+def test_null_value(conn):
     """Test NULL value, which is None in Python"""
     assert conn.r('NULL') is None
     assert conn.r.ident(None) is None
@@ -289,7 +263,7 @@ def test_null_value():
 
 # ### Test large data objects
 
-def test_large_objects():
+def test_large_objects(conn):
     """Test that data objects larger than 2**24 bytes are supported
     Sent array back and forth btw Python and R before comparing them.
     """
@@ -301,7 +275,7 @@ def test_large_objects():
 
 # ### Test list function
 
-def test_lists():
+def test_lists(conn):
     """Test lists which directtly translate into Python lists"""
     assert conn.r('list()') == []
     # with strings
@@ -320,7 +294,7 @@ def test_lists():
     assert conn.r.ident([1, 2, 5]) == [1, 2, 5]
 
 
-def test_tagged_lists():
+def test_tagged_lists(conn):
     """
     Tests 'tagged' lists, i.e. lists which allow to address their items via
     name, not only via index.
@@ -345,7 +319,7 @@ def test_tagged_lists():
     # conn.r.ident(TaggedList([("n","Fred"), 2.0, ("c_ages", 5.5)])
 
 
-def test_vector_expression():
+def test_vector_expression(conn):
     """
     Tests for typecode 0x1a XT_VECTOR_EXP - returns the expression content
     as python list
@@ -363,7 +337,7 @@ def test_vector_expression():
 # ### Many have been test above, but generally only 1-d arrays. Let's look at
 # ### arrays with higher dimensions
 
-def test_2d_arrays_created_in_python():
+def test_2d_arrays_created_in_python(conn):
     """
     Check that transferring various arrays to R preserves columns, rows,
     and shape.
@@ -396,7 +370,7 @@ def test_2d_arrays_created_in_python():
         assert compareArrays(arr[:, 1], conn.r('arr[,2]'))
 
 
-def test_2d_numeric_array_created_in_R():
+def test_2d_numeric_array_created_in_R(conn):
     """
     Create an array in R, transfer it to python, and check that columns,
     rows, and shape are preserved.
@@ -420,20 +394,20 @@ def test_2d_numeric_array_created_in_R():
     assert compareArrays(arr[:, 1], conn.r('arr[,2]'))
 
 
-def test_tagged_array():
+def test_tagged_array(conn):
     res = conn.r('c(a=1.,b=2.,c=3.)')
     exp_res = TaggedArray.new(numpy.array([1., 2., 3.]), ['a', 'b', 'c'])
     assert compareArrays(res, exp_res)
     assert res.keys() == exp_res.keys()  # compare the tags of both arrays
 
 
-def test_very_large_result_array():
+def test_very_large_result_array(conn):
     """Check that a SEXP with XT_LARGE set in header is properly parsed """
     res = conn.r('c(1:9999999)')
     assert res.size == 9999999
 
 
-def test_eval_void():
+def test_eval_void(conn):
     """
     Check that conn.voidEval() does not return any result in contrast to
     conn.eval()
@@ -447,7 +421,7 @@ def test_eval_void():
 
 # ### Test evaluation of some R functions
 
-def test_eval_sequence():
+def test_eval_sequence(conn):
     # first string evaluate of R expression:
     res = conn.r('seq(1, 5)')
     assert compareArrays(res, numpy.array(range(1, 6)))
@@ -457,7 +431,7 @@ def test_eval_sequence():
     assert compareArrays(conn.r.seq(1, 5), numpy.array(range(1, 6)))
 
 
-def test_eval_polyroot():
+def test_eval_polyroot(conn):
     # first string evaluate of R expression:
     res = conn.r('polyroot(c(-39.141,151.469,401.045))')
     exp_res = numpy.array([0.1762039 + 1.26217745e-29j,
@@ -469,7 +443,7 @@ def test_eval_polyroot():
                          exp_res)
 
 
-def test_eval_very_convoluted_function_result():
+def test_eval_very_convoluted_function_result(conn):
     """
     The result of this call is a highly nested data structure.
     Have fun on evaluation it!
@@ -486,7 +460,7 @@ def test_eval_very_convoluted_function_result():
     # ... many more tags could be tested here ...
 
 
-def test_s4():
+def test_s4(conn):
     """
     S4 classes behave like dicts but usually have a 'class' attribute.
     """
@@ -503,7 +477,7 @@ def test_s4():
     assert "<S4 classes=['track'] {" in repr(res)
 
 
-def test_s4_empty():
+def test_s4_empty(conn):
     """
     Rare but possible: S4 classes without attributes.
     """
@@ -518,7 +492,7 @@ def test_s4_empty():
     assert res.classes == []
 
 
-def test_sapply_with_func_proxy_argument():
+def test_sapply_with_func_proxy_argument(conn):
     """
     Test calling sapply providing a proxy object to a R function as argument
     """
@@ -528,40 +502,7 @@ def test_sapply_with_func_proxy_argument():
 
 # ### Some more tests
 
-def xtest_parse_s4_result():
-    """
-    S4 are special objects in R, generated e.g. when creating a database
-    connection as shown below:
-
-    in R:
-        install.packages('RSQLite')
-        install.packages('DBI')
-
-    in Python:
-        c.eval("library(RSQLite)")
-        c.eval("con <- dbConnect(RSQLite::SQLite(), dbname='testdb')")
-
-    To avoid the dependency of having RSQLite installed for unittesting
-    the raw result of the
-    """
-    raw = '\x01\x00\x01\x00\xbc\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
-          '\x0a\xb8\x00\x00\x87\xb4\x00\x00\x15\xb0\x00\x00\x30\x04\x00\x00' \
-          '\x16\x00\x00\x00\x13\x04\x00\x00\x49\x64\x00\x00\x22\x08\x00\x00' \
-          '\x74\x65\x73\x74\x64\x62\x00\x01\x13\x08\x00\x00\x64\x62\x6e\x61' \
-          '\x6d\x65\x00\x00\x24\x08\x00\x00\x01\x00\x00\x00\x01\xff\xff\xff' \
-          '\x13\x14\x00\x00\x6c\x6f\x61\x64\x61\x62\x6c\x65\x2e\x65\x78\x74' \
-          '\x65\x6e\x73\x69\x6f\x6e\x73\x00\x20\x04\x00\x00\x06\x00\x00\x00' \
-          '\x13\x08\x00\x00\x66\x6c\x61\x67\x73\x00\x00\x00\x22\x04\x00\x00' \
-          '\x00\x01\x01\x01\x13\x04\x00\x00\x76\x66\x73\x00\xa2\x30\x00\x00' \
-          '\x15\x18\x00\x00\x22\x08\x00\x00\x52\x53\x51\x4c\x69\x74\x65\x00' \
-          '\x13\x08\x00\x00\x70\x61\x63\x6b\x61\x67\x65\x00\x53\x51\x4c\x69' \
-          '\x74\x65\x43\x6f\x6e\x6e\x65\x63\x74\x69\x6f\x6e\x00\x01\x01\x01' \
-          '\x13\x08\x00\x00\x63\x6c\x61\x73\x73\x00\x00\x00'
-    res = rparser.rparse(raw)
-    assert isinstance(res, rparser.S4)
-
-
-def test_rAssign_method():
+def test_rAssign_method(conn):
     """test "rAssign" class method of RSerializer"""
     hexd = b'\x20\x00\x00\x00\x20\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
            b'\x00\x44\x04\x00\x00\x00\x00\x00\x00\x76\x00\x00\x00\x4a\x0c' \
@@ -590,12 +531,12 @@ def test_serialize_DT_INT():
     assert hexd == res
 
 
-def test_serialize_unsupported_object_raises_exception():
+def test_serialize_unsupported_object_raises_exception(conn):
     # datetime objects are not yet supported, so an exception can be expected
-    py.test.raises(NotImplementedError, conn.r.ident, datetime.date.today())
+    pytest.raises(NotImplementedError, conn.r.ident, datetime.date.today())
 
 
-def test_eval_illegal_variable_lookup():
+def test_eval_illegal_variable_lookup(conn):
     """
     Calling an invalid variable lookup should result in a proper exception.
     Also the connector should be still usable afterwards.
@@ -608,7 +549,7 @@ def test_eval_illegal_variable_lookup():
     assert conn.r('1') == 1
 
 
-def test_eval_illegal_R_statement():
+def test_eval_illegal_R_statement(conn):
     """
     Calling an R statement lookup should result in a proper exception.
     Also the connector should be still usable afterwards.
@@ -624,26 +565,26 @@ def test_eval_illegal_R_statement():
 #######################
 # some more tests
 
-def test_rvarproxy():
+def test_rvarproxy(conn):
     """A var proxy is accessed via conn.ref"""
     conn.r.a = [1, 2, 3]
     assert conn.ref.a.__class__ == RVarProxy
     assert conn.ref.a.value() == [1, 2, 3]
 
 
-def test_oob_send():
+def test_oob_send(conn):
     """Tests OOB without registering a callback"""
     assert conn.r('self.oobSend("foo")') is True
 
 
-def test_oob_message():
+def test_oob_message(conn):
     """Tests OOB Message. Should not lock up, and without callbacks,
     NULL should be sent back to R. (None → NULL)
     """
     assert conn.r('stopifnot(self.oobMessage("foo") == NULL)') is None
 
 
-def test_oob_callback():
+def test_oob_callback(conn):
     """Tests OOB with one registered callback"""
     collect = []
 
@@ -657,13 +598,13 @@ def test_oob_callback():
         assert collect == [(0, 1), (10, 2)]
 
 
-def test_oob_callback_result():
+def test_oob_callback_result(conn):
     """Tests OOB with a registered callback returning a one"""
     with OOBCallback(conn, lambda data, code=0: 1):
         assert conn.r('stopifnot(self.oobMessage(NULL) == 1L)') is None
 
 
-def test_help_message():
+def test_help_message(conn):
     """Check that a help message is properly delivered from R for a function"""
     help_msg = conn.r.sapply.__doc__
     assert help_msg is not None
