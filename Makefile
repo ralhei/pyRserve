@@ -25,7 +25,7 @@ upload: upload-prep
 	twine upload dist/*
 
 upload-testpypi: upload-prep
-	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+	twine upload -r testpypi dist/*
 
 backup: clean _backup
 

@@ -21,11 +21,11 @@ setup(
     long_description_content_type='text/x-rst',
     author='Ralph Heinkel',
     author_email='rh@ralph-heinkel.com',
-    url='https://pypi.org/project/pyRserve/',
+    url='https://github.com/ralhei/pyRserve',
     project_urls={
         'Documentation': 'https://pyrserve.readthedocs.io/',
         'Changelog': 'https://pyrserve.readthedocs.io/en/latest/changelog.html',
-        'Source': 'https://github.com/ralhei/pyRserve',
+        'PyPI': 'https://pypi.org/project/pyRserve/',
         'Tracker': 'https://github.com/ralhei/pyRserve/issues',
     },
     keywords='R Rserve',
@@ -34,6 +34,7 @@ setup(
     package_data={
         'pyRserve': ['version.txt'],
     },
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, <4',
     install_requires=requirements,
     extras_require={
         'testing': requirements_testing

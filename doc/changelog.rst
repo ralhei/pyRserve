@@ -1,6 +1,23 @@
 Changelog
 =========
 
+* V 1.0.0 (2022-10-13)
+    * Added docu for secure connection to Rserve via SSH tunnel
+    * Updated meta data for pyRserve package
+    * Added deprecation warning for Python 2
+    * Corrected links to documentation
+
+* V 1.0.0b3 (2021-06-25)
+    Brought usage of pytest into the year 2021.
+
+    * use fixtures for setting up an Rserve connection
+    * put fixtures into conftest.py
+    * added command line option for controlling rserve startup
+    * properly named rserve-test.conf file.
+
+* V 1.0.0b2 (2021-06-22)
+    * Added missing version.txt file to wheel
+
 * V 1.0.0b1 (2021-06-22)
     * Updated and cleanup documentation
     * Updated for more recent versions of R and Rserve

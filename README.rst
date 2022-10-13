@@ -32,7 +32,7 @@ The latest development has been tested with some previous and current versions o
 License
 -------
 pyRserve has been written by Ralph Heinkel `(ralph-heinkel.com) <https://ralph-heinkel.com/>`_ and is
-released under `MIT license <https://pyrserve.readthedocs.io/license>`_.
+released under `MIT license <https://github.com/ralhei/pyRserve/blob/master/LICENSE>`_.
 
 
 Quick installation
@@ -42,7 +42,7 @@ From your unix/macOS,windows command line run::
     pip install pyRserve
 
 For a fully functional setup also R and Rserve have to be installed. See section
-`installation <https://pyrserve.readthedocs.io/installation>`_ in the pyRserve
+`installation <https://pyrserve.readthedocs.io/en/latest/installation.html>`_ in the pyRserve
 documentation for instructions.
 
 

@@ -5,14 +5,21 @@ This manual is written in sort of a `walk-through`-style. All examples can be tr
 command line as you read through it.
 
 Setting up a connection to Rserve
-------------------------------------
+---------------------------------
+
+Running both Rserve and pyRserve locally on one host
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This is the most simple solution, and we will begin with it before explaining remote connections.
 
 First of all startup Rserve if it is not yet running::
 
   $ R CMD Rserve
 
-If you started it on your local machine (i.e. ``localhost``) without any extra options Rserve should be listening on
-port 6311 (its default). R puts itself into daemon mode, meaning that your shell comes back, and you have no way to
+By default Rserve is listening on port port 6311 (its default) on localhost (or 127.0.0.1) only,
+for security reasons. This means that no connection from any other machine is possible to it.
+For now, and for simplicity, we stick with running everything (Rserve and pyRserve) on the same host.
+
+R puts itself into daemon mode, meaning that your shell comes back, and you have no way to
 shutdown R via ``ctrl-C`` (you need to call ``kill`` with it's process id). However ``Rserve`` can be started in
 debug mode during development. In this mode it'll print messages to stdout helping you to see whether your
 connection works etc. To do so `Rserve` needs to be started like::
@@ -26,14 +33,6 @@ setup the connection to your locally running ``Rserve``::
   $ python
   >>> import pyRserve
   >>> conn = pyRserve.connect()
-
-To connect to a different location host and port can be specified explicitly::
-
-  pyRserve.connect(host='localhost', port=6311)
-
-.. NOTE::
-   On some windows versions it might be necessary to always provide 'localhost' for connecting to a locally
-   running Rserve instance.
 
 The resulting connection handle can tell you where it is connected to::
 
@@ -57,14 +56,71 @@ To check the status of the connection use::
   >>> conn.isClosed
   False
 
-.. NOTE::
-   When a remote connection to Rserve should be opened, and pyRserve cannot connect to it, most likely Rserve
-   only listens to it's own internal network connection. To force Rserve accepting connections from other machines
-   create a file called `/etc/Rserv.conf` and add at least the following line:
+Setting up a remote connection to Rserve
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-          ``remote enable``
+Variant 1: Make Rserve listen to a public port
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   Then restart Rserve.
+To allow Rserve accept connections from remote hosts on a public port a special flag needs to be set in its
+configuration file (which might be missing initially). Once the ``remote enable``-flag is set there,
+Rserve needs to be restarted in order to honor it.
+
+.. WARNING::
+    Opening Rserve on a port which is publically (or maybe within an organization like a company)
+    accessible allows anyone who has access to this machine to connect to the Rserve server process.
+
+.. WARNING::
+    Traffic between Rserve and pyRserve is not encrypted - so anyone with access to the network
+    would in principle be able to sniff your communication, or even manipulate it.
+
+By default Rserve tries to load the configuration file from ``/etc/Rserv.conf``. So if you have
+root privileges on your host you can enable remote connections with the following command::
+
+    $ sudo echo "remote enable" > /etc/Rserv.conf
+
+Then restart Rserve.
+
+In case you don't have sudo privileges the config file can be created anywhere else, e.g.::
+
+    $ echo "remote enable" > ~/.config/Rserv.conf
+
+Then restart Rserve like ``$ R CMD Rserve --RS-conf ~/.config/Rserv.conf``.
+
+Variant 2: Connect to Rserve through an SSH tunnel
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This option is definitely more secure than variant 1. First of all communication is encrypted.
+Secondly you can easily control who is allowed to access Rserve from outside the host
+Rserve is running on.
+
+The approach could be:
+
+1. Create a generic account on the host running Rserve, called e.g. ``rserveuser``.
+   For this example let the host be called ``rservehost``.
+2. In the ``rserveuser``'s home directory, inside the ``~/.ssh`` directory, add the public
+   ssh key of allowed users to the ``~/.ssh/authorized_keys`` file. This can be done
+   in a very special ways that only enables access to Rserve, without any other
+   privilege like opening a remote shell etc.
+
+   To achive this, a line in the ``~/.ssh/authorized_keys`` must look like::
+
+    command="echo 'Rserve only account.'",restrict,port-forwarding,permitopen="localhost:6311" ssh-ed25519 AAAAC3..pxfm user1@someuserhost
+
+3. Start rserve in normal mode, without the ``remote enable`` flag, so it only listens on localhost.
+4. ``user1`` (owning the public ssh key added in 2.) then opens an SSH tunnel to ``rservehost``::
+
+    $ ssh -N -L 6311:localhost:6311 rservehost
+
+   This command forwards traffic from port 6311 on ``user``'s client machine to ``localhost:6311`` on
+   ``rservehost``.
+
+5. ``user1`` on his/her client machine opens Python and establishes an Rserve connection with::
+
+    >>> import pyRserve
+    >>> conn = pyRserve.connect()
+
+   The connection to ``localhost:6311`` on the client machine will be forwarded to Rserve listening
+   on ``localhost:6311`` on ``rservehost``.
 
 
 Shutting down Rserve remotely
