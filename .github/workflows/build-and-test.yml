@@ -13,8 +13,8 @@ jobs:
       - run: sudo PKG_CPPFLAGS=-DNODAEMON  R CMD INSTALL Rserve_1.8-12.tar.gz
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
-          with:
-            python-version: ['3.9', '3.10', '3.11']
-            cache: 'pip' # caching pip dependencies
-            - run: pip install -r requirements.txt requirements_dev.txt
+        with:
+          python-version: ['3.9', '3.10', '3.11']
+          cache: 'pip' # caching pip dependencies
+          - run: pip install -r requirements.txt requirements_dev.txt
       - run: pytest testing
