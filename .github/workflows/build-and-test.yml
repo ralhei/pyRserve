@@ -11,7 +11,7 @@ jobs:
       - name: Install R and Rserve
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y gfortran
+          sudo apt-get install -y gfortran libcurl-dev
           curl -O https://cran.r-project.org/src/base/R-4/R-4.2.2.tar.gz
           tar -xzf R-4.2.2.tar.gz
           (cd R-4.2.2; ./configure --with-x=no --prefix=/usr --enable-R-shlib && make && sudo make install)
