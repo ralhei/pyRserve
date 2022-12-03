@@ -1,0 +1,20 @@
+name: build-and-test
+on: [push]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt-get update -qq
+      - run: sudo apt-get install -y gfortran
+      - run: curl -O https://cran.r-project.org/src/base/R-4/R-4.2.2.tar.gz
+      - run: tar -xzf R-4.2.2.tar.gz
+      - run: (cd R-4.2.2; ./configure --with-x=no --prefix=/usr --enable-R-shlib && make && sudo make install)
+      - run: curl -O https://www.rforge.net/Rserve/snapshot/Rserve_1.8-12.tar.gz
+      - run: sudo PKG_CPPFLAGS=-DNODAEMON  R CMD INSTALL Rserve_1.8-12.tar.gz
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+          with:
+            python-version: ['3.9', '3.10', '3.11']
+            cache: 'pip' # caching pip dependencies
+            - run: pip install -r requirements.txt requirements_dev.txt
+      - run: pytest testing
