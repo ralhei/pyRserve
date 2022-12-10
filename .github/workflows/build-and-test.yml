@@ -7,16 +7,13 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11"]
 
+    services:
+      service-rserve:
+        image: ghcr.io/ralhei/r4.2.2-rserve1.8.12:latest
+        ports:
+          - 6311:6311
+
     steps:
-      - name: Install R and Rserve
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y gfortran liblzma-dev libblas-dev gfortran gcc-multilib gobjc++ aptitude libreadline-dev libbz2-dev libpcre2-dev libcurl4 libcurl4-openssl-dev
-          curl -O https://cran.r-project.org/src/base/R-4/R-4.2.2.tar.gz
-          tar -xzf R-4.2.2.tar.gz
-          (cd R-4.2.2; ./configure --with-x=no --prefix=/usr --enable-R-shlib && make && sudo make install)
-          curl -O https://www.rforge.net/Rserve/snapshot/Rserve_1.8-12.tar.gz
-          sudo PKG_CPPFLAGS=-DNODAEMON  R CMD INSTALL Rserve_1.8-12.tar.gz
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
