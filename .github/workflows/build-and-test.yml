@@ -12,6 +12,7 @@ jobs:
         image: ghcr.io/ralhei/r4.2.2-rserve1.8.12:latest
         ports:
           - 6311:6311
+        options: --tty
 
     steps:
       - uses: actions/checkout@v3
