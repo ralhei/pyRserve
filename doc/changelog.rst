@@ -1,5 +1,10 @@
 Changelog
 =========
+* V.1.0.1 (2023-01-10)
+    * Replace deprecated numpy.bool8 with numpy.bool_
+    * Upgraded installation instructions in INSTALL file (more up-to-date R and Rserve)
+    * Added Dockerfile for installing R and Rserve into container (used for github actions)
+    * Enabled github actions for testing
 
 * V 1.0.0 (2022-10-13)
     * Added docu for secure connection to Rserve via SSH tunnel

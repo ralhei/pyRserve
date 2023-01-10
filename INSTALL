@@ -1,13 +1,13 @@
 
-Install R
-===========
-Requires:
-- X11 devel package (suse), png-devel, jpeg-devel (otherwise it cannot write png/jpeg files!)
+Install R:
+==========
+Install some system packages first, e.g. on RHEL:
+    yum install xz-devel pcre pcre-devel libcurl-devel *gfortran* zlib* bzip2-* png-devel jpeg-devel
 
-Compilation:
-1. curl -LO https://cran.r-project.org/src/base/R-3/R-${RVER}.tar.gz
-2. tar -xf R-3.6.2.tar.gz
-3. $ cd R-3.6.2
+Compilation of R:
+1. curl -LO https://cran.r-project.org/src/base/R-4/R-4.2.2.tar.gz
+2. tar -xf R-4.2.2.tar.gz
+3. $ cd R-4.2.2
    $ ./configure --enable-R-shlib --with-x=no
    $ make
    $ make install
@@ -15,8 +15,8 @@ Compilation:
 
 Install Rserve:
 ===============
-1. curl -LO http://www.rforge.net/Rserve/snapshot/Rserve_1.8-6.tar.gz
-2. R CMD INSTALL Rserve_1.8.6.tar.gz
+1. curl -LO http://www.rforge.net/Rserve/snapshot/Rserve_1.8-12.tar.gz
+2. R CMD INSTALL Rserve_1.8.12.tar.gz
 
 This way also the debug version will be compiled and installed.
 
