@@ -541,7 +541,7 @@ class RParser(object):
                 elif isinstance(data, (numpy.string_, str)):
                     # convert into native python string:
                     data = str(data)
-                elif isinstance(data, (bool, numpy.bool8)):
+                elif isinstance(data, (bool, numpy.bool_)):
                     # convert into native python string
                     data = bool(data)
         return data
