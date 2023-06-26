@@ -9,6 +9,7 @@ import socket
 
 import numpy
 
+
 from . import rtypes
 from .misc import PY3, FunctionMapper, byteEncode, padLen4, string2bytesPad4
 from .taggedContainers import TaggedList, TaggedArray
@@ -153,6 +154,7 @@ class RSerializer(object):
 
     def serializeExpr(self, o):
         if isinstance(o, numpy.ndarray):
+            # print(o.dtype.type)
             rTypeCode = rtypes.numpyMap[o.dtype.type]
         else:
             rTypeCode = type(o)
@@ -283,7 +285,7 @@ class RSerializer(object):
         self._buffer.write(struct.pack(structCode, o.size))
         # Then write the boolean values themselves. Note that R expects binary
         # array data in Fortran order, so prepare this accordingly:
-        data = o.tobytes(order='F')
+        data = o.tostring(order='F')
         self._buffer.write(data)
         # Finally pad the binary data to be of a multiple of four in length:
         self._buffer.write(padLen4(data) * b'\xff')
@@ -291,14 +293,14 @@ class RSerializer(object):
         # Update the array header:
         self.__s_update_xt_array_header(startPos, rTypeCode)
 
-    @fmap(int, numpy.int32, long, numpy.int64, numpy.compat.long, float, complex,
-          numpy.float64, numpy.complex64, numpy.complex128)
+    @fmap(int, numpy.int32, long, numpy.int64, float, complex,
+          numpy.float64, complex, numpy.complex64, numpy.complex128)
     def s_atom_to_xt_array_numeric(self, o):
         """
         Render single numeric items into their corresponding array counterpart
         in R
         """
-        if isinstance(o, (int, long, numpy.int64, numpy.compat.long)):
+        if isinstance(o, (int, long, numpy.int64)):
             if rtypes.MIN_INT32 <= o <= rtypes.MAX_INT32:
                 # even though this type of data is 'long' it still fits into a
                 # normal integer. Good!
@@ -325,8 +327,7 @@ class RSerializer(object):
         @note: If o is multi-dimensional a tagged array is created. Also if o
                is of type TaggedArray.
         """
-        if o.dtype in (numpy.int64, numpy.compat.long):
-            # Note: use int instead of compat.long once Py2 is abandoned.
+        if o.dtype in (numpy.int64,numpy.int64):
             if rtypes.MIN_INT32 <= o.min() and o.max() <= rtypes.MAX_INT32:
                 # even though this type of array is 'long' its values still
                 # fit into a normal int32 array. Good!
@@ -343,7 +344,7 @@ class RSerializer(object):
 
         # Note: R expects binary array data in Fortran order, so prepare this
         # accordingly:
-        self._buffer.write(o.tobytes(order='F'))
+        self._buffer.write(o.tostring(order='F'))
 
         # Update the array header:
         self.__s_update_xt_array_header(startPos, rTypeCode)

@@ -277,7 +277,8 @@ if not PY3:
 # map r-types and some python types to typecodes used in the 'struct' module
 structMap = {
     XT_BOOL:          'b',
-    bool:             'b',
+    bool:       'b',
+    # bool_:      'b',
     XT_BYTE:          'B',
     XT_INT:           'i',
     int:              'i',
@@ -288,9 +289,9 @@ structMap = {
     float:            'd',
     numpy.double:     'd',
     complex:          'd',
-    complex:          'd',
+    # numpy.complex:    'd',
     numpy.complex128: 'd',
-}
+    }
 
 # mapping to determine overall type of message.
 DT_Map = {
@@ -301,24 +302,25 @@ DT_Map = {
 
 
 numpyMap = {
-    XT_ARRAY_BOOL:     numpy.bool_,
+    XT_ARRAY_BOOL:     bool,
+    #   XT_BYTE:           numpy.byte,
     XT_ARRAY_INT:      numpy.int32,
     XT_ARRAY_DOUBLE:   numpy.double,     # double float64
-    XT_ARRAY_CPLX:     complex,
+    # XT_ARRAY_CPLX:     numpy.complex,
     XT_ARRAY_STR:      numpy.string_,
-}
+    }
 
 # also add the inverse mapping to it:
 for k, v in list(numpyMap.items()):
     numpyMap[v] = k
 
 # some manual additions for numpy variants:
-numpyMap[numpy.complex128]  = XT_ARRAY_CPLX
-numpyMap[numpy.int32]       = XT_ARRAY_INT
-numpyMap[numpy.int64]       = XT_ARRAY_INT
-numpyMap[numpy.compat.long] = XT_ARRAY_INT
-numpyMap[numpy.str_]        = XT_ARRAY_STR
-numpyMap[numpy.unicode_]    = XT_ARRAY_STR
+numpyMap[numpy.complex128] = XT_ARRAY_CPLX
+numpyMap[numpy.int32]      = XT_ARRAY_INT
+numpyMap[numpy.int64]      = XT_ARRAY_INT
+numpyMap[numpy.bool_]       = XT_ARRAY_BOOL
+numpyMap[numpy.str_]       = XT_ARRAY_STR
+numpyMap[numpy.unicode_]   = XT_ARRAY_STR
 
 
 atom2ArrMap = {
@@ -328,10 +330,13 @@ atom2ArrMap = {
     float:             XT_ARRAY_DOUBLE,
     numpy.double:      XT_ARRAY_DOUBLE,
     complex:           XT_ARRAY_CPLX,
+    # complex:     XT_ARRAY_CPLX,
     numpy.complex128:  XT_ARRAY_CPLX,
     str:               XT_ARRAY_STR,
     numpy.str_:        XT_ARRAY_STR,
     numpy.string_:     XT_ARRAY_STR,
     numpy.unicode_:    XT_ARRAY_STR,
     bool:              XT_ARRAY_BOOL,
-}
+    bool:        XT_ARRAY_BOOL,
+    # bool_:       XT_ARRAY_BOOL,
+    }

@@ -338,19 +338,8 @@ class Lexer(object):
         numBools = self.__unpack(XT_INT, 1)[0]
         # read the actual boolean values, including padding bytes:
         raw = self.read(lexeme.dataLength - 4)
-        # Check if the array contains any NA values (encoded as \x02).
-        # If so we need to convert the 2's to None's and use a numpy
-        # array of type Object otherwise numpy will cast the None's into False's.
-        # This is handled for us for numeric types since numpy can use it's own
-        # nan type, but here we need to help it out.
-        if 2 in raw:
-            data = numpy.frombuffer(raw[:numBools], dtype=numpy.int8).astype(object)
-            data[data == 2] = None
-        else:
-            data = numpy.frombuffer(
-                raw[:numBools],
-                dtype=numpyMap[lexeme.rTypeCode]
-            )
+        data = numpy.frombuffer(raw[:numBools],
+                                dtype=numpyMap[lexeme.rTypeCode])
         return data
 
     @fmap(XT_ARRAY_STR)
@@ -538,10 +527,10 @@ class RParser(object):
                                        numpy.complex128)):
                     # convert into native python complex number:
                     data = complex(data)
-                elif isinstance(data, (numpy.string_, str)):
+                elif isinstance(data, (numpy.string_, numpy.str_)):
                     # convert into native python string:
                     data = str(data)
-                elif isinstance(data, (bool, numpy.bool_)):
+                elif isinstance(data, (numpy.bool_, bool, numpy.bool8)):
                     # convert into native python string
                     data = bool(data)
         return data
