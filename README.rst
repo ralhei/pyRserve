@@ -10,7 +10,7 @@ in R attaches the R-interpreter to a network socket, waiting for pyRserve to con
 Through such a connection, variables can be get and set in R from Python,
 and also R-functions can be called remotely.
 
-In contrast to `rpy or rpy2 <http://rpy.sourceforge.net/>`_ the R process does not have to
+In contrast to `rpy or rpy2 <https://rpy2.github.io/>`_ the R process does not have to
 run on the same machine, it can run on a remote machine and all variable  access and
 function calls will be delegated there through the network.
 

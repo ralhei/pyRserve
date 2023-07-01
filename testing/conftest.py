@@ -3,6 +3,7 @@ Configurations and fixtures for testing pyRserve with pytest.
 """
 import os
 import time
+import shutil
 import socket
 import subprocess
 
@@ -19,6 +20,10 @@ EXTRA_RPORT = 6355
 
 def start_Rserve(port):
     """Start an Rserve process for unittesting"""
+    # First check that 'R' is in PATH:
+    if not shutil.which('R'):
+        pytest.exit("Cannot start R interpreter, R executable not in PATH", returncode=1)
+
     rProc = subprocess.Popen(
         ['R', 'CMD', 'Rserve', '--no-save', '--RS-conf',
          os.path.join(HERE_PATH, 'rserve-test.conf'),
@@ -103,7 +108,7 @@ def conn(run_rserve):
             r_proc and r_proc.terminate()
         except subprocess.SubprocessError:
             pass
-        pytest.exit('Cannnot reach running Rserve process.\nEither start'
+        pytest.exit('Error: Cannot reach running Rserve process.\nEither start'
                     'one manually or run pytest with option --run-rserve',
                     returncode=1)
         raise
