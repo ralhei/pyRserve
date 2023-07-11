@@ -106,8 +106,12 @@ class RConnector(object):
 
     def __repr__(self):
         txt = 'Closed handle' if self.isClosed else 'Handle'
-        return '<%s to Rserve on %s:%s>' % \
-               (txt, self.host or 'localhost', self.port)
+        if self.unix_socket:
+            return '<%s to Rserve on %s>' % \
+                   (txt, self.unix_socket)
+        else:
+            return '<%s to Rserve on %s:%s>' % \
+                   (txt, self.host or 'localhost', self.port)
 
     @property
     def isClosed(self):
