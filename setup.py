@@ -1,9 +1,9 @@
 import os
 from setuptools import setup
-from pyRserve import __version__
 
 PACKAGE_NAME = "pyRserve"
 
+__version__ = open(os.path.join('pyRserve', 'version.txt')).readline().strip()
 requirements = open('requirements.txt').read().splitlines()
 requirements_testing = open('requirements_dev.txt').read().splitlines()
 
@@ -34,6 +34,7 @@ setup(
     package_data={
         'pyRserve': ['version.txt'],
     },
+    data_files=[('.', ['requirements.txt', 'requirements_dev.txt'])],
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, <4',
     install_requires=requirements,
     extras_require={
