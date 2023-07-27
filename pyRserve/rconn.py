@@ -37,13 +37,14 @@ class OOBCallback(object):
         self.conn.oobCallback = self.old_callback
 
 
-def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False,
+def connect(host='', port=RSERVEPORT, unix_socket=None, atomicArray=False, defaultVoid=False,
             oobCallback=_defaultOOBCallback):
     """Open a connection to an Rserve instance
     Params:
     - host: provide hostname where Rserve runs, or leave as empty string to
             connect to localhost
     - port: Rserve port number, defaults to 6311
+    - unix_socket: Unix Socket path (use in place of (host,port))
     - atomicArray:
             If True: when a result from an Rserve call is an array with
             a single element that single element
@@ -67,7 +68,7 @@ def connect(host='', port=RSERVEPORT, atomicArray=False, defaultVoid=False,
         # or '' were passed.
         host = 'localhost'
     assert port is not None, 'port number must be given'
-    return RConnector(host, port, atomicArray, defaultVoid, oobCallback)
+    return RConnector(host, port, unix_socket, atomicArray, defaultVoid, oobCallback)
 
 
 def checkIfClosed(func):
@@ -89,12 +90,13 @@ def checkIfClosed(func):
 
 class RConnector(object):
     """Provide a network connector to an Rserve process"""
-    def __init__(self, host, port, atomicArray, defaultVoid,
+    def __init__(self, host, port, unix_socket, atomicArray, defaultVoid,
                  oobCallback=_defaultOOBCallback):
         self.sock = None
         self.__closed = True
         self.host = host
         self.port = port
+        self.unix_socket = unix_socket
         self.atomicArray = atomicArray
         self.defaultVoid = defaultVoid
         self.oobCallback = oobCallback
@@ -104,20 +106,32 @@ class RConnector(object):
 
     def __repr__(self):
         txt = 'Closed handle' if self.isClosed else 'Handle'
-        return '<%s to Rserve on %s:%s>' % \
-               (txt, self.host or 'localhost', self.port)
+        if self.unix_socket:
+            return '<%s to Rserve on %s>' % \
+                   (txt, self.unix_socket)
+        else:
+            return '<%s to Rserve on %s:%s>' % \
+                   (txt, self.host or 'localhost', self.port)
 
     @property
     def isClosed(self):
         return self.__closed
 
     def connect(self):
-        self.sock = socket.socket()
-        try:
-            self.sock.connect((self.host, self.port))
-        except socket.error:
-            raise RConnectionRefused('Connection denied, server not reachable '
-                                     'or not accepting connections')
+        if self.unix_socket:
+            self.sock = socket.socket(socket.AF_UNIX)
+            try:
+                self.sock.connect(self.unix_socket)
+            except socket.error:
+                raise RConnectionRefused('Connection denied, server not reachable '
+                                         'or not accepting connections')            
+        else:
+            self.sock = socket.socket()
+            try:
+                self.sock.connect((self.host, self.port))
+            except socket.error:
+                raise RConnectionRefused('Connection denied, server not reachable '
+                                         'or not accepting connections')
         time.sleep(0.2)
         hdr = self.sock.recv(1024)
         self.__closed = False
