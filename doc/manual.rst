@@ -122,6 +122,26 @@ The approach could be:
    The connection to ``localhost:6311`` on the client machine will be forwarded to Rserve listening
    on ``localhost:6311`` on ``rservehost``.
 
+Variant 3: Connect to Rserve through a Unix socket
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This option might be more flexible for concurrent/dynamic connections than variants 1 and 2 and
+is slightly more secure than variant 1 (and less than variant 2), as the Unix socket can only be
+accessed from within the server.
+
+To enable Unix sockets in Rserve a flag needs to be enabled::
+
+    R CMD Rserve --RS-socket /tmp/rserve.sock
+
+That socket can now be used from pyRserve::
+
+    >>> import pyRserve
+    >>> conn = pyRserve.connect(unix_socket='/tmp/rserve.sock')
+
+.. WARNING::
+    Just as in Variant 1, communication between pyRserve and Rserve is not encrypted.
+    The only additional security is that this socket cannot be accessed from the network,
+    but a user with access to the system can still sniff/manipulate your connection.
+
 
 Shutting down Rserve remotely
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
