@@ -5,3 +5,4 @@ sphinx
 pre-commit
 wheel
 twine
+build
