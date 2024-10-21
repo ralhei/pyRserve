@@ -1,6 +1,14 @@
 Changelog
 =========
-* V.1.0.1 (2023-01-10)
+* V 1.0.4 (2024-10-21)
+    * Support connection to Rserve via sockets
+    * Pin numpy to version below 2
+* V 1.0.3 (2023-07-24)
+    * Fixed setup.py to include requirements files
+* V 1.0.2 (2023-01-01)
+    * pytest checks for R in PATH
+    * add list of required Linux (opensuse) packages for compiling R
+* V 1.0.1 (2023-01-10)
     * Replace deprecated numpy.bool8 with numpy.bool_
     * Upgraded installation instructions in INSTALL file (more up-to-date R and Rserve)
     * Added Dockerfile for installing R and Rserve into container (used for github actions)

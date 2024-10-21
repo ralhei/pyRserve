@@ -23,11 +23,11 @@ fortran compiler installed, otherwise installation will not be possible.
 
 On installing R then looks like::
 
-  R_VER=4.3.1   # possibly find the latest version, or use the version you require
+  R_VER=4.4.1   # possibly find the latest version, or use the version you require
   curl -LO https://cran.r-project.org/src/base/R-4/R-${R_VER}.tar.gz
   tar -xzf R-${R_VER}.tar.gz
   cd R-${R_VER}
-  ./configure --enable-R-shlib -with-x=no
+  ./configure --enable-R-shlib --disable-java -with-x=no
   make
   make install
 
@@ -41,8 +41,8 @@ Installing Rserve
 
 If you have already downloaded the tar file then from your command line run::
 
-  curl -LO http://www.rforge.net/Rserve/snapshot/Rserve_1.8-12.tar.gz
-  R CMD INSTALL Rserve_1.8-12.tar.gz
+  curl -LO http://www.rforge.net/Rserve/snapshot/Rserve_1.8-15.tar.gz
+  R CMD INSTALL Rserve_1.8-15.tar.gz
 
 Older versions of Rserve might also work, the earliest function version however
 seems to be 0.6.6.
