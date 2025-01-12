@@ -1,5 +1,10 @@
 Changelog
 =========
+* V 1.1.0 (2025-01-??)
+    * Support for numpy2 (numpy1.x no more supported)
+    * Removed support for Python2
+    * Switched from setup.py to pyproject.toml
+    * Some variable naming cleanup (from camel-case to underscore-based)
 * V 1.0.4 (2024-10-21)
     * Support connection to Rserve via sockets
     * Pin numpy to version below 2

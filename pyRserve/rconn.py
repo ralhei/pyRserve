@@ -20,7 +20,7 @@ def _defaultOOBCallback(data, code=0):  # noqa
     return None
 
 
-class OOBCallback(object):
+class OOBCallback:
     """Sets up conn with a new callback when entering the `with` block and
     restores the old one when exiting
     """
@@ -72,7 +72,7 @@ def connect(host='', port=RSERVEPORT, unix_socket=None, atomicArray=False, defau
 
 
 def checkIfClosed(func):
-    def decoCheckIfClosed(self, *args, **kw):
+    def deco_check_if_closed(self, *args, **kw):
         if self.isClosed:
             raise PyRserveClosed('Connection to Rserve already closed')
         try:
@@ -85,10 +85,10 @@ def checkIfClosed(func):
                 raise PyRserveClosed('Connection to Rserve already closed')
             else:
                 raise
-    return decoCheckIfClosed
+    return deco_check_if_closed
 
 
-class RConnector(object):
+class RConnector:
     """Provide a network connector to an Rserve process"""
     def __init__(self, host, port, unix_socket, atomicArray, defaultVoid,
                  oobCallback=_defaultOOBCallback):
@@ -201,8 +201,8 @@ class RConnector(object):
             # explanation about why the error has occurred. R allows to
             # retrieve the error message of the last exception via a built-in
             # function called 'geterrmessage()'.
-            errorMsg = self.eval('geterrmessage()').strip()
-            raise REvalError(errorMsg)
+            error_msg = self.eval('geterrmessage()').strip()
+            raise REvalError(error_msg)
 
     @checkIfClosed
     def voidEval(self, aString):
@@ -263,25 +263,25 @@ class RConnector(object):
             assert [x for x in args if not isinstance(x, RBaseProxy)] == (),\
                 'Only references to variables or functions allowed for "rm()"'
 
-        argNames = []
+        arg_names = []
         for idx, arg in enumerate(args):
             if isinstance(arg, RBaseProxy):
-                argName = arg.__name__
+                arg_name = arg.__name__
             else:
                 # a real python value is passed. Set a value of an artificial
                 # variable on the R side, memorize its name for making the
                 # actual call to the function below
-                argName = 'arg_%d_' % idx
-                self.setRexp(argName, arg)
-            argNames.append(argName)
+                arg_name = 'arg_%d_' % idx
+                self.setRexp(arg_name, arg)
+            arg_names.append(arg_name)
         for key, value in kw.items():
             if isinstance(value, RBaseProxy):
-                argName = value.__name__
+                arg_name = value.__name__
             else:
-                argName = 'kwarg_%s_' % key
-                self.setRexp(argName, value)
-            argNames.append('%s=%s' % (key, argName))
-        return self.eval(name+'(%s)' % ', '.join(argNames))
+                arg_name = 'kwarg_%s_' % key
+                self.setRexp(arg_name, value)
+            arg_names.append('%s=%s' % (key, arg_name))
+        return self.eval(name+'(%s)' % ', '.join(arg_names))
 
     @checkIfClosed
     def assign(self, aDict):
@@ -295,7 +295,7 @@ class RConnector(object):
         return self.eval('is.function(%s)' % name)
 
 
-class RNameSpace(object):
+class RNameSpace:
     """
     An instance of this class serves as access point to the default namesspace
     of an Rserve connection
@@ -314,13 +314,13 @@ class RNameSpace(object):
         """
         realname = name[1:] if name.startswith('_') else name
         try:
-            isFunction = self._rconn.isFunction(realname)
+            is_function = self._rconn.isFunction(realname)
         except Exception:
             # an error is only raised if neither such a function or variable
             # exists at all!
             raise NameError('no such variable or function "%s" '
                             'defined in Rserve' % realname)
-        if isFunction:
+        if is_function:
             return RFuncProxy(realname, self._rconn)
         elif name.startswith('_'):
             return RVarProxy(realname, self._rconn)
@@ -333,7 +333,7 @@ class RNameSpace(object):
         return self._rconn.eval(aString, atomicArray=atomicArray, void=void)
 
 
-class RNameSpaceReference(object):
+class RNameSpaceReference:
     """
     Provide reference to R objects (a proxy), NOT directly to their values
     """
@@ -343,19 +343,19 @@ class RNameSpaceReference(object):
     def __getattr__(self, name):
         """Return either a reference proxy to a variable to to a function"""
         try:
-            isFunction = self._rconn.isFunction(name)
+            is_function = self._rconn.isFunction(name)
         except Exception:
             # an error is only raised if neither such a function or variable
             # exists at all!
             raise NameError('no such variable or function "%s" '
                             'defined in Rserve' % name)
-        if isFunction:
+        if is_function:
             return RFuncProxy(name, self._rconn)
         else:
             return RVarProxy(name, self._rconn)
 
 
-class RBaseProxy(object):
+class RBaseProxy:
     """
     Proxy for a reference to a variable or function in R.
     Do not use this directly, only its subclasses.

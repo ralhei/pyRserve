@@ -11,7 +11,7 @@ Available classes:
 import numpy
 
 
-class TaggedList(object):
+class TaggedList:
     # This code is mainly based on UserList.UserList and modified for tags
     """
     A tagged list is useful for additionally addressing individual items by

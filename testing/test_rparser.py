@@ -3,16 +3,15 @@
 Unittesting module for rparser
 """
 import datetime
-###
+
 import numpy
 import pytest
-###
+
 from pyRserve import rtypes, rserializer, rparser
 from pyRserve.rconn import RVarProxy, OOBCallback
-from pyRserve.misc import PY3
 from pyRserve.rexceptions import REvalError
 from pyRserve.taggedContainers import TaggedList, TaggedArray
-###
+
 from .testtools import compareArrays
 
 
@@ -26,26 +25,10 @@ def test_eval_strings(conn):
     assert conn.r("'abc'") == 'abc'
 
     # make sure also byte-strings are handled successfully.
-    # Makes no difference in PY2, but in PY3 it does:
     assert conn.r(b"'abc'") == 'abc'
 
     # test via call to ident function with single argument:
     assert conn.r.ident('abc') == 'abc'
-
-    try:
-        # make sure also unicode strings are handled successfully in Python2.x
-        # Since u'abc' would raise a SyntaxError when this module is loaded
-        # in Py3 < 3.3 we have to create the unicode string via eval at
-        # runtime:
-        unicode_str = eval("""u'"abc"'""")
-    except SyntaxError:
-        # outdated PY3 version, so just skip the rest
-        return
-
-    assert conn.r(unicode_str) == 'abc'
-
-    # test via call to ident function with single argument:
-    assert conn.r.ident(eval("u'abc'")) == 'abc'
 
 
 def test_eval_string_arrays(conn):
@@ -117,10 +100,9 @@ def test_eval_long(conn):
     # The syntax like 234L only exists in Python2! So use long in Py2. I
     # n Python3 everything is of type <int>
     # Send a long value which is still within below the rtypes.MAX_INT32.
-    # It it automatically converted to a normal int in the rserializer and
+    # It is automatically converted to a normal int in the rserializer and
     # hence should work fine:
-    toLong = int if PY3 else long  # noqa    No 'long' function in PY3
-    assert conn.r.ident(toLong(123))
+    assert conn.r.ident(int(123))
 
     # Here comes the problem - there is no native 64bit integer on the R side,
     # so this should raise a ValueError
@@ -154,13 +136,9 @@ def test_eval_long_arrays(conn):
     MAX_INT32. Such an array is internally handled as a 32bit integer array
     and hence should work.
     """
-    toLong = int if PY3 else long    # noqa   No 'long' function in PY3
-    # arr64 = numpy.array([rtypes.MIN_INT32, toLong(5)], dtype=numpy.int64)
-    # assert compareArrays(conn.r.ident(arr64), arr64)
-
-    # Here again comes the problem: a int64 array with values beyong
+    # Here again comes the problem: a int64 array with values beyond
     # rtypes.MAX_INT32. This should raise a ValueError:
-    arr64big = numpy.array([toLong(-rtypes.MAX_INT32 * 2), toLong(5)],
+    arr64big = numpy.array([int(-rtypes.MAX_INT32 * 2), int(5)],
                            dtype=numpy.int64)
     pytest.raises(ValueError, conn.r.ident, arr64big)
 

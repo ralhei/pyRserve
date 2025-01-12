@@ -5,9 +5,9 @@ Install some system packages first, e.g. on RHEL:
     yum install xz-devel pcre pcre-devel libcurl-devel *gfortran* zlib* bzip2-* png-devel jpeg-devel
 
 Compilation of R:
-1. curl -LO https://cran.r-project.org/src/base/R-4/R-4.2.2.tar.gz
-2. tar -xf R-4.2.2.tar.gz
-3. $ cd R-4.2.2
+1. curl -LO https://cran.r-project.org/src/base/R-4/R-4.4.1.tar.gz
+2. tar -xf R-4.4.1.tar.gz
+3. $ cd R-4.4.1
    $ ./configure --enable-R-shlib --with-x=no
    $ make
    $ make install
@@ -15,12 +15,12 @@ Compilation of R:
 
 Install Rserve:
 ===============
-1. curl -LO http://www.rforge.net/Rserve/snapshot/Rserve_1.8-12.tar.gz
-2. R CMD INSTALL Rserve_1.8.12.tar.gz
+1. curl -LO https://www.rforge.net/Rserve/snapshot/Rserve_1.8-16.tar.gz
+2. R CMD INSTALL Rserve_1.8.16.tar.gz
 
 This way also the debug version will be compiled and installed.
 
-To start Rserver type:
+To start Rserve type:
 
     $ R CMD Rserve
 

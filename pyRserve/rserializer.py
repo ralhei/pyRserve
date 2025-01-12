@@ -10,7 +10,7 @@ import socket
 import numpy
 
 from . import rtypes
-from .misc import PY3, FunctionMapper, byteEncode, padLen4, string2bytesPad4
+from .misc import FunctionMapper, byteEncode, padLen4, string2bytesPad4
 from .taggedContainers import TaggedList, TaggedArray
 
 # turn on DEBUG to see extra information about what the serializer is
@@ -19,14 +19,10 @@ DEBUG = 0
 
 NoneType = type(None)
 
-if PY3:
-    # make test work with Python 3 where 'long'-type does not exist:
-    long = int
 
-
-class RSerializer(object):
+class RSerializer:
     """
-    Class to to serialize Python objects into a binary data stream for sending
+    Class to serialize Python objects into a binary data stream for sending
     them to Rserve.
 
     Depending on 'commandType' given to __init__ the resulting binary string
@@ -38,7 +34,6 @@ class RSerializer(object):
 
     def __init__(self, commandType, fp=None):
         if isinstance(fp, socket.socket):
-            # kwargs = {'mode': 'b'} if PY3 else {}
             self._fp = fp
             self._buffer = io.BytesIO()
         elif not fp:
@@ -81,21 +76,21 @@ class RSerializer(object):
         """
         # Jump to end of buffer to determine its length:
         self._buffer.seek(0, os.SEEK_END)
-        messageSize = self._buffer.tell() - rtypes.RHEADER_SIZE
+        message_size = self._buffer.tell() - rtypes.RHEADER_SIZE
         if DEBUG:
-            print('writing size of header: %2d' % messageSize)
+            print('writing size of header: %2d' % message_size)
         # Goto position 4 of the general Rserve package header and write the
         # size of the overall rserve message there. For message size > 2**32
         # the size is split into two parts, the lower 32 bits are written at
         # position 4, the higher part is written at position 12 (see QAP1 docs)
-        bin_messageSize = struct.pack('<Q', messageSize)
-        bin_messageSize_lo = bin_messageSize[:4]
-        bin_messageSize_hi = bin_messageSize[4:]
+        bin_message_size = struct.pack('<Q', message_size)
+        bin_message_size_lo = bin_message_size[:4]
+        bin_message_size_hi = bin_message_size[4:]
 
         self._buffer.seek(4)
-        self._buffer.write(bin_messageSize_lo)
+        self._buffer.write(bin_message_size_lo)
         self._buffer.write(b'\x00\x00\x00\x00')  # data offset, zero by default
-        self._buffer.write(bin_messageSize_hi)
+        self._buffer.write(bin_message_size_hi)
         return self._getRetVal()
 
     def _writeDataHeader(self, rTypeCode, length):
@@ -130,44 +125,44 @@ class RSerializer(object):
         # Here the data typecode (DT_* ) of the entire message is written,
         # with its length. Then the actual data itself is written out.
         if dtTypeCode == rtypes.DT_STRING:
-            paddedString = string2bytesPad4(o)
-            length = len(paddedString)
-            hdrSize = self._writeDataHeader(dtTypeCode, length)
-            self._buffer.write(paddedString)
+            padded_string = string2bytesPad4(o)
+            length = len(padded_string)
+            hdr_size = self._writeDataHeader(dtTypeCode, length)
+            self._buffer.write(padded_string)
         elif dtTypeCode == rtypes.DT_INT:
             length = 4   # an integer is encoded as 4 bytes
-            hdrSize = self._writeDataHeader(dtTypeCode, length)
+            hdr_size = self._writeDataHeader(dtTypeCode, length)
             self._buffer.write(struct.pack('<i', o))
         elif dtTypeCode == rtypes.DT_SEXP:
-            startPos = self._buffer.tell()
+            start_pos = self._buffer.tell()
             self._buffer.write(b'\0\0\0\0\0\0\0\0')
             length = self.serializeExpr(o)
-            self._buffer.seek(startPos)
-            hdrSize = self._writeDataHeader(dtTypeCode, length)
+            self._buffer.seek(start_pos)
+            hdr_size = self._writeDataHeader(dtTypeCode, length)
         else:
             raise NotImplementedError('no support for DT-type %x' % dtTypeCode)
         # Jump back to end of buffer to be prepared for writing more data
         self._buffer.seek(0, os.SEEK_END)
         # Adjust datasize counter
-        self._dataSize += length + hdrSize
+        self._dataSize += length + hdr_size
 
     def serializeExpr(self, o):
         if isinstance(o, numpy.ndarray):
-            rTypeCode = rtypes.numpyMap[o.dtype.type]
+            r_type_code = rtypes.numpyMap[o.dtype.type]
         else:
-            rTypeCode = type(o)
+            r_type_code = type(o)
         try:
-            s_func = self.serializeMap[rTypeCode]
+            s_func = self.serializeMap[r_type_code]
         except KeyError:
             raise NotImplementedError('Serialization of "%s" not implemented' %
-                                      rTypeCode)
-        startPos = self._buffer.tell()
+                                      r_type_code)
+        start_pos = self._buffer.tell()
         if DEBUG:
-            print('Serializing expr %r with rTypeCode=%s using function %s' %
-                  (o, rTypeCode, s_func))
+            print('Serializing expr %r with r_type_code=%s using function %s' %
+                  (o, r_type_code, s_func))
         s_func(self, o)
         # determine and return the length of actual R expression data:
-        return self._buffer.tell() - startPos
+        return self._buffer.tell() - start_pos
 
     @fmap(NoneType, rtypes.XT_NULL)
     def s_null(self, _):
@@ -184,20 +179,20 @@ class RSerializer(object):
         """
         # The string packet contains trailing padding zeros to make it always
         # a multiple of 4 in length:
-        paddedString = string2bytesPad4(o)
-        length = len(paddedString)
+        padded_string = string2bytesPad4(o)
+        length = len(padded_string)
         self._writeDataHeader(rTypeCode, length)
         if DEBUG:
             print('Writing string: %2d bytes: %s' %
-                  (length, repr(paddedString)))
-        self._buffer.write(paddedString)
+                  (length, repr(padded_string)))
+        self._buffer.write(padded_string)
 
     # ############### Arrays #########################################
 
     def __s_write_xt_array_tag_data(self, o):
         """
         Write tag data of an array, like dimension for a multi-dim array,
-        or other information found. Return appropriate rTypeCode.
+        or other information found. Return appropriate r_type_code.
         """
         xt_tag_list = []
         if o.ndim > 1:
@@ -205,13 +200,13 @@ class RSerializer(object):
         if isinstance(o, TaggedArray):
             xt_tag_list.append((b'names', numpy.array(o.attr)))
 
-        attrFlag = rtypes.XT_HAS_ATTR if xt_tag_list else 0
-        rTypeCode = rtypes.numpyMap[o.dtype.type] | attrFlag
+        attr_flag = rtypes.XT_HAS_ATTR if xt_tag_list else 0
+        r_type_code = rtypes.numpyMap[o.dtype.type] | attr_flag
         # write length of zero for now, will be corrected later:
-        self._writeDataHeader(rTypeCode, 0)
-        if attrFlag:
+        self._writeDataHeader(r_type_code, 0)
+        if attr_flag:
             self.s_xt_tag_list(xt_tag_list)
-        return rTypeCode
+        return r_type_code
 
     def __s_update_xt_array_header(self, headerPos, rTypeCode):
         """
@@ -236,25 +231,25 @@ class RSerializer(object):
     @fmap(rtypes.XT_ARRAY_STR)
     def s_xt_array_str(self, o):
         """Serialize array of strings"""
-        startPos = self._buffer.tell()
-        rTypeCode = self.__s_write_xt_array_tag_data(o)
+        start_pos = self._buffer.tell()
+        r_type_code = self.__s_write_xt_array_tag_data(o)
 
         # reshape into 1d array:
         o1d = o.reshape(o.size, order='F')
         # Byte-encode them:
         bo = [byteEncode(d) for d in o1d]
-        # add empty string to that the following join with \0 adds an
-        # additional zero at the end of the last string!
+        # add empty string so that the following join with \0 adds an
+        # extra zero at the end of the last string!
         bo.append(b'')
         # Concatenate them as null-terminated strings:
-        nullTerminatedStrings = b'\0'.join(bo)
+        null_terminated_strings = b'\0'.join(bo)
 
-        padLength = padLen4(nullTerminatedStrings)
-        self._buffer.write(nullTerminatedStrings)
-        self._buffer.write(b'\1\1\1\1'[:padLength])
+        pad_length = padLen4(null_terminated_strings)
+        self._buffer.write(null_terminated_strings)
+        self._buffer.write(b'\1\1\1\1'[:pad_length])
 
         # Update the array header:
-        self.__s_update_xt_array_header(startPos, rTypeCode)
+        self.__s_update_xt_array_header(start_pos, r_type_code)
 
     @fmap(bool, numpy.bool_)
     def s_atom_to_xt_array_boolean(self, o):
@@ -274,13 +269,13 @@ class RSerializer(object):
         Note: If o is multi-dimensional a tagged array is created. Also if o
               is of type TaggedArray.
         """
-        startPos = self._buffer.tell()
-        rTypeCode = self.__s_write_xt_array_tag_data(o)
+        start_pos = self._buffer.tell()
+        r_type_code = self.__s_write_xt_array_tag_data(o)
 
         # A boolean vector starts with its number of boolean values in the
         # vector (as int32):
-        structCode = '<'+rtypes.structMap[int]
-        self._buffer.write(struct.pack(structCode, o.size))
+        struct_code = '<'+rtypes.structMap[int]
+        self._buffer.write(struct.pack(struct_code, o.size))
         # Then write the boolean values themselves. Note that R expects binary
         # array data in Fortran order, so prepare this accordingly:
         data = o.tobytes(order='F')
@@ -289,43 +284,41 @@ class RSerializer(object):
         self._buffer.write(padLen4(data) * b'\xff')
 
         # Update the array header:
-        self.__s_update_xt_array_header(startPos, rTypeCode)
+        self.__s_update_xt_array_header(start_pos, r_type_code)
 
-    @fmap(int, numpy.int32, long, numpy.int64, numpy.compat.long, float, complex,
+    @fmap(int, numpy.int32, numpy.int64, numpy.long, float, complex,
           numpy.float64, numpy.complex64, numpy.complex128)
     def s_atom_to_xt_array_numeric(self, o):
         """
         Render single numeric items into their corresponding array counterpart
         in R
         """
-        if isinstance(o, (int, long, numpy.int64, numpy.compat.long)):
+        if isinstance(o, (int, numpy.int64, numpy.long)):
             if rtypes.MIN_INT32 <= o <= rtypes.MAX_INT32:
-                # even though this type of data is 'long' it still fits into a
-                # normal integer. Good!
                 o = int(o)
             else:
                 raise ValueError('Cannot serialize long integers larger than '
                                  'MAX_INT32 (**31-1)')
 
-        rTypeCode = rtypes.atom2ArrMap[type(o)]
-        structCode = '<'+rtypes.structMap[type(o)]
-        length = struct.calcsize(structCode)
+        r_type_code = rtypes.atom2ArrMap[type(o)]
+        struct_code = '<'+rtypes.structMap[type(o)]
+        length = struct.calcsize(struct_code)
         if type(o) is complex:
-            self._writeDataHeader(rTypeCode, length*2)
-            self._buffer.write(struct.pack(structCode, o.real))
-            self._buffer.write(struct.pack(structCode, o.imag))
+            self._writeDataHeader(r_type_code, length*2)
+            self._buffer.write(struct.pack(struct_code, o.real))
+            self._buffer.write(struct.pack(struct_code, o.imag))
         else:
-            self._writeDataHeader(rTypeCode, length)
-            self._buffer.write(struct.pack(structCode, o))
+            self._writeDataHeader(r_type_code, length)
+            self._buffer.write(struct.pack(struct_code, o))
 
     @fmap(rtypes.XT_ARRAY_CPLX, rtypes.XT_ARRAY_DOUBLE, rtypes.XT_ARRAY_INT)
     def s_xt_array_numeric(self, o):
         """
         @param o: numpy array or subclass (e.g. TaggedArray)
-        @note: If o is multi-dimensional a tagged array is created. Also if o
+        @note: If o is multidimensional a tagged array is created. Also if o
                is of type TaggedArray.
         """
-        if o.dtype in (numpy.int64, numpy.compat.long):
+        if o.dtype in (numpy.int64, numpy.long):
             # Note: use int instead of compat.long once Py2 is abandoned.
             if rtypes.MIN_INT32 <= o.min() and o.max() <= rtypes.MAX_INT32:
                 # even though this type of array is 'long' its values still
@@ -335,8 +328,8 @@ class RSerializer(object):
                 raise ValueError('Cannot serialize long integer arrays with '
                                  'values outside MAX_INT32 (2**31-1) range')
 
-        startPos = self._buffer.tell()
-        rTypeCode = self.__s_write_xt_array_tag_data(o)
+        start_pos = self._buffer.tell()
+        r_type_code = self.__s_write_xt_array_tag_data(o)
 
         # TODO: make this also work on big endian machines (data must be
         #       written in little-endian!!)
@@ -346,38 +339,38 @@ class RSerializer(object):
         self._buffer.write(o.tobytes(order='F'))
 
         # Update the array header:
-        self.__s_update_xt_array_header(startPos, rTypeCode)
+        self.__s_update_xt_array_header(start_pos, r_type_code)
 
     # ############## Vectors and Tag lists ####################################
 
     @fmap(list, TaggedList)
     def s_xt_vector(self, o):
         """Render all objects of given python list into generic r vector"""
-        startPos = self._buffer.tell()
+        start_pos = self._buffer.tell()
         # remember start position for calculating length in bytes of entire
         # list content
-        attrFlag = rtypes.XT_HAS_ATTR if o.__class__ == TaggedList else 0
-        self._writeDataHeader(rtypes.XT_VECTOR | attrFlag, 0)
-        if attrFlag:
+        attr_flag = rtypes.XT_HAS_ATTR if o.__class__ == TaggedList else 0
+        self._writeDataHeader(rtypes.XT_VECTOR | attr_flag, 0)
+        if attr_flag:
             self.s_xt_tag_list([(b'names', numpy.array(o.keys))])
         for v in o:
             self.serializeExpr(v)
-        length = self._buffer.tell() - startPos
-        self._buffer.seek(startPos)
+        length = self._buffer.tell() - start_pos
+        self._buffer.seek(start_pos)
         # now write header again with correct length information
         # subtract length of list data header:
-        self._writeDataHeader(rtypes.XT_VECTOR | attrFlag,
+        self._writeDataHeader(rtypes.XT_VECTOR | attr_flag,
                               length - rtypes.LARGE_DATA_HEADER_SIZE)
         self._buffer.seek(0, os.SEEK_END)
 
     def s_xt_tag_list(self, o):
-        startPos = self._buffer.tell()
+        start_pos = self._buffer.tell()
         self._writeDataHeader(rtypes.XT_LIST_TAG, 0)
         for tag, data in o:
             self.serializeExpr(data)
             self.s_string_or_symbol(tag, rTypeCode=rtypes.XT_SYMNAME)
-        length = self._buffer.tell() - startPos
-        self._buffer.seek(startPos)
+        length = self._buffer.tell() - start_pos
+        self._buffer.seek(start_pos)
         # now write header again with correct length information
         # subtract length of list data header:
         self._writeDataHeader(rtypes.XT_LIST_TAG,

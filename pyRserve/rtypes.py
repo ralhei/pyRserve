@@ -2,7 +2,6 @@
 types module for pyRserve
 """
 import numpy
-from pyRserve.misc import PY3
 
 # some general constants:
 SOCKET_BLOCK_SIZE = 4096
@@ -267,9 +266,8 @@ VALID_R_TYPES = [
     XT_VECTOR_EXP, XT_NULL, XT_UNKNOWN, XT_RAW, XT_S4
 ]
 
-STRING_TYPES = [str, numpy.string_, numpy.str_]
-if not PY3:
-    STRING_TYPES.append(unicode)  # noqa: F821      'unicode' unknown in Python3
+STRING_TYPES = [str, numpy.str_]
+
 
 ###############################################################################
 # Mapping btw. numpy and R data types, in both directions
@@ -288,9 +286,9 @@ structMap = {
     float:            'd',
     numpy.double:     'd',
     complex:          'd',
-    complex:          'd',
     numpy.complex128: 'd',
 }
+
 
 # mapping to determine overall type of message.
 DT_Map = {
@@ -305,7 +303,7 @@ numpyMap = {
     XT_ARRAY_INT:      numpy.int32,
     XT_ARRAY_DOUBLE:   numpy.double,     # double float64
     XT_ARRAY_CPLX:     complex,
-    XT_ARRAY_STR:      numpy.string_,
+    XT_ARRAY_STR:      numpy.str_,
 }
 
 # also add the inverse mapping to it:
@@ -316,9 +314,8 @@ for k, v in list(numpyMap.items()):
 numpyMap[numpy.complex128]  = XT_ARRAY_CPLX
 numpyMap[numpy.int32]       = XT_ARRAY_INT
 numpyMap[numpy.int64]       = XT_ARRAY_INT
-numpyMap[numpy.compat.long] = XT_ARRAY_INT
+numpyMap[numpy.long]        = XT_ARRAY_INT
 numpyMap[numpy.str_]        = XT_ARRAY_STR
-numpyMap[numpy.unicode_]    = XT_ARRAY_STR
 
 
 atom2ArrMap = {
@@ -331,7 +328,5 @@ atom2ArrMap = {
     numpy.complex128:  XT_ARRAY_CPLX,
     str:               XT_ARRAY_STR,
     numpy.str_:        XT_ARRAY_STR,
-    numpy.string_:     XT_ARRAY_STR,
-    numpy.unicode_:    XT_ARRAY_STR,
     bool:              XT_ARRAY_BOOL,
 }

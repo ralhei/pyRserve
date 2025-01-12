@@ -16,7 +16,7 @@ from .rtypes import (
     XT_LIST_NOTAG, XT_LIST_TAG, XT_NULL, XT_RAW, XT_S4, XT_STR, XT_SYMNAME,
     XT_UNKNOWN, XT_VECTOR, XT_VECTOR_EXP, XTs, structMap, numpyMap
 )
-from .misc import FunctionMapper, byteEncode, stringEncode, PY3
+from .misc import FunctionMapper, byteEncode, stringEncode
 from .rexceptions import \
     RResponseError, REvalError, EndOfDataError, RParserError
 from .taggedContainers import TaggedList, asTaggedArray, asAttrArray
@@ -24,7 +24,7 @@ from .taggedContainers import TaggedList, asTaggedArray, asAttrArray
 DEBUG = 0
 
 
-class OOBMessage(object):
+class OOBMessage:
     """OOB Message
 
     - type: OOB_SEND or OOB_MSG or OOB_STREAM_READ
@@ -42,18 +42,18 @@ class OOBMessage(object):
         return self.messageSize + 16  # header
 
 
-class Command(object):
+class Command:
     """Wrapper around the command bitfield calculating and storing its properties
     Magic extracted from RSProtocol.h
     """
     def __init__(self, code):
         self.code = code
         # Rserve 1.7 or’s the command with CMD_RESP even if it’s a OOB instead
-        fixedOOBCode = code & ~CMD_RESP
+        fixed_oob_code = code & ~CMD_RESP
 
         self.isOOB = bool(code & CMD_OOB)
-        self.oobType = fixedOOBCode & 0x0ffff000
-        self.oobUserCode = fixedOOBCode & 0xfff
+        self.oobType = fixed_oob_code & 0x0ffff000
+        self.oobUserCode = fixed_oob_code & 0xfff
 
         self.errCode = (code >> 24) & 127
         self.responseCode = code & 0xfffff  # lowest 20 bit
@@ -101,7 +101,7 @@ class Lexeme(list):
                (hex(self.rTypeCode), self.length, self.hasAttr, self.lexpos)
 
 
-class Lexer(object):
+class Lexer:
     """Rserve message lexer
     Can either read a OOBMessage or a R Object
     """
@@ -153,12 +153,12 @@ class Lexer(object):
 
         command = Command(struct.unpack('<I', self.read(4))[0])
         # Obtain lower 32bit part of message length:
-        messageSize1 = self.__unpack(XT_INT)
-        dataOffset = self.__unpack(XT_INT)
-        assert dataOffset == 0, 'dataOffset > 0 is not implemented'
+        message_size1 = self.__unpack(XT_INT)
+        data_offset = self.__unpack(XT_INT)
+        assert data_offset == 0, 'dataOffset > 0 is not implemented'
         # Obtain upper 32bit part of message length:
-        messageSize2 = self.__unpack(XT_INT) << 32  # shift 32bits to the left
-        self.messageSize = messageSize2 + messageSize1
+        message_size2 = self.__unpack(XT_INT) << 32  # shift 32bits to the left
+        self.messageSize = message_size2 + message_size1
 
         self.isOOB = command.isOOB
         if self.isOOB:
@@ -221,15 +221,15 @@ class Lexer(object):
         Sockets might not return all requested data at once, so use an io
         buffer to collect all data needed in a loop.
         """
-        bytesToRead = length
+        bytes_to_read = length
         buf = io.BytesIO(b'')
-        while bytesToRead > 0:
-            fragment = self._read(bytesToRead)
-            lenFrag = len(fragment)
-            if lenFrag == 0:
+        while bytes_to_read > 0:
+            fragment = self._read(bytes_to_read)
+            len_frag = len(fragment)
+            if len_frag == 0:
                 raise EndOfDataError()
             buf.write(fragment)
-            bytesToRead -= lenFrag
+            bytes_to_read -= len_frag
 
         self.lexpos += length
         data = buf.getvalue()
@@ -241,20 +241,20 @@ class Lexer(object):
         into a list of python objects. Byteswapping for numeric data will
         be done.
         """
-        structCode = structMap[tCode] if type(tCode) == int else tCode
+        struct_code = structMap[tCode] if type(tCode) == int else tCode
         # All data from Rserve is stored in little-endian format!
-        fmt = byteEncode('<' + str(num) + structCode if (num is not None)
-                         else '<' + structCode)  # convert into bytes!
+        fmt = byteEncode('<' + str(num) + struct_code if (num is not None)
+                         else '<' + struct_code)  # convert into bytes!
         if tCode == XT_INT3:
             length = 3
-            rawData = self.read(length) + b'\x00'
+            raw_data = self.read(length) + b'\x00'
         elif tCode == XT_INT7:
             length = 7
-            rawData = self.read(length) + b'\x00'
+            raw_data = self.read(length) + b'\x00'
         else:
             length = struct.calcsize(fmt or 1)
-            rawData = self.read(length)
-        d = struct.unpack(fmt, rawData)
+            raw_data = self.read(length)
+        d = struct.unpack(fmt, raw_data)
         return d[0] if num is None else list(d)
 
     def nextExprHdr(self):
@@ -265,26 +265,26 @@ class Lexer(object):
         - entire data header (containing one of the DT_* codes)
         - an REXPR header
         """
-        startLexpos = self.lexpos
-        _rTypeCode = self.__unpack('B')  # unsigned byte!
-        # extract pure rTypeCode without XT_HAS_ATTR or XT_LARGE flags:
-        rTypeCode = _rTypeCode & 0x3F
+        start_lexpos = self.lexpos
+        _r_type_code = self.__unpack('B')  # unsigned byte!
+        # extract pure r_type_code without XT_HAS_ATTR or XT_LARGE flags:
+        r_type_code = _r_type_code & 0x3F
         # extract XT_HAS_ATTR flag (if it exists)"
-        hasAttr = (_rTypeCode & XT_HAS_ATTR) != 0
+        has_attr = (_r_type_code & XT_HAS_ATTR) != 0
         # extract XT_LARGE flag (if it exists):
-        isXtLarge = (_rTypeCode & XT_LARGE) != 0
-        if isXtLarge:
+        is_xt_large = (_r_type_code & XT_LARGE) != 0
+        if is_xt_large:
             # header is larger, use all 7 bytes for length information
             # (new in Rserve 0.3)
             length = self.__unpack(XT_INT7)
         else:
             # small header, use 3 bytes for length information
             length = self.__unpack(XT_INT3)
-        if rTypeCode not in VALID_R_TYPES:
+        if r_type_code not in VALID_R_TYPES:
             raise RParserError(
                 "Unknown SEXP type %s found at lexpos %d, length %d" %
-                (hex(rTypeCode), startLexpos, length))
-        return Lexeme(rTypeCode, length, hasAttr, startLexpos)
+                (hex(r_type_code), start_lexpos, length))
+        return Lexeme(r_type_code, length, has_attr, start_lexpos)
 
     def nextExprData(self, lexeme):
         """
@@ -306,13 +306,8 @@ class Lexer(object):
         raw = self.read(lexeme.dataLength)
         # a boolean is stored in a 4 bytes word, but only the first byte
         # is significant:
-        if PY3:
-            # python3 directly converts a single byte item into a number!
-            b = raw[0]
-        else:
-            b = struct.unpack(byteEncode('<%s' % structMap[XT_BOOL]),
-                              raw[0])[0]
-            # b can be 2, meaning NA. Otherwise transform 0/1 into False/True
+        # python directly converts a single byte item into a number!
+        b = raw[0]
         return None if b == 2 else b == 1
 
     @fmap(XT_ARRAY_INT, XT_ARRAY_DOUBLE, XT_ARRAY_CPLX)
@@ -335,7 +330,7 @@ class Lexer(object):
         Those will be used if the vector has 2,3 or 4 boolean values.
         For a fifth value another 4 bytes are appended.
         """
-        numBools = self.__unpack(XT_INT, 1)[0]
+        num_bools = self.__unpack(XT_INT, 1)[0]
         # read the actual boolean values, including padding bytes:
         raw = self.read(lexeme.dataLength - 4)
         # Check if the array contains any NA values (encoded as \x02).
@@ -344,11 +339,11 @@ class Lexer(object):
         # This is handled for us for numeric types since numpy can use it's own
         # nan type, but here we need to help it out.
         if 2 in raw:
-            data = numpy.frombuffer(raw[:numBools], dtype=numpy.int8).astype(object)
+            data = numpy.frombuffer(raw[:num_bools], dtype=numpy.int8).astype(object)
             data[data == 2] = None
         else:
             data = numpy.frombuffer(
-                raw[:numBools],
+                raw[:num_bools],
                 dtype=numpyMap[lexeme.rTypeCode]
             )
         return data
@@ -358,15 +353,15 @@ class Lexer(object):
         """
         An array of one or more null-terminated strings.
         The XT_ARRAY_STR can contain trailing chars \x01 which need to be
-        chopped off. Since strings are encoded as bytes (in Py3) they need
+        chopped off. Since strings are encoded as bytes they need
         to be converted into real strings.
         """
         if lexeme.dataLength == 0:
             return ''
         raw = self.read(lexeme.dataLength)
-        bytesStrList = raw.split(b'\0')[:-1]
-        strList = [stringEncode(byteString) for byteString in bytesStrList]
-        return numpy.array(strList)
+        bytes_str_list = raw.split(b'\0')[:-1]
+        str_list = [stringEncode(byteString) for byteString in bytes_str_list]
+        return numpy.array(str_list)
 
     @fmap(XT_STR)
     def xt_str(self, lexeme):
@@ -377,8 +372,8 @@ class Lexer(object):
         The rest is filled with trailing \0s which need to be chopped off.
         """
         raw = self.read(lexeme.dataLength)
-        byteStr = raw.split(b'\0', 1)[0]
-        return stringEncode(byteStr)
+        byte_str = raw.split(b'\0', 1)[0]
+        return stringEncode(byte_str)
 
     @fmap(XT_SYMNAME)
     def xt_symname(self, lexeme):
@@ -402,7 +397,7 @@ class Lexer(object):
         return self.read(lexeme.dataLength - 4)
 
 
-class RParser(object):
+class RParser:
     #
     parserMap = {}
     fmap = FunctionMapper(parserMap)
@@ -411,7 +406,7 @@ class RParser(object):
         """
         atomicArray: if False parsing arrays with only one element will just
                      return this element
-        arrayOrder:  The order in which data in multi-dimensional arrays is
+        arrayOrder:  The order in which data in multidimensional arrays is
                      returned. 'C' for c-order, F for fortran.
         """
         self.lexer = Lexer(src)
@@ -436,9 +431,9 @@ class RParser(object):
     def _debugLog(self, lexeme, isRexpr=True):
         if DEBUG:
             lx = lexeme
-            typeCodeDict = XTs if isRexpr else DTs
+            type_code_dict = XTs if isRexpr else DTs
             print('%s %s (%s), hasAttr=%s, lexpos=%d, length=%s' %
-                  (self.__ind, typeCodeDict[lx.rTypeCode], hex(lx.rTypeCode),
+                  (self.__ind, type_code_dict[lx.rTypeCode], hex(lx.rTypeCode),
                    lx.hasAttr, lx.lexpos, lx.length))
 
     def parse(self):
@@ -477,9 +472,9 @@ class RParser(object):
             return message
 
     def _parse(self):
-        dataLexeme = self.lexer.nextExprHdr()
-        self._debugLog(dataLexeme, isRexpr=False)
-        if dataLexeme.rTypeCode == DT_SEXP:
+        data_lexeme = self.lexer.nextExprHdr()
+        self._debugLog(data_lexeme, isRexpr=False)
+        if data_lexeme.rTypeCode == DT_SEXP:
             lexeme = self._parseExpr()
             return self._postprocessData(lexeme.data)
         else:
@@ -508,8 +503,8 @@ class RParser(object):
                   (self.__ind, lexpos, lexeme.dataLength))
             print('%s    data: %s' % (self.__ind, repr(data)))
             try:
-                dataLen = len(data)
-                print('%s    length: %d' % (self.__ind, dataLen))
+                data_len = len(data)
+                print('%s    length: %d' % (self.__ind, data_len))
             except TypeError:
                 pass
         return data
@@ -538,7 +533,7 @@ class RParser(object):
                                        numpy.complex128)):
                     # convert into native python complex number:
                     data = complex(data)
-                elif isinstance(data, (numpy.string_, str)):
+                elif isinstance(data, (numpy.str_, str)):
                     # convert into native python string:
                     data = str(data)
                 elif isinstance(data, (bool, numpy.bool_)):
@@ -590,13 +585,13 @@ class RParser(object):
         as XT_VECTOR. For now just a list with the expression content is
         returned in this case.
         """
-        finalLexpos = self.lexer.lexpos + lexeme.dataLength
+        final_lexpos = self.lexer.lexpos + lexeme.dataLength
         if DEBUG:
             print('%s     Vector-lexpos: %d, length %d, finished at: %d' %
                   (self.__ind, self.lexer.lexpos,
-                   lexeme.dataLength, finalLexpos))
+                   lexeme.dataLength, final_lexpos))
         data = []
-        while self.lexer.lexpos < finalLexpos:
+        while self.lexer.lexpos < final_lexpos:
             # convert single item arrays into atoms (via stripArray)
             data.append(self._postprocessData(self._parseExpr().data))
 
@@ -619,9 +614,9 @@ class RParser(object):
     def xt_list_tag(self, lexeme):
         # a xt_list_tag usually occurs as an attribute of a vector or list
         # (like for a tagged list)
-        finalLexpos = self.lexer.lexpos + lexeme.dataLength
+        final_lexpos = self.lexer.lexpos + lexeme.dataLength
         r = []
-        while self.lexer.lexpos < finalLexpos:
+        while self.lexer.lexpos < final_lexpos:
             value, tag = self._parseExpr().data, self._parseExpr().data
             # reverse order of tag and value when adding it to result list
             r.append((tag, value))
@@ -631,14 +626,14 @@ class RParser(object):
     def xt_closure(self, lexeme):
         # read entire data provided for closure (a R code object) even though
         # we don't know what to do with it on the Python side ;-)
-        aList1 = self._parseExpr().data
-        aList2 = self._parseExpr().data
+        a_list1 = self._parseExpr().data
+        a_list2 = self._parseExpr().data
         # Some closures seem to provide their sourcecode in an attrLexeme,
         # but some don't.
         # return Closure(lexeme.attrLexeme.data[0][1])
         # So for now let's just return the entire parse tree in a
         # Closure instance.
-        return Closure(lexeme, aList1, aList2)
+        return Closure(lexeme, a_list1, a_list2)
 
     @fmap(XT_S4)
     def xt_s4(self, lexeme):
@@ -659,7 +654,7 @@ def rparse(src, atomicArray=False):
 ##############################################################################
 
 
-class Closure(object):
+class Closure:
     """
     Very simple container to return "something" for a closure.
     Not really usable in Python though.

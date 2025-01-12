@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+ 
+[project]
+dynamic = ["version"]
+name = "pyRserve"
+
+authors = [
+    {name = "Ralph Heinkel", email = "rh@ralph-heinkel.com"},
+]
+maintainers = [
+    {name = "Ralph Heinkel", email = "rh@ralph-heinkel.com"},
+]
+
+description = "A Python client to remotely access the R statistic package via Network"
+readme = "README.rst"
+
+dependencies = [
+    "numpy>=2",
+]
+
+requires-python = ">= 3.10"
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 2",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Networking",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "flake8",
+    "coverage",
+    "sphinx",
+    "pre-commit",
+    "build",
+    "twine",
+]
+
+[project.urls]
+Homepage = "https://github.com/ralhei/pyRserve"
+Repository = "https://github.com/ralhei/pyRserve"
+Documentation = "https://pyrserve.readthedocs.io/"
+Changelog = "https://pyrserve.readthedocs.io/en/latest/changelog.html"
+Issues = "https://github.com/ralhei/pyRserve/issues"
+
+[tool.hatch.version]
+path = "pyRserve/version.txt"
+pattern = "(?P<version>.+)"
