@@ -18,7 +18,7 @@ clean:
 
 upload-prep: docs
 	rm -f dist/*
-	python setup.py sdist bdist_wheel
+	python -m build
 	twine check dist/*
 
 upload: upload-prep

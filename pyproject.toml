@@ -17,7 +17,7 @@ description = "A Python client to remotely access the R statistic package via Ne
 readme = "README.rst"
 
 dependencies = [
-    "numpy>=2",
+    "numpy",
 ]
 
 requires-python = ">= 3.10"
