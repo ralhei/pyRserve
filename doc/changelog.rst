@@ -1,5 +1,7 @@
 Changelog
 =========
+* V 1.1.0a2 (2025-01-15)
+    * Include support for Python 3.9
 * V 1.1.0a1 (2025-01-15)
     * Support for numpy2
     * Removed support for Python2
