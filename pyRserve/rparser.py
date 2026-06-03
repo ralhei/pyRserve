@@ -538,7 +538,7 @@ class RParser(object):
                                        numpy.complex128)):
                     # convert into native python complex number:
                     data = complex(data)
-                elif isinstance(data, (numpy.string_, str)):
+                elif isinstance(data, (numpy.bytes_, str)):
                     # convert into native python string:
                     data = str(data)
                 elif isinstance(data, (bool, numpy.bool_)):

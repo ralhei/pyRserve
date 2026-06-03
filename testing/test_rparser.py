@@ -268,7 +268,7 @@ def test_large_objects(conn):
     Sent array back and forth btw Python and R before comparing them.
     """
     # make an integer (int32) array a little bit larger than 2**24
-    arr = numpy.arange(2**24 / 4 + 100, dtype=numpy.int32)
+    arr = numpy.arange(2**24 // 4 + 100, dtype=numpy.int32)
     conn.r.largearr = arr
     compareArrays(arr, conn.r.largearr)
 
