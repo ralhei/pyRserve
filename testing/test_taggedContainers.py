@@ -62,3 +62,17 @@ def test_TaggedList_insert_with_key():
     assert len(t) == 3
     assert t.values == [1, 11, 22]
     assert t[0] == t['x'] == 1
+
+
+def test_TaggedList_setitem_by_key():
+    t = TaggedList([('v1', 11), ('v2', 22)])
+    t['v1'] = 99
+    assert t['v1'] == 99
+    assert t.values == [99, 22]
+
+
+def test_TaggedList_delitem_by_key():
+    t = TaggedList([('v1', 11), ('v2', 22)])
+    del t['v1']
+    assert t.values == [22]
+    assert t.keys == ['v2']

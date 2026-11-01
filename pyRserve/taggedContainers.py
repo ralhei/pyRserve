@@ -102,12 +102,12 @@ class TaggedList(object):
 
     def __setitem__(self, i, item):
         if type(i) == str:
-            i = self.keys.index[i]
+            i = self.keys.index(i)
         self.values[i] = item
 
     def __delitem__(self, i):
         if type(i) == str:
-            i = self.keys.index[i]
+            i = self.keys.index(i)
             del self.keys[i]
         del self.values[i]
 
